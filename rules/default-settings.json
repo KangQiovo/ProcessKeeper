@@ -1,0 +1,32 @@
+{
+  "Format": "ProcessKeeper.Settings",
+  "Version": 1,
+  "Whitelist": {
+    "Version": 1,
+    "Rules": []
+  },
+  "Appearance": {
+    "Version": 1,
+    "BackdropEnabled": true,
+    "Material": "Mica",
+    "Theme": "System"
+  },
+  "View": {
+    "Version": 1,
+    "LiveRefresh": true,
+    "ShowSystemProcesses": false,
+    "CategoryFilter": 0,
+    "SortOrder": 0,
+    "Language": "auto",
+    "HistoryAutoScroll": true,
+    "InstalledDrive": ""
+  },
+  "Updates": {
+    "Version": 1,
+    "Repository": "KangQiovo/ProcessKeeper",
+    "CheckOnStartup": true,
+    "SourceMode": "Auto",
+    "ThirdPartySourceId": "auto",
+    "AutoDesktopShortcut": true
+  }
+}

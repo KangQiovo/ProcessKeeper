@@ -1,0 +1,143 @@
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using Microsoft.Win32;
+using ProcessKeeper.Core;
+namespace ProcessKeeper.App;
+public partial class MainWindow
+{
+    private static TextBlock Text(string value, double size = 14) => new() { Text = value, FontSize = size, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Left, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 0, 0, 12) };
+    private static Button Button(string value, Action action) { var button = new Wpf.Ui.Controls.Button { Content = value, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 8, 12), Padding = new Thickness(12, 8, 12, 8) }; button.Click += (_, _) => action(); return button; }
+    private void ApplyTheme()
+    {
+        var dark = _appearance.Theme == AppearanceTheme.Dark;
+        if (_appearance.Theme == AppearanceTheme.System)
+        {
+            try { using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"); dark = key?.GetValue("AppsUseLightTheme") is int value && value == 0; } catch { dark = false; }
+        }
+        Wpf.Ui.Appearance.ApplicationThemeManager.Apply(dark ? Wpf.Ui.Appearance.ApplicationTheme.Dark : Wpf.Ui.Appearance.ApplicationTheme.Light);
+        Resources["PageBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#202124" : "#F4F5F7"));
+        Resources["PanelBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#292B30" : "#FFFFFF"));
+        Resources["InkBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#F3F4F6" : "#17191C"));
+        Resources["MutedBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#BFC5D0" : "#505763"));
+        // Popup menus are rebuilt after changes so a previously open menu cannot keep the old theme.
+        List.ContextMenu = new ContextMenu();
+    }
+    private void BuildSettings()
+    {
+        SettingsContent.Children.Clear();
+        var tabs = new TabControl { Background = Brushes.Transparent, BorderThickness = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top };
+        SettingsContent.Children.Add(tabs);
+        StackPanel Tab(string title) { var panel = new StackPanel { Margin = new Thickness(12, 18, 12, 12), HorizontalAlignment = HorizontalAlignment.Stretch }; tabs.Items.Add(new TabItem { Header = L.T(title), Content = panel, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top }); return panel; }
+        var language = Tab("语言");
+        language.Children.Add(Text(L.T("显示语言"), 20));
+        var languages = new ComboBox { ItemsSource = new[] { L.T("自动（跟随系统）"), "简体中文", "繁體中文", "English" }, SelectedIndex = Array.IndexOf(new[] { "auto", "zh-Hans", "zh-Hant", "en" }, _view.Language), MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left };
+        languages.SelectionChanged += async (_, _) => { if (languages.SelectedIndex < 0) return; _view = _view with { Language = new[] { "auto", "zh-Hans", "zh-Hant", "en" }[languages.SelectedIndex] }; SaveView(); L.Language = LanguageResolver.ResolveCurrent(_view.Language); ConfigureLanguage(); await RenderAsync(); };
+        language.Children.Add(languages);
+        var appearance = Tab("外观"); appearance.Children.Add(Text(L.T("应用主题"), 20));
+        var themes = new ComboBox { ItemsSource = new[] { L.T("跟随系统"), L.T("浅色"), L.T("深色") }, SelectedIndex = (int)_appearance.Theme, MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 16) };
+        themes.SelectionChanged += (_, _) => { if (themes.SelectedIndex < 0) return; _appearance = _appearance with { Theme = (AppearanceTheme)themes.SelectedIndex }; try { new AppearancePreferencesStore(_directory).Save(_appearance); ApplyTheme(); } catch (Exception ex) { Notice(ex.Message); } };
+        appearance.Children.Add(themes); appearance.Children.Add(Text(L.T("当前环境使用纯色背景。")));
+        var backup = Tab("备份"); AddProfilesView(backup); backup.Children.Add(Text(L.T("全部设置"), 20));
+        backup.Children.Add(Button(L.T("导出"), ExportSettings)); backup.Children.Add(Button(L.T("导入全部设置"), async () => await ImportSettings()));
+        backup.Children.Add(Button(L.T("导出白名单"), () => ExportRulesClick(this, new RoutedEventArgs())));
+        backup.Children.Add(Button(L.T("导入白名单"), () => ImportRulesClick(this, new RoutedEventArgs())));
+        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(Text(CurrentAppVersion + " | .NET Framework 4.6.2 | " + (Environment.Is64BitProcess ? "x64" : "x86")));
+        if (BuildInfo.IsPreviewBuild) about.Children.Add(Text(L.T("测试版本不代表最终品质"))); BuildUpdateSettings(about); about.Children.Add(Text(L.T("作者信息"), 20)); about.Children.Add(Text("KangQi"));
+        var links = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left }; links.Children.Add(AuthorButton("GitHub", AuthorIcons.Github, "https://github.com/KangQiovo")); links.Children.Add(AuthorButton(L.T("酷安"), AuthorIcons.Coolapk, "https://www.coolapk.com/u/21241695", true)); links.Children.Add(AuthorButton(L.T("B站"), AuthorIcons.Bilibili, "https://space.bilibili.com/329073257")); about.Children.Add(links);
+        about.Children.Add(Text(L.T("引用项目"), 20));
+        foreach (var project in ReferencedProjects.All)
+        {
+            var reference = Button(project.Name, async () => { if (await Confirm(L.T("打开项目主页？"), L.T("将在默认浏览器打开以下网址：") + "\n" + project.Url)) OpenWebsite(project.Url); });
+            reference.Content = new TextBlock { Text = project.Name, TextWrapping = TextWrapping.Wrap };
+            reference.Tag = project.Url; reference.HorizontalAlignment = HorizontalAlignment.Stretch; reference.HorizontalContentAlignment = HorizontalAlignment.Left;
+            reference.BorderThickness = new Thickness(0); reference.Background = Brushes.Transparent;
+            about.Children.Add(reference);
+            about.Children.Add(Text(project.Description, 12));
+        }
+        about.Children.Add(Button(L.T("重新进入引导（OOBE）"), () => { if (_busy) Notice(L.T("请等待当前操作完成")); else ShowOnboarding(true); }));
+        var diagnostics = Text(L.T("正在读取运行环境…")); about.Children.Add(diagnostics);
+        about.Children.Add(Button(L.T("重新检测"), async () => diagnostics.Text = (await Task.Run(_backend.CaptureEnvironment)).Description));
+        _ = LoadDiagnostics(); async Task LoadDiagnostics() { try { diagnostics.Text = (await Task.Run(_backend.CaptureEnvironment)).Description; } catch (Exception ex) { diagnostics.Text = ex.Message; } }
+        var risk = Button("", async () => await ToggleRiskModeAsync());
+        risk.Tag = "risk-mode-toggle"; risk.Background = new SolidColorBrush(Color.FromRgb(176, 0, 32)); risk.Foreground = Brushes.White;
+        risk.Style = (Style)Resources[typeof(Button)]; risk.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
+        about.Children.Add(Text(L.T("仅本次运行生效；重新启动后恢复风险确认。"))); about.Children.Add(risk);
+    }
+    private void OpenWebsite(string uri) { try { if (_backend.OpenWebPage is not null) _backend.OpenWebPage(uri); else Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); } catch (Exception ex) { Notice(ex.Message); } }
+    private Button AuthorButton(string name, string geometry, string uri, bool stroked = false)
+    {
+        var path = new System.Windows.Shapes.Path { Data = Geometry.Parse(geometry) };
+        path.SetResourceReference(stroked ? System.Windows.Shapes.Shape.StrokeProperty : System.Windows.Shapes.Shape.FillProperty, "InkBrush");
+        if (stroked) { path.StrokeThickness = 12; path.StrokeLineJoin = PenLineJoin.Round; path.StrokeStartLineCap = path.StrokeEndLineCap = PenLineCap.Round; }
+        var canvas = new Canvas { Width = stroked ? 192 : 24, Height = stroked ? 192 : 24 }; canvas.Children.Add(path);
+        var panel = new StackPanel { Orientation = Orientation.Horizontal }; panel.Children.Add(new Viewbox { Child = canvas, Width = 20, Height = 20, Margin = new Thickness(0, 0, 8, 0) }); panel.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center });
+        var button = Button(name, () => OpenWebsite(uri)); button.Content = panel; return button;
+    }
+    private sealed record ExportPurpose(bool ForSharing, string Label);
+    private async Task<ExportPurpose?> ChooseExportPurpose() => await Pick(L.T("导出用途"), new[]
+    {
+        new ExportPurpose(true, L.T("分享给其他电脑（仅通用规则）")),
+        new ExportPurpose(false, L.T("完整本机备份（保留所有规则与路径）"))
+    }, purpose => purpose.Label);
+    private IReadOnlyList<WhitelistRule> RulesForExport(bool forSharing) => forSharing ? RulePortability.ForSharing(_rules) : _rules;
+    private async void ExportSettings() => await ExportSettingsAsync();
+    private async Task ExportSettingsAsync()
+    {
+        var options = await ChooseExportOptions(); if (options is null) return;
+        var filename = options.WhitelistOnly ? "ProcessKeeper.rules.json" : "ProcessKeeper.settings.json";
+        string? path;
+        if (_backend.SelectExportPath is not null) path = _backend.SelectExportPath(filename);
+        else { var picker = new SaveFileDialog { Filter = "JSON (*.json)|*.json", FileName = filename }; path = picker.ShowDialog(this) == true ? picker.FileName : null; }
+        if (path is null || string.IsNullOrWhiteSpace(path)) return;
+        try
+        {
+            var rules = RulesForExport(options.ForSharing);
+            if (options.WhitelistOnly) WhitelistStore.ExportToFile(path, rules);
+            else
+            {
+                var profiles = new WhitelistProfilesStore(_directory).ExportSnapshot();
+                if (options.ForSharing) profiles = profiles with { Profiles = profiles.Profiles.Select(profile => profile with { Rules = RulePortability.ForSharing(profile.Rules) }).ToArray() };
+                SettingsBundleStore.Export(path, new SettingsBundle(profiles.ActiveRules, _appearance, _view, ReadUpdatesForExport(), profiles));
+            }
+            Notice(L.T("导出成功"), true);
+        }
+        catch (Exception ex) { Notice(ex.Message); }
+    }
+    private UpdatePreferences ReadUpdatesForExport() => new UpdatePreferencesStore(_directory).Load();
+    private async Task ImportSettings()
+    {
+        if (_closed || _busy) return;
+        var picker = new OpenFileDialog { Filter = "JSON (*.json)|*.json", CheckFileExists = true }; if (picker.ShowDialog(this) != true) return;
+        try
+        {
+            var bundle = SettingsBundleStore.ReadImport(picker.FileName);
+            var profiles = bundle.Profiles;
+            if (profiles is not null) profiles = profiles with { Profiles = profiles.Profiles.Select(profile => profile with { Rules = RulePortability.PrepareImport(profile.Rules) }).ToArray() };
+            bundle = bundle with { Rules = profiles?.ActiveRules ?? RulePortability.PrepareImport(bundle.Rules), Profiles = profiles };
+            var detail = L.T("将替换当前设置和白名单，并保留备份。");
+            if (profiles is not null) detail += "\n" + L.F($"包含 {profiles.Profiles.Count} 套配置；将整体恢复配置列表。");
+            if (!await Confirm(L.T("导入全部设置"), detail)) return;
+            if (_closed || _busy) return;
+            SettingsBundleStore.CommitAll(_directory, bundle); ApplyImportedSettings(bundle); Log(L.T("全部设置已导入")); await RenderAsync();
+        }
+        catch (SettingsCommitException ex) { if (!ex.RollbackSucceeded) _rulesReadable = false; Notice(ex.Message); }
+        catch (Exception ex) { Notice(ex.Message); }
+    }
+    private void ApplyImportedSettings(SettingsBundle bundle)
+    {
+        var ready = _ready; _ready = false;
+        try
+        {
+            _rules = bundle.Rules; _view = bundle.View; _appearance = bundle.Appearance; _rulesReadable = true;
+            if (bundle.Updates is not null) ApplyUpdatePreferences(bundle.Updates);
+            _livePages[0] = _livePages[1] = _livePages[2] = _view.LiveRefresh;
+            L.Language = LanguageResolver.ResolveCurrent(_view.Language);
+            ApplyTheme(); ConfigureLanguage();
+            ShowSystem.IsChecked = _view.ShowSystemProcesses; HistoryAuto.IsChecked = _view.HistoryAutoScroll;
+        }
+        finally { _ready = ready; }
+        RequestPresentationCapture();
+    }
+}

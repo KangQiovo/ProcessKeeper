@@ -1,0 +1,1510 @@
+[
+  {
+    "source": "模拟器启动参数数量不受支持。",
+    "en": "Unsupported number of emulator launch arguments."
+  },
+  {
+    "source": "模拟器启动参数包含空值、控制字符或超长内容。",
+    "en": "Emulator arguments contain empty values, control characters, or oversized content."
+  },
+  {
+    "source": "启动参数的程序路径与已核实的 emulator.exe 不一致。",
+    "en": "The launch command does not point to the verified emulator.exe."
+  },
+  {
+    "source": "将 @AVD 简写转换为 -avd 参数。",
+    "en": "Convert the @AVD shorthand to the -avd argument."
+  },
+  {
+    "source": "存在未归属的参数值；不会猜测或拼接执行。",
+    "en": "An argument value has no matching option; it will not be guessed or executed."
+  },
+  {
+    "source": "不支持自动重放 {0}：它可能改变数据、磁盘写入模式或执行额外命令。",
+    "en": "Cannot replay {0} automatically: it may change data, disk write behavior, or run additional commands."
+  },
+  {
+    "source": "参数 {0} 重复，无法确定原启动意图。",
+    "en": "Argument {0} appears more than once; the original intent is ambiguous."
+  },
+  {
+    "source": "移除 {0}（取消无窗口或 IDE 嵌入参数）。",
+    "en": "Remove {0} to disable headless or IDE-embedded mode."
+  },
+  {
+    "source": "移除 {0} 及其值（取消 IDE 通信与退出生命周期参数）。",
+    "en": "Remove {0} and its value to detach IDE communication and exit lifecycle settings."
+  },
+  {
+    "source": "移除 {0} 及其路径（取消 IDE 通信配置，不记录原值）。",
+    "en": "Remove {0} and its path to detach IDE communication settings; the original value is not recorded."
+  },
+  {
+    "source": "移除 -snapshot 及其名称，改为冷启动。",
+    "en": "Remove -snapshot and its name; use a cold boot instead."
+  },
+  {
+    "source": "-port 与 -ports 不能重复或同时出现。",
+    "en": "-port and -ports cannot be repeated or used together."
+  },
+  {
+    "source": "{0} 的端口格式不受支持。",
+    "en": "Unsupported port format for {0}."
+  },
+  {
+    "source": "AVD 控制台端口必须为 5554 至 5682 内的偶数。",
+    "en": "The AVD console port must be an even number from 5554 to 5682."
+  },
+  {
+    "source": "AVD 的 adb 端口必须为 5555 至 5683 内的奇数。",
+    "en": "The AVD adb port must be an odd number from 5555 to 5683."
+  },
+  {
+    "source": "规范化 {0} 的绝对路径（目标不变）。",
+    "en": "Normalize the absolute path for {0} without changing its target."
+  },
+  {
+    "source": "-feature 含不受支持的功能名称，不会将其他选项误当作功能值。",
+    "en": "-feature contains an unsupported feature name; other options will not be treated as feature values."
+  },
+  {
+    "source": "-feature 重复或互相冲突。",
+    "en": "-feature is repeated or conflicting."
+  },
+  {
+    "source": "尚不支持自动重放参数 {0}；请从 Android Studio 或模拟器自身入口启动。",
+    "en": "Argument {0} cannot be replayed automatically yet; launch from Android Studio or the emulator itself."
+  },
+  {
+    "source": "启动参数中没有唯一的 -avd 名称或 @名称，不能安全确定目标模拟器。",
+    "en": "No unique -avd name or @name was found; the target emulator cannot be identified safely."
+  },
+  {
+    "source": "-no-accel 与 -accel 同时出现，无法确定硬件加速设置。",
+    "en": "Both -no-accel and -accel are present; hardware acceleration settings are ambiguous."
+  },
+  {
+    "source": "添加 -no-snapshot-load（冷启动，避免恢复无窗口快照）。",
+    "en": "Add -no-snapshot-load for a cold boot without restoring a headless snapshot."
+  },
+  {
+    "source": "只能包含一个 -avd 名称或 @名称，重复目标不会自动处理。",
+    "en": "Only one -avd name or @name is supported; duplicate targets will not be handled automatically."
+  },
+  {
+    "source": "AVD 名称包含不支持的字符或路径内容。",
+    "en": "The AVD name contains unsupported characters or path content."
+  },
+  {
+    "source": "参数 {0} 缺少有效值，不会吞掉后续选项。",
+    "en": "Argument {0} has no valid value; subsequent options will not be consumed as its value."
+  },
+  {
+    "source": "参数 {0} 的值不受支持或格式无效（未记录原值）。",
+    "en": "Argument {0} has an unsupported or invalid value; the original value is not recorded."
+  },
+  {
+    "source": "参数 {0} 需要 {1} 至 {2} 范围内的整数。",
+    "en": "Argument {0} requires an integer from {1} to {2}."
+  },
+  {
+    "source": "{0} 必须使用普通绝对路径，不能依赖原进程的工作目录。",
+    "en": "{0} must use a normal absolute path and cannot depend on the original process working directory."
+  },
+  {
+    "source": "{0} 的路径格式不受支持。",
+    "en": "Unsupported path format for {0}."
+  },
+  {
+    "source": "{0} 的绝对路径无法规范化。",
+    "en": "The absolute path for {0} cannot be normalized."
+  },
+  {
+    "source": "（未知选项，原值已隐藏）",
+    "en": "(Unknown option; original value hidden)"
+  },
+  {
+    "source": "必须提供确认过的 AVD 名称。",
+    "en": "A confirmed AVD name is required."
+  },
+  {
+    "source": "控制台 AVD 名称已变化，未发送退出命令。",
+    "en": "The console AVD name changed; no exit command was sent."
+  },
+  {
+    "source": "模拟器控制台端口归属已变化或存在冲突，未发送操作命令。",
+    "en": "Emulator console port ownership changed or is ambiguous; no command was sent."
+  },
+  {
+    "source": "未找到属于该模拟器的本机控制台。",
+    "en": "No local console belonging to this emulator was found."
+  },
+  {
+    "source": "拒绝连接非本机模拟器控制台。",
+    "en": "Connections to non-local emulator consoles are not allowed."
+  },
+  {
+    "source": "监听端口没有返回 Android Emulator 控制台标识。",
+    "en": "The listening port did not identify itself as an Android Emulator console."
+  },
+  {
+    "source": "模拟器用户配置目录无法核实，未读取控制台凭据。",
+    "en": "The emulator user profile directory could not be verified; console credentials were not read."
+  },
+  {
+    "source": "模拟器控制台认证文件不存在或格式不受支持。",
+    "en": "The emulator console authentication file is missing or unsupported."
+  },
+  {
+    "source": "模拟器控制台认证文件格式无效。",
+    "en": "The emulator console authentication file is invalid."
+  },
+  {
+    "source": "模拟器没有返回唯一、有效的 AVD 名称。",
+    "en": "The emulator did not return a unique, valid AVD name."
+  },
+  {
+    "source": "控制台命令包含无效分隔符。",
+    "en": "The console command contains invalid separators."
+  },
+  {
+    "source": "模拟器控制台意外断开，未确认请求完成。",
+    "en": "The emulator console disconnected unexpectedly; completion was not confirmed."
+  },
+  {
+    "source": "模拟器控制台拒绝了请求；未改用其他设备或 ADB 连接。",
+    "en": "The emulator console rejected the request; no other device or ADB connection was used."
+  },
+  {
+    "source": "模拟器控制台响应超出读取上限。",
+    "en": "The emulator console response exceeded the read limit."
+  },
+  {
+    "source": "模拟器控制台响应未完整终止。",
+    "en": "The emulator console response did not terminate correctly."
+  },
+  {
+    "source": "模拟器控制台响应行过长。",
+    "en": "An emulator console response line is too long."
+  },
+  {
+    "source": "进程命令行大小不可核实。",
+    "en": "The process command-line size could not be verified."
+  },
+  {
+    "source": "无法读取进程命令行（NTSTATUS 0x{0:X8}）。",
+    "en": "Cannot read the process command line (NTSTATUS 0x{0:X8})."
+  },
+  {
+    "source": "进程命令行缓冲区无效。",
+    "en": "The process command-line buffer is invalid."
+  },
+  {
+    "source": "进程命令行包含无效终止符。",
+    "en": "The process command line contains an invalid terminator."
+  },
+  {
+    "source": "无法解析进程命令行。",
+    "en": "Cannot parse the process command line."
+  },
+  {
+    "source": "进程参数数量超出支持范围。",
+    "en": "The number of process arguments exceeds the supported limit."
+  },
+  {
+    "source": "进程命令行在读取期间发生变化，请重新识别。",
+    "en": "The process command line changed while being read; identify the target again."
+  },
+  {
+    "source": "仅支持核实 x64 模拟器环境。",
+    "en": "Only x64 emulator environments can be verified."
+  },
+  {
+    "source": "无法核实模拟器的 x64 环境，未使用当前应用环境代替。",
+    "en": "The emulator x64 environment could not be verified; the current application environment was not substituted."
+  },
+  {
+    "source": "无法读取模拟器环境地址。",
+    "en": "Cannot read the emulator environment address."
+  },
+  {
+    "source": "模拟器环境地址无效。",
+    "en": "The emulator environment address is invalid."
+  },
+  {
+    "source": "模拟器环境不可读，未按当前应用环境猜测 AVD。",
+    "en": "The emulator environment is unreadable; the AVD was not inferred from the current application environment."
+  },
+  {
+    "source": "模拟器环境在读取期间发生变化。",
+    "en": "The emulator environment changed while being read."
+  },
+  {
+    "source": "模拟器环境存在重复的关键配置项。",
+    "en": "The emulator environment contains duplicate key settings."
+  },
+  {
+    "source": "模拟器环境项超出支持范围。",
+    "en": "An emulator environment entry exceeds the supported limit."
+  },
+  {
+    "source": "模拟器环境未在读取上限内正确终止。",
+    "en": "The emulator environment did not terminate within the read limit."
+  },
+  {
+    "source": "进程内存地址无效。",
+    "en": "The process memory address is invalid."
+  },
+  {
+    "source": "无法核实模拟器进程环境。",
+    "en": "Cannot verify the emulator process environment."
+  },
+  {
+    "source": "模拟器身份信息不完整，请刷新后重试。",
+    "en": "Emulator identity information is incomplete; refresh and try again."
+  },
+  {
+    "source": "模拟器进程已退出或无法读取。",
+    "en": "The emulator process has exited or cannot be read."
+  },
+  {
+    "source": "模拟器 PID 或创建时间已变化。",
+    "en": "The emulator PID or creation time changed."
+  },
+  {
+    "source": "模拟器可执行文件路径无法核实。",
+    "en": "The emulator executable path could not be verified."
+  },
+  {
+    "source": "模拟器不属于当前登录会话。",
+    "en": "The emulator does not belong to the current login session."
+  },
+  {
+    "source": "无法读取模拟器所属用户。",
+    "en": "Cannot read the emulator owner."
+  },
+  {
+    "source": "模拟器账户信息无效。",
+    "en": "Emulator account information is invalid."
+  },
+  {
+    "source": "无法核实模拟器账户。",
+    "en": "Cannot verify the emulator account."
+  },
+  {
+    "source": "模拟器不属于当前用户，未进行操作。",
+    "en": "The emulator belongs to another user; no action was taken."
+  },
+  {
+    "source": "模拟器进程已退出。",
+    "en": "The emulator process has exited."
+  },
+  {
+    "source": "无法读取本机 TCP 监听归属（Win32 {0}）。",
+    "en": "Cannot read local TCP listener ownership (Win32 {0})."
+  },
+  {
+    "source": "TCP 监听表大小无效。",
+    "en": "The TCP listener table size is invalid."
+  },
+  {
+    "source": "TCP 监听归属读取失败（Win32 {0}）。",
+    "en": "Cannot read TCP listener ownership (Win32 {0})."
+  },
+  {
+    "source": "TCP 监听表条目越界。",
+    "en": "A TCP listener table entry is out of bounds."
+  },
+  {
+    "source": "TCP 监听表持续变化，无法可靠核实端口归属。",
+    "en": "The TCP listener table keeps changing; port ownership cannot be verified reliably."
+  },
+  {
+    "source": "Windows 没有创建模拟器启动进程。",
+    "en": "Windows did not create the emulator launch process."
+  },
+  {
+    "source": "启动请求已发送，但无法核实新进程身份；未将它视为窗口启动成功，请刷新列表。",
+    "en": "The launch request was sent, but the new process identity could not be verified. A visible page was not confirmed; refresh the list."
+  },
+  {
+    "source": "无法唯一确定这个启动器的虚拟机核心，请等待启动完成后刷新。",
+    "en": "The virtual machine core for this launcher cannot be identified uniquely; wait for startup to finish and refresh."
+  },
+  {
+    "source": "无法通过模拟器控制接口唯一核实设备名称与端口；原实例未被修改。",
+    "en": "The device name and port could not be verified uniquely through the emulator control interface; the original instance is unchanged."
+  },
+  {
+    "source": "这个 SDK 没有对应的原生窗口版模拟器核心，未提供重启操作。",
+    "en": "This SDK has no matching emulator core with a native window; restart is unavailable."
+  },
+  {
+    "source": "没有找到可核实的 emulator.exe 启动器；仅有孤立核心时无法可靠重建原启动环境。",
+    "en": "No verifiable emulator.exe launcher was found. An orphaned core alone cannot reliably reconstruct the original environment."
+  },
+  {
+    "source": "已有一个 AVD 重启操作正在进行，请等待完成。",
+    "en": "An AVD restart is already in progress; wait for it to finish."
+  },
+  {
+    "source": "核实目标",
+    "en": "Verify target"
+  },
+  {
+    "source": "正在复核 {0} 的进程、端口和启动参数。",
+    "en": "Rechecking processes, ports, and launch arguments for {0}."
+  },
+  {
+    "source": "退出原实例",
+    "en": "Exit original instance"
+  },
+  {
+    "source": "正在请求 {0} 通过自身控制接口退出，最多等待 {1:0} 秒。",
+    "en": "Requesting {0} to exit through its own control interface; waiting up to {1:0} seconds."
+  },
+  {
+    "source": "旧实例尚未完全退出，或原端口被其他进程占用；没有启动第二份模拟器，也没有强制结束进程。",
+    "en": "The original instance has not fully exited, or another process owns its ports. No second emulator was launched and no process was forcibly terminated."
+  },
+  {
+    "source": "原实例已退出，但 SDK 文件已经变化或原生核心缺失，已停止后续启动。",
+    "en": "The original instance exited, but SDK files changed or the native core is missing. Launch was stopped."
+  },
+  {
+    "source": "启动原生窗口",
+    "en": "Launch native window"
+  },
+  {
+    "source": "正在以带窗口模式启动 {0}；进程创建本身不代表页面已打开。",
+    "en": "Starting {0} in windowed mode; process creation alone does not confirm that a page opened."
+  },
+  {
+    "source": "启动后无法核实新进程身份，未报告页面启动成功。",
+    "en": "The new process identity could not be verified; page launch was not reported as successful."
+  },
+  {
+    "source": "等待真实窗口",
+    "en": "Wait for actual window"
+  },
+  {
+    "source": "正在等待 {0} 的原生页面，最多 {1:0} 秒；控制台与命令行窗口不计入。",
+    "en": "Waiting up to {1:0} seconds for the native page of {0}; console and command-line windows do not count."
+  },
+  {
+    "source": "新窗口对应的设备名称发生变化，未报告页面启动成功，请检查运行列表。",
+    "en": "The device name associated with the new window changed. Page launch was not confirmed; check the running list."
+  },
+  {
+    "source": "已确认 {0} 的原生窗口持续可见。Android 系统可能仍在启动；未将控制台或启动器进程视为页面。",
+    "en": "The native window of {0} has remained visible. Android may still be starting; console and launcher processes were not counted as a page."
+  },
+  {
+    "source": "已发出启动请求，但等待超时仍未确认对应 AVD 的原生可见窗口。请检查 SDK、显卡或模拟器提示；新进程保留，未重复启动。",
+    "en": "Launch was requested, but no matching native AVD window was confirmed before timeout. Check SDK, graphics, or emulator messages. The new process remains running; no duplicate was launched."
+  },
+  {
+    "source": "已停止等待窗口；启动请求已经发送，新模拟器进程保留。",
+    "en": "Stopped waiting for the window. Launch was already requested; the new emulator process remains running."
+  },
+  {
+    "source": "已取消后续启动；原实例已收到退出请求，请刷新确认其状态。",
+    "en": "Further launch steps were cancelled. The original instance already received an exit request; refresh to check its state."
+  },
+  {
+    "source": "已取消，尚未请求退出或启动模拟器。",
+    "en": "Cancelled before requesting emulator exit or launch."
+  },
+  {
+    "source": "启动后验证未完成：",
+    "en": "Post-launch verification incomplete: "
+  },
+  {
+    "source": "重启未完成，原实例可能已退出：",
+    "en": "Restart incomplete; the original instance may have exited: "
+  },
+  {
+    "source": "目标核实失败，尚未修改原实例：",
+    "en": "Target verification failed; the original instance is unchanged: "
+  },
+  {
+    "source": "原启动参数已经变化，请重新选择设备。",
+    "en": "The original launch arguments changed; select the device again."
+  },
+  {
+    "source": "重启计划与原设备参数不一致。",
+    "en": "The restart plan does not match the original device arguments."
+  },
+  {
+    "source": "原启动环境已经变化，未按新环境启动其他 AVD。",
+    "en": "The original launch environment changed; no other AVD was launched using the new environment."
+  },
+  {
+    "source": "模拟器 SDK 文件已经变化或缺失，请重新准备。",
+    "en": "Emulator SDK files changed or are missing; prepare the restart again."
+  },
+  {
+    "source": "控制端口或设备名称已经变化，请刷新列表。",
+    "en": "The control port or device name changed; refresh the list."
+  },
+  {
+    "source": "控制端口与原启动参数不一致。",
+    "en": "The control port does not match the original launch arguments."
+  },
+  {
+    "source": "无法读取原模拟器的用户目录，未按当前环境猜测 AVD 位置。",
+    "en": "The original emulator user directory could not be read; the AVD location was not guessed from the current environment."
+  },
+  {
+    "source": "原模拟器的 {0} 使用相对路径，无法可靠还原设备目录；未请求退出。",
+    "en": "The original emulator uses a relative path for {0}; its device directory cannot be restored reliably. Exit was not requested."
+  },
+  {
+    "source": "无法核实同一 SDK、账户与会话下的启动器和虚拟机核心关系。",
+    "en": "The launcher and virtual machine core could not be verified as belonging to the same SDK, account, and session."
+  },
+  {
+    "source": "无法核实浏览器主进程及原启动参数。",
+    "en": "Cannot verify the browser main process and original launch arguments."
+  },
+  {
+    "source": "这是浏览器子进程或管道调试实例，无法通过本机页面接口安全连接。",
+    "en": "This is a browser subprocess or a pipe-debugging instance; a local page connection cannot be established safely."
+  },
+  {
+    "source": "所选浏览器未以支持的无头模式启动。",
+    "en": "The selected browser was not launched in a supported headless mode."
+  },
+  {
+    "source": "浏览器调试地址不是回环地址，未连接。",
+    "en": "The browser debugging address is not a loopback address; no connection was made."
+  },
+  {
+    "source": "浏览器调试端口参数无效或重复。",
+    "en": "The browser debugging port argument is invalid or repeated."
+  },
+  {
+    "source": "浏览器未开放 CDP 页面接口，无法安全附加实时预览；原进程保持运行。",
+    "en": "The browser has no CDP page endpoint, so a live preview cannot be attached safely. The original process remains running."
+  },
+  {
+    "source": "浏览器调试参数缺少值。",
+    "en": "A browser debugging argument is missing its value."
+  },
+  {
+    "source": "本机调试端口不再由原浏览器独占，或监听地址不是回环地址。",
+    "en": "The local debugging port is no longer exclusively owned by the original browser, or its address is not loopback."
+  },
+  {
+    "source": "页面接口返回了不可信的调试地址，未连接。",
+    "en": "The page endpoint returned an untrusted debugging address; no connection was made."
+  },
+  {
+    "source": "页面图像大小超出预览上限。",
+    "en": "The page image size exceeds the preview limit."
+  },
+  {
+    "source": "页面图像格式无效。",
+    "en": "The page image format is invalid."
+  },
+  {
+    "source": "页面接口未返回可识别的 JPEG 或 PNG 图像。",
+    "en": "The page endpoint did not return a recognizable JPEG or PNG image."
+  },
+  {
+    "source": "页面图像尺寸超出预览上限。",
+    "en": "The page image dimensions exceed the preview limit."
+  },
+  {
+    "source": "一次最多识别 32 个浏览器进程，请缩小选择范围。",
+    "en": "At most 32 browser processes can be inspected at once; narrow the selection."
+  },
+  {
+    "source": "识别已达到时间上限，请缩小选择范围后重试。",
+    "en": "Inspection reached its time limit; narrow the selection and try again."
+  },
+  {
+    "source": "候选调试端口过多，无法可靠选择这个浏览器的页面接口。",
+    "en": "Too many candidate debugging ports were found to select this browser's page endpoint reliably."
+  },
+  {
+    "source": "找到多个页面接口，无法唯一核实原浏览器的调试端口。",
+    "en": "Multiple page endpoints were found; the original browser debugging port cannot be verified uniquely."
+  },
+  {
+    "source": "PID {0} | 未找到可安全附加的本机 CDP 页面；没有重启或修改原浏览器。",
+    "en": "PID {0} | No local CDP page could be attached safely. The original browser was not restarted or modified."
+  },
+  {
+    "source": "PID {0} | 浏览器身份或本机页面接口无法核实，请刷新后重试。",
+    "en": "PID {0} | The browser identity or local page endpoint could not be verified; refresh and try again."
+  },
+  {
+    "source": "选择范围内没有 Chrome 或 Edge 浏览器主进程。",
+    "en": "No Chrome or Edge main process was found in the selection."
+  },
+  {
+    "source": "页面身份无效，请重新识别。",
+    "en": "The page identity is invalid; identify the page again."
+  },
+  {
+    "source": "原页面已关闭或不再是可预览页面，请重新识别。",
+    "en": "The original page closed or is no longer available for preview; identify the page again."
+  },
+  {
+    "source": "无法连接原页面的本机实时预览接口；原浏览器保持运行。",
+    "en": "Cannot connect to the original page's local live-preview endpoint; the original browser remains running."
+  },
+  {
+    "source": "浏览器启动参数已变化，请重新识别页面。",
+    "en": "The browser launch arguments changed; identify the page again."
+  },
+  {
+    "source": "调试端口归属已变化，预览已停止。",
+    "en": "Debugging port ownership changed; preview stopped."
+  },
+  {
+    "source": "本机监听不是受支持的浏览器调试接口。",
+    "en": "The local listener is not a supported browser debugging endpoint."
+  },
+  {
+    "source": "浏览器调试接口身份无效。",
+    "en": "The browser debugging endpoint identity is invalid."
+  },
+  {
+    "source": "页面列表无效或数量超出预览上限。",
+    "en": "The page list is invalid or exceeds the preview limit."
+  },
+  {
+    "source": "页面列表包含无效或重复身份。",
+    "en": "The page list contains invalid or duplicate identities."
+  },
+  {
+    "source": "页面接口响应状态或大小无效。",
+    "en": "The page endpoint response status or size is invalid."
+  },
+  {
+    "source": "页面列表响应超过读取上限。",
+    "en": "The page list response exceeds the read limit."
+  },
+  {
+    "source": "页面接口响应缺少必要字段。",
+    "en": "The page endpoint response is missing required fields."
+  },
+  {
+    "source": "页面接口字段超过预览上限。",
+    "en": "A page endpoint field exceeds the preview limit."
+  },
+  {
+    "source": "页面预览连接已经关闭，请重新识别。",
+    "en": "The page preview connection is closed; identify the page again."
+  },
+  {
+    "source": "页面预览响应超过读取上限。",
+    "en": "The page preview response exceeds the read limit."
+  },
+  {
+    "source": "页面预览响应无效。",
+    "en": "The page preview response is invalid."
+  },
+  {
+    "source": "页面预览响应身份不一致。",
+    "en": "The page preview response identity does not match."
+  },
+  {
+    "source": "浏览器暂时无法提供页面图像。",
+    "en": "The browser cannot provide a page image right now."
+  },
+  {
+    "source": "页面图像超过预览读取上限。",
+    "en": "The page image exceeds the preview read limit."
+  },
+  {
+    "source": "页面预览没有在响应上限内返回图像。",
+    "en": "The page preview did not return an image within the response limit."
+  },
+  {
+    "source": "页面实时预览已中断或超时，请重新识别；原浏览器保持运行。",
+    "en": "Live page preview was interrupted or timed out. Identify the page again; the original browser remains running."
+  },
+  {
+    "source": "页面预览连接已关闭或响应超过读取上限。",
+    "en": "The page preview connection closed or its response exceeded the read limit."
+  },
+  {
+    "source": "当前用户的 Windows 包：{0}；只读取清单入口，不扫描包子目录。{1}",
+    "en": "Current user's Windows package: {0}. Only manifest entry points are read; package subdirectories are not scanned. {1}"
+  },
+  {
+    "source": "开始菜单快捷方式记录的本地 EXE 目标；只读取链接，不解析迁移目标、不读取参数、不启动。",
+    "en": "Local EXE target recorded in a Start menu shortcut. Only the link is read; moved targets and arguments are not resolved, and nothing is launched."
+  },
+  {
+    "source": "本轮安装目录扫描达到 {0} 秒或 2500 项边界，已停止后续扫描；单个正在执行的系统读取不能立即中断。可手动添加遗漏的软件目录或 EXE。",
+    "en": "This installation scan reached {0} seconds or 2500 entries and stopped further scanning. A system read already in progress cannot be interrupted immediately. Add any missing application folder or EXE manually."
+  },
+  {
+    "source": "请选择某个软件的安装目录；不扫描盘根、Windows、用户目录或通用程序容器目录。",
+    "en": "Select an application's installation folder. Drive roots, Windows folders, user folders, and shared application containers are not scanned."
+  },
+  {
+    "source": "手动指定的安装目录；",
+    "en": "Manually selected installation folder; "
+  },
+  {
+    "source": "手动选择的现有 EXE；未执行文件。文件存在不等于可正常运行。",
+    "en": "Manually selected existing EXE; the file was not executed. Existence does not establish that it runs correctly."
+  },
+  {
+    "source": "最多扫描安装目录下 {0} 层、{1} 个文件/目录、{2} 个 EXE，跳过链接目录、steamapps 与 node_modules；仅发现文件，不保证能运行或覆盖全部组件。",
+    "en": "Scan at most {0} levels, {1} files/folders, and {2} EXEs beneath the installation folder, skipping linked folders, steamapps, and node_modules. File discovery does not guarantee executability or complete component coverage."
+  },
+  {
+    "source": "卸载信息",
+    "en": "Uninstall information"
+  },
+  {
+    "source": "{0} {1} 的 {2}注册项；未读取卸载命令。",
+    "en": "{2} registry entry in {0} {1}; the uninstall command was not read."
+  },
+  {
+    "source": "部分软件注册项无法读取：",
+    "en": "Some application registry entries could not be read: "
+  },
+  {
+    "source": "{0} {1} 安装记录无法读取：{2}",
+    "en": "Cannot read installation records in {0} {1}: {2}"
+  },
+  {
+    "source": "部分安装文件无法读取：",
+    "en": "Some installed files could not be read: "
+  },
+  {
+    "source": "部分安装目录无法读取：",
+    "en": "Some installation folders could not be read: "
+  },
+  {
+    "source": "扫描已截断：",
+    "en": "Scan truncated: "
+  },
+  {
+    "source": "；达到文件或遍历数量上限。",
+    "en": "; the file or traversal limit was reached."
+  },
+  {
+    "source": "包注册读取达到本轮扫描时间边界，后续包未读取。",
+    "en": "Package registration reading reached this scan's time limit; remaining packages were not read."
+  },
+  {
+    "source": "已安装包超过 {0} 个，本次仅读取前 {1} 个。",
+    "en": "More than {0} packages are installed; only the first {1} were read."
+  },
+  {
+    "source": "某个已安装包的身份为空，已跳过。",
+    "en": "An installed package had no identity and was skipped."
+  },
+  {
+    "source": "显示名称",
+    "en": "Display name"
+  },
+  {
+    "source": "发布者",
+    "en": "Publisher"
+  },
+  {
+    "source": "安装位置",
+    "en": "Install location"
+  },
+  {
+    "source": "无法读取某个已安装包，已跳过：{0}",
+    "en": "An installed package could not be read and was skipped: {0}"
+  },
+  {
+    "source": "无法完整读取当前用户的已安装包：{0}",
+    "en": "The current user's installed packages could not be read completely: {0}"
+  },
+  {
+    "source": "{0}为空或资源未解析，已使用注册身份",
+    "en": "{0} is empty or its resource could not be resolved; the registered identity was used"
+  },
+  {
+    "source": "{0}不可读：{1}",
+    "en": "Cannot read {0}: {1}"
+  },
+  {
+    "source": "无法确认清单入口：安装位置不可用",
+    "en": "Cannot verify manifest entry points: install location is unavailable"
+  },
+  {
+    "source": "包清单根元素或命名空间不受支持。",
+    "en": "The package manifest root element or namespace is unsupported."
+  },
+  {
+    "source": "包清单为空。",
+    "en": "The package manifest is empty."
+  },
+  {
+    "source": "清单入口超过 {0} 个，仅采集前 {1} 个",
+    "en": "The manifest contains more than {0} entry points; only the first {1} were collected"
+  },
+  {
+    "source": "{0} 个入口不是包内的普通 EXE 文件，已忽略",
+    "en": "{0} entry points were ignored because they are not regular EXEs inside the package"
+  },
+  {
+    "source": "{0} 个入口文件不存在或不可读，保留包身份",
+    "en": "{0} entry point files are missing or unreadable; the package identity is retained"
+  },
+  {
+    "source": "清单入口不可读：{0}",
+    "en": "Cannot read manifest entry points: {0}"
+  },
+  {
+    "source": "跳过重复 PID",
+    "en": "Duplicate PID skipped"
+  },
+  {
+    "source": "已取消，未发送关闭请求",
+    "en": "Cancelled; no close request was sent"
+  },
+  {
+    "source": "跳过系统进程或当前程序自身",
+    "en": "System process or Process Keeper itself skipped"
+  },
+  {
+    "source": "跳过：目标进程身份信息不完整",
+    "en": "Skipped: target process identity is incomplete"
+  },
+  {
+    "source": "跳过：",
+    "en": "Skipped: "
+  },
+  {
+    "source": "进程已退出",
+    "en": "Process exited"
+  },
+  {
+    "source": "无法打开进程：",
+    "en": "Cannot open process: "
+  },
+  {
+    "source": "跳过：无法检查系统关键进程标志",
+    "en": "Skipped: the system critical-process flag could not be checked"
+  },
+  {
+    "source": "跳过：Windows 将其标记为关键进程",
+    "en": "Skipped: Windows marks this as a critical process"
+  },
+  {
+    "source": "未关闭：关闭请求被拒绝（可能需要管理员权限）",
+    "en": "Not closed: the close request was rejected; administrator permission may be required"
+  },
+  {
+    "source": "未关闭：无可关闭窗口，未启用强制结束",
+    "en": "Not closed: no closable window exists and force termination is disabled"
+  },
+  {
+    "source": "已取消后续操作；此前已发送正常关闭请求",
+    "en": "Further actions cancelled; a normal close request was already sent"
+  },
+  {
+    "source": "已取消，进程未结束",
+    "en": "Cancelled; the process was not terminated"
+  },
+  {
+    "source": "已正常退出",
+    "en": "Exited normally"
+  },
+  {
+    "source": "进程自行退出",
+    "en": "Process exited on its own"
+  },
+  {
+    "source": "仍在运行：已发送正常关闭请求，未启用强制结束",
+    "en": "Still running: a normal close request was sent and force termination is disabled"
+  },
+  {
+    "source": "已取消强制结束",
+    "en": "Force termination cancelled"
+  },
+  {
+    "source": "取消强制结束：",
+    "en": "Force termination cancelled: "
+  },
+  {
+    "source": "取消强制结束：关键进程检查未通过",
+    "en": "Force termination cancelled: the critical-process check did not pass"
+  },
+  {
+    "source": "强制结束失败：",
+    "en": "Force termination failed: "
+  },
+  {
+    "source": "已强制结束",
+    "en": "Forcibly terminated"
+  },
+  {
+    "source": "已发送强制结束请求，尚未确认退出",
+    "en": "Force termination requested; exit is not yet confirmed"
+  },
+  {
+    "source": "已取消后续操作；已发送的正常关闭请求无法撤销",
+    "en": "Further actions cancelled; normal close requests already sent cannot be undone"
+  },
+  {
+    "source": "跳过或关闭失败：",
+    "en": "Skipped or failed to close: "
+  },
+  {
+    "source": "跳过：进程身份已变化或无法重新核验",
+    "en": "Skipped: process identity changed or could not be reverified"
+  },
+  {
+    "source": "跳过：PID 已复用，创建时间不同",
+    "en": "Skipped: the PID was reused and the creation time differs"
+  },
+  {
+    "source": "跳过：进程路径已变化",
+    "en": "Skipped: the process path changed"
+  },
+  {
+    "source": "跳过：进程所属用户已变化",
+    "en": "Skipped: the process owner changed"
+  },
+  {
+    "source": "进程采集仅支持 Windows。",
+    "en": "Process collection is supported only on Windows."
+  },
+  {
+    "source": "无法创建进程快照。",
+    "en": "Cannot create a process snapshot."
+  },
+  {
+    "source": "无法读取进程快照。",
+    "en": "Cannot read the process snapshot."
+  },
+  {
+    "source": "进程快照枚举未完整结束。",
+    "en": "Process snapshot enumeration did not finish completely."
+  },
+  {
+    "source": "无法打开进程（Win32 {0}）；可能已退出或权限不足",
+    "en": "Cannot open process (Win32 {0}); it may have exited or access may be denied"
+  },
+  {
+    "source": "启动时间格式无效",
+    "en": "Invalid start-time format"
+  },
+  {
+    "source": "无法读取启动时间",
+    "en": "Cannot read start time"
+  },
+  {
+    "source": "无法读取可执行文件路径",
+    "en": "Cannot read executable path"
+  },
+  {
+    "source": "无法核实所属用户 SID",
+    "en": "Cannot verify owner SID"
+  },
+  {
+    "source": "进程在本轮枚举期间启动；本轮不关联快照中的父 PID",
+    "en": "The process started during this enumeration; its snapshot parent PID is not linked this time"
+  },
+  {
+    "source": "Windows 标记为关键进程",
+    "en": "Marked as critical by Windows"
+  },
+  {
+    "source": "窗口枚举失败；显示状态可能不完整",
+    "en": "Window enumeration failed; display state may be incomplete"
+  },
+  {
+    "source": "服务映射不可读（Win32 {0}）",
+    "en": "Cannot read service mapping (Win32 {0})"
+  },
+  {
+    "source": "服务映射不完整（Win32 {0}）",
+    "en": "Service mapping is incomplete (Win32 {0})"
+  },
+  {
+    "source": "服务枚举未能继续；映射可能不完整",
+    "en": "Service enumeration could not continue; mapping may be incomplete"
+  },
+  {
+    "source": "服务数量超出分页上限；映射可能不完整",
+    "en": "The service count exceeded the page limit; mapping may be incomplete"
+  },
+  {
+    "source": "已知程序映射；Windows 包族：{0}",
+    "en": "Known application mapping; Windows package family: {0}"
+  },
+  {
+    "source": "已知程序名称 / 路径映射：{0}；{1}",
+    "en": "Known application name/path mapping: {0}; {1}"
+  },
+  {
+    "source": "按已知组件名称识别：{0}；无法读取路径，归属未充分核实",
+    "en": "Identified by a known component name: {0}. The path is unreadable; application ownership is not fully verified"
+  },
+  {
+    "source": "位于已知程序安装目录：{0}；按目录推断组件归属，不依据父子关系",
+    "en": "Located in a known application's installation folder: {0}. Component ownership is inferred from the folder, not parent-child relationships"
+  },
+  {
+    "source": "Windows 包族相同：{0}；包内可包含多个入口",
+    "en": "Same Windows package family: {0}; a package may contain multiple entry points"
+  },
+  {
+    "source": "按同一可执行文件完整路径分组；不自动合并父子进程或同名文件",
+    "en": "Grouped by the same full executable path; parent-child processes and same-named files are not merged automatically"
+  },
+  {
+    "source": "无法读取可执行文件路径及包身份；单独显示，不推断程序归属",
+    "en": "Executable path and package identity are unreadable; shown separately without inferring application ownership"
+  },
+  {
+    "source": "Windows 核心、桌面、安全或驱动基础组件",
+    "en": "Windows core, desktop, security, or driver infrastructure component"
+  },
+  {
+    "source": "无可核实的父进程；PID 0 为系统占位",
+    "en": "No verifiable parent process; PID 0 is a system placeholder"
+  },
+  {
+    "source": "父进程记录指向自身，未建立启动关系",
+    "en": "The parent record points to the process itself; no launch relationship was established"
+  },
+  {
+    "source": "创建者 PID {0} 已退出或不在本次快照中",
+    "en": "Creator PID {0} exited or is absent from this snapshot"
+  },
+  {
+    "source": "记录的父 PID 为 {0}，但启动时间不可读，关系未核实",
+    "en": "Recorded parent PID: {0}, but start times are unreadable and the relationship is unverified"
+  },
+  {
+    "source": "当前 PID {0} 启动晚于该进程，原父 PID 已复用；不建立关系",
+    "en": "The current PID {0} started later than this process. The original parent PID was reused; no relationship was established"
+  },
+  {
+    "source": "由 {0}（PID {1}）启动；创建时间顺序已核对。启动关系不等于同一程序",
+    "en": "Started by {0} (PID {1}); creation-time order was checked. A launch relationship does not establish that processes belong to the same application"
+  },
+  {
+    "source": "进程 {0}",
+    "en": "Process {0}"
+  },
+  {
+    "source": "Windows 服务宿主：",
+    "en": "Windows service host: "
+  },
+  {
+    "source": "崩溃检测 / 错误报告组件（按文件名称识别）",
+    "en": "Crash detection / error reporting component, identified by filename"
+  },
+  {
+    "source": "网页界面渲染 / WebView 子进程；可能有多个实例",
+    "en": "Web interface rendering / WebView subprocess; multiple instances may exist"
+  },
+  {
+    "source": "Node.js JavaScript 运行时；归属依据安装路径，不能仅凭名称判断用途",
+    "en": "Node.js JavaScript runtime; ownership follows the installation path. Purpose cannot be inferred from its name alone"
+  },
+  {
+    "source": "Python 脚本运行时；未读取命令行，具体脚本未知",
+    "en": "Python script runtime; command line was not read, so the specific script is unknown"
+  },
+  {
+    "source": "命令行解释器 / 终端任务；不是父程序的当然组成部分",
+    "en": "Command interpreter / terminal task; not necessarily part of its parent application"
+  },
+  {
+    "source": "Android 模拟器虚拟机核心（QEMU）",
+    "en": "Android emulator virtual machine core (QEMU)"
+  },
+  {
+    "source": "Android 模拟器网络 / 设备模拟组件",
+    "en": "Android emulator network / device simulation component"
+  },
+  {
+    "source": "Android 虚拟设备启动器 / 模拟器",
+    "en": "Android virtual device launcher / emulator"
+  },
+  {
+    "source": "Clash Verge 代理内核 / 网络转发组件",
+    "en": "Clash Verge proxy core / network forwarding component"
+  },
+  {
+    "source": "UU 远程桌面连接服务端组件",
+    "en": "UU remote desktop connection server component"
+  },
+  {
+    "source": "UU 远程运行状态监护组件",
+    "en": "UU remote desktop health monitoring component"
+  },
+  {
+    "source": "火绒安全防护后台组件",
+    "en": "Huorong security protection background component"
+  },
+  {
+    "source": "火绒安全托盘 / 控制界面",
+    "en": "Huorong security tray / control interface"
+  },
+  {
+    "source": "MyDockFinder 桌面 Dock / 菜单栏美化组件",
+    "en": "MyDockFinder desktop Dock / menu bar appearance component"
+  },
+  {
+    "source": "任务栏透明与外观调整程序",
+    "en": "Taskbar transparency and appearance utility"
+  },
+  {
+    "source": "QQ 主程序或其多进程界面组件；具体实例角色未核实",
+    "en": "QQ main application or multiprocess interface component; the specific instance role is unverified"
+  },
+  {
+    "source": "Codex 客户端、运行时或工具组件；具体归属见识别依据",
+    "en": "Codex client, runtime, or tool component; see identification evidence for ownership"
+  },
+  {
+    "source": "（文件版本信息声明）",
+    "en": " (declared in file version information)"
+  },
+  {
+    "source": "拥有桌面窗口的程序进程",
+    "en": "Application process with a desktop window"
+  },
+  {
+    "source": "未发现可见顶层窗口；可能是后台任务或辅助组件，不能据此断言为托盘程序",
+    "en": "No visible top-level window was found. This may be a background task or helper component; that alone does not establish a tray application"
+  },
+  {
+    "source": "当前管理程序自身",
+    "en": "Process Keeper itself"
+  },
+  {
+    "source": "系统或必要桌面组件",
+    "en": "System or essential desktop component"
+  },
+  {
+    "source": "系统服务会话（Session 0）",
+    "en": "System service session (Session 0)"
+  },
+  {
+    "source": "其他登录会话",
+    "en": "Another login session"
+  },
+  {
+    "source": "无法确认进程创建时间",
+    "en": "Cannot verify process creation time"
+  },
+  {
+    "source": "无法确认进程完整路径",
+    "en": "Cannot verify the full process path"
+  },
+  {
+    "source": "无法确认进程所属用户",
+    "en": "Cannot verify the process owner"
+  },
+  {
+    "source": "属于其他用户或系统账户",
+    "en": "Belongs to another user or a system account"
+  },
+  {
+    "source": "白名单：",
+    "en": "Whitelist: "
+  },
+  {
+    "source": "白名单子进程：{0}（父级 PID {1}）",
+    "en": "Whitelisted child process: {0} (ancestor PID {1})"
+  },
+  {
+    "source": "当前用户的非白名单应用进程",
+    "en": "Current user's application process outside the whitelist"
+  },
+  {
+    "source": "目标不是可核实的本机 Hyper-V 核心。",
+    "en": "The target is not a verifiable local Hyper-V worker."
+  },
+  {
+    "source": "Hyper-V 核心已退出或身份变化。",
+    "en": "The Hyper-V worker exited or its identity changed."
+  },
+  {
+    "source": "无法复核 Hyper-V 核心账户及创建时间。",
+    "en": "Cannot reverify the Hyper-V worker account and creation time."
+  },
+  {
+    "source": "Windows 未接受界面启动请求。",
+    "en": "Windows did not accept the interface launch request."
+  },
+  {
+    "source": "进程身份不完整，请刷新后重试。",
+    "en": "Process identity is incomplete; refresh and try again."
+  },
+  {
+    "source": "Hyper-V 未返回与该核心对应的运行中虚拟机。",
+    "en": "Hyper-V did not return a running virtual machine associated with this worker."
+  },
+  {
+    "source": "无法唯一核实 Hyper-V 虚拟机。",
+    "en": "The Hyper-V virtual machine could not be verified uniquely."
+  },
+  {
+    "source": "打开该虚拟机的 VMConnect 连接窗口。",
+    "en": "Open this virtual machine's VMConnect connection window."
+  },
+  {
+    "source": "无法核实原进程启动入口。",
+    "en": "Cannot verify the original process entry point."
+  },
+  {
+    "source": "VirtualBox 设备参数不唯一。",
+    "en": "VirtualBox device arguments are ambiguous."
+  },
+  {
+    "source": "没有找到明确的 VirtualBox 设备 UUID。",
+    "en": "No explicit VirtualBox device UUID was found."
+  },
+  {
+    "source": "无法核实 VirtualBox 设备与后台核心的对应关系。",
+    "en": "Cannot verify the association between the VirtualBox device and background core."
+  },
+  {
+    "source": "VirtualBox 设备身份发生变化。",
+    "en": "The VirtualBox device identity changed."
+  },
+  {
+    "source": "以独立界面连接现有虚拟机；不发送开机或重启命令。",
+    "en": "Connect to the existing virtual machine in a separate interface; no power-on or restart command is sent."
+  },
+  {
+    "source": "无法唯一核实 VMware 虚拟机配置文件。",
+    "en": "The VMware virtual machine configuration file could not be verified uniquely."
+  },
+  {
+    "source": "无法核实 VMware 配置中的设备名称。",
+    "en": "Cannot verify the device name in the VMware configuration."
+  },
+  {
+    "source": "在 VMware 中打开这份运行中的虚拟机配置。窗口仍需核验；不会执行开机、关机或重启。",
+    "en": "Open this running virtual machine configuration in VMware. The window still requires verification; no power-on, shutdown, or restart command is sent."
+  },
+  {
+    "source": "重新调用该程序的界面入口，尝试唤回主窗口。部分版本可能打开登录页或新实例。",
+    "en": "Call this application's interface entry point again to try to restore its main window. Some versions may open a sign-in page or a new instance."
+  },
+  {
+    "source": "未找到可核实的图形界面入口；不会改用命令行窗口。",
+    "en": "No verifiable graphical entry point was found; a command-line window will not be used instead."
+  },
+  {
+    "source": "已取消，未发送任何启动或连接请求。",
+    "en": "Cancelled; no launch or connection request was sent."
+  },
+  {
+    "source": "已有窗口操作正在进行。",
+    "en": "A window operation is already in progress."
+  },
+  {
+    "source": "正在复核进程和界面入口…",
+    "en": "Rechecking the process and interface entry point…"
+  },
+  {
+    "source": "进程启动参数已变化，请重新选择。",
+    "en": "Process launch arguments changed; select the target again."
+  },
+  {
+    "source": "界面入口或目标设备已变化，未启动。",
+    "en": "The interface entry point or target device changed; nothing was launched."
+  },
+  {
+    "source": "原进程已经退出或变化，未发送启动请求。",
+    "en": "The original process exited or changed; no launch request was sent."
+  },
+  {
+    "source": "原进程参数已变化，未发送启动请求。",
+    "en": "The original process arguments changed; no launch request was sent."
+  },
+  {
+    "source": "设备映射已经变化，未发送连接请求。",
+    "en": "Device mapping changed; no connection request was sent."
+  },
+  {
+    "source": "已发送请求，正在等待对应的真实窗口…",
+    "en": "Request sent; waiting for the matching actual window…"
+  },
+  {
+    "source": "原后台进程已退出；无法确认当前界面仍对应所选实例。",
+    "en": "The original background process exited; the current interface cannot be confirmed as belonging to the selected instance."
+  },
+  {
+    "source": "窗口出现后设备映射发生变化，未报告显示成功。",
+    "en": "Device mapping changed after the window appeared; display success was not reported."
+  },
+  {
+    "source": "已确认程序的主窗口持续可见。",
+    "en": "The application's main window has remained visible."
+  },
+  {
+    "source": "已确认对应虚拟机的图形连接窗口持续可见；来宾系统的就绪状态请以窗口内显示为准。",
+    "en": "The matching virtual machine connection window has remained visible; check the window to determine whether the guest system is ready."
+  },
+  {
+    "source": "请求已发送，但未核实对应的可见主窗口；没有把命令行、管理器首页或进程启动当成成功。",
+    "en": "The request was sent, but no matching visible main window was verified. A command line, manager home page, or process launch was not counted as success."
+  },
+  {
+    "source": "已停止等待；已打开的界面保留。",
+    "en": "Stopped waiting; any interface already opened remains open."
+  },
+  {
+    "source": "已取消，未发送启动请求。",
+    "en": "Cancelled; no launch request was sent."
+  },
+  {
+    "source": "窗口操作未完成 | ",
+    "en": "Window operation incomplete | "
+  },
+  {
+    "source": "白名单文件不能超过 1 MiB。",
+    "en": "The whitelist file must not exceed 1 MiB."
+  },
+  {
+    "source": "配置内容为空。",
+    "en": "The configuration is empty."
+  },
+  {
+    "source": "不支持白名单配置版本 {0}。",
+    "en": "Whitelist configuration version {0} is unsupported."
+  },
+  {
+    "source": "配置缺少 Rules 列表。",
+    "en": "The configuration is missing the Rules list."
+  },
+  {
+    "source": "无法读取白名单：{0}。请先修复配置或从备份恢复，原文件未修改。{1}",
+    "en": "Cannot read whitelist: {0}. Repair the configuration or restore a backup first; the original file is unchanged. {1}"
+  },
+  {
+    "source": "白名单规则不能超过 1000 条。",
+    "en": "The whitelist cannot contain more than 1000 rules."
+  },
+  {
+    "source": "白名单规则缺少唯一 Id，或出现重复 Id。",
+    "en": "A whitelist rule has a missing or duplicate Id."
+  },
+  {
+    "source": "白名单规则的名称、类型或匹配值无效。",
+    "en": "A whitelist rule has an invalid name, type, or match value."
+  },
+  {
+    "source": "白名单匹配值包含无效的空白或控制字符。",
+    "en": "A whitelist match value contains invalid whitespace or control characters."
+  },
+  {
+    "source": "路径规则必须使用有效的完整路径。",
+    "en": "Path rules require a valid full path."
+  },
+  {
+    "source": "进程名称规则只接受完整文件名，不接受路径或通配符。",
+    "en": "Process-name rules accept only complete filenames, not paths or wildcards."
+  },
+  {
+    "source": "白名单配置缺少版本号或规则列表。",
+    "en": "The whitelist configuration is missing its version or rule list."
+  },
+  {
+    "source": "白名单配置含重复属性。",
+    "en": "The whitelist configuration contains duplicate properties."
+  },
+  {
+    "source": "白名单规则缺少必要字段。",
+    "en": "A whitelist rule is missing required fields."
+  },
+  {
+    "source": "白名单规则含重复属性。",
+    "en": "A whitelist rule contains duplicate properties."
+  },
+  {
+    "source": "窗口或进程身份信息不完整，请刷新后重试。",
+    "en": "Window or process identity is incomplete; refresh and try again."
+  },
+  {
+    "source": "这不是 AVD 的原生设备页面；命令行、终端或辅助窗口不会作为打开成功。请刷新后使用原生窗口重启入口。",
+    "en": "This is not the native AVD device page. Command lines, terminals, and helper windows do not count as a successful page launch. Refresh and use the native-window restart option."
+  },
+  {
+    "source": "进程已退出或无法读取，请刷新列表。",
+    "en": "The process exited or cannot be read; refresh the list."
+  },
+  {
+    "source": "进程创建时间已变化或无法核验，未操作窗口。",
+    "en": "Process creation time changed or could not be verified; the window was not operated."
+  },
+  {
+    "source": "进程完整路径已变化或无法核验，未操作窗口。",
+    "en": "The full process path changed or could not be verified; the window was not operated."
+  },
+  {
+    "source": "窗口不属于当前登录会话，或无法确认会话。",
+    "en": "The window does not belong to the current login session, or the session could not be verified."
+  },
+  {
+    "source": "Windows 未接受显示请求；该窗口可能已变化或不允许显示。",
+    "en": "Windows did not accept the display request; the window may have changed or may not allow display."
+  },
+  {
+    "source": "已发送显示请求，但尚未观察到可见窗口；程序可能没有响应或再次隐藏了窗口。",
+    "en": "A display request was sent, but no visible window has been observed. The application may be unresponsive or may have hidden the window again."
+  },
+  {
+    "source": "已显示隐藏的主窗口并切到前台。",
+    "en": "The hidden main window was displayed and brought to the foreground."
+  },
+  {
+    "source": "已显示窗口，但 Windows 未允许切换焦点或焦点已被其他窗口接管；可从任务栏选择。",
+    "en": "The window is visible, but Windows did not allow focus to switch or another window took focus. Select it from the taskbar."
+  },
+  {
+    "source": "窗口一度显示，随后又被程序隐藏、最小化或关闭，请刷新状态。",
+    "en": "The window appeared, then was hidden, minimized, or closed by the application. Refresh its state."
+  },
+  {
+    "source": "窗口已经最小化。",
+    "en": "The window is already minimized."
+  },
+  {
+    "source": "Windows 未接受最小化请求，窗口可能已变化或受权限限制。",
+    "en": "Windows did not accept the minimize request; the window may have changed or access may be restricted."
+  },
+  {
+    "source": "已最小化窗口。",
+    "en": "Window minimized."
+  },
+  {
+    "source": "已发送最小化请求，但尚未确认窗口最小化；程序可能未响应。",
+    "en": "A minimize request was sent, but minimization is not yet confirmed. The application may be unresponsive."
+  },
+  {
+    "source": "Windows 未接受还原请求，窗口可能已变化或受权限限制。",
+    "en": "Windows did not accept the restore request; the window may have changed or access may be restricted."
+  },
+  {
+    "source": "已发送还原请求，但尚未确认窗口恢复；请稍后重试。",
+    "en": "A restore request was sent, but restoration is not yet confirmed. Try again shortly."
+  },
+  {
+    "source": "已将窗口切到前台。",
+    "en": "The window was brought to the foreground."
+  },
+  {
+    "source": "已请求切到前台，但焦点未停留在所选窗口；程序可能有活动对话框。",
+    "en": "Foreground activation was requested, but focus did not remain on the selected window. The application may have an active dialog."
+  },
+  {
+    "source": "Windows 未允许切换前台焦点；窗口仍保留，可从任务栏手动选择。",
+    "en": "Windows did not allow foreground focus to switch. The window remains available; select it from the taskbar."
+  },
+  {
+    "source": "窗口操作未完成：",
+    "en": "Window operation incomplete: "
+  },
+  {
+    "source": "窗口已关闭或所属进程已变化，请刷新列表。",
+    "en": "The window closed or its owning process changed; refresh the list."
+  },
+  {
+    "source": "所选句柄不是顶层窗口，未执行操作。",
+    "en": "The selected handle is not a top-level window; no action was taken."
+  },
+  {
+    "source": "窗口不属于当前桌面，未执行跨桌面操作。",
+    "en": "The window is not on the current desktop; no cross-desktop operation was attempted."
+  },
+  {
+    "source": "窗口当前隐藏；请使用单独的隐藏主窗口显示操作。",
+    "en": "The window is hidden; use the separate hidden-main-window action."
+  },
+  {
+    "source": "无法核实窗口所在桌面的显示状态，未执行操作。",
+    "en": "The window's desktop display state could not be verified; no action was taken."
+  },
+  {
+    "source": "窗口处于其他虚拟桌面或被系统隐藏，未执行操作。",
+    "en": "The window is on another virtual desktop or hidden by the system; no action was taken."
+  },
+  {
+    "source": "所选窗口不是可显示的隐藏主窗口（可能是工具、消息辅助窗口或没有有效窗口区域）。",
+    "en": "The selected window is not a recoverable hidden main window. It may be a tool, a message helper, or a window without a usable display area."
+  },
+  {
+    "source": "未确认 AVD 原生设备页面；当前窗口是命令行、辅助窗口或页面状态已变化，未将其当作打开成功。",
+    "en": "No native AVD device page was confirmed. The current window is a command line, a helper, or a page whose state changed; it was not counted as a successful page launch."
+  },
+  {
+    "source": "这是当前快照中的候选能力；操作前会重新核实身份与条件，不保证一定显示成功。",
+    "en": "This is a candidate capability from the current snapshot. Identity and requirements are checked again before the action; successful display is not guaranteed."
+  },
+  {
+    "source": "可连接画面",
+    "en": "Connect to display"
+  },
+  {
+    "source": "可检查对应的 Hyper-V 设备并打开连接画面；不会因此重启虚拟机。",
+    "en": "Inspect the matching Hyper-V device and open its connection window without restarting the virtual machine."
+  },
+  {
+    "source": "可恢复窗口",
+    "en": "Recoverable window"
+  },
+  {
+    "source": "快照中存在符合条件的隐藏主窗口，可尝试重新显示。系统会再次核实窗口和所属进程。",
+    "en": "The snapshot contains an eligible hidden main window that can be requested to reappear. The window and its owning process will be verified again."
+  },
+  {
+    "source": "需确认重启",
+    "en": "Restart confirmation required"
+  },
+  {
+    "source": "可检查 AVD 原生窗口重启条件；必须核实启动器、设备与启动参数，并单独确认。重启会中断当前模拟器会话。",
+    "en": "Inspect native AVD window restart requirements. The launcher, device, and original arguments must be verified, followed by separate confirmation. Restart interrupts the current emulator session."
+  },
+  {
+    "source": "快照中已关联 AVD 启动器，可检查原生窗口重启条件；仍需核实设备与原启动参数，并单独确认。重启会中断当前模拟器会话。",
+    "en": "The snapshot links an AVD launcher, so native-window restart requirements can be inspected. Device identity and original arguments still require verification and separate confirmation. Restart interrupts the current emulator session."
+  },
+  {
+    "source": "可检查对应的运行中虚拟机并打开其图形连接入口；不会因此发送开机、关机或重启命令。",
+    "en": "Inspect the matching running virtual machine and open its graphical connection entry point. No power-on, shutdown, or restart command is sent."
+  },
+  {
+    "source": "可检查画面",
+    "en": "Inspect display"
+  },
+  {
+    "source": "当前快照未发现可见窗口，可进一步核实浏览器启动参数与画面入口；这不表示已确认无头模式，也不保证可以恢复画面。",
+    "en": "No visible window was found in the current snapshot. Browser launch arguments and display access can be inspected further. This does not confirm headless mode or guarantee that a display can be restored."
+  },
+  {
+    "source": "可尝试唤起",
+    "en": "Try to restore"
+  },
+  {
+    "source": "已识别该程序的界面入口候选，可在核实后尝试唤回窗口；某些版本可能打开登录页或新实例。",
+    "en": "A candidate interface entry point was identified. After verification, the application can be asked to restore its window. Some versions may open a sign-in page or a new instance."
+  },
+  {
+    "source": "Codex及其工具子进程",
+    "en": "Codex and its tool subprocesses"
+  },
+  {
+    "source": "Android 模拟器 / AVD",
+    "en": "Android Emulator / AVD"
+  },
+  {
+    "source": "导入的规则不能包含空项。",
+    "en": "Imported rules cannot contain null entries."
+  }
+]

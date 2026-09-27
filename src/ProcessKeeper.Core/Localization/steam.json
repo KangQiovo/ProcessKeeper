@@ -1,0 +1,107 @@
+[
+  { "source": " | 已取消稳定检查，请刷新确认。", "en": " | Stability check cancelled. Refresh to confirm the current state." },
+  {
+    "source": " | 无法核实关闭后的进程状态：{0}",
+    "en": " | Could not verify process state after closing: {0}"
+  },
+  {
+    "source": " | 观察到新进程，未自动追加或结束，请刷新确认。",
+    "en": " | New processes were observed and left untouched. Refresh to review them."
+  },
+  {
+    "source": "目标不属于已确认的 Steam 客户端进程，未强制结束。",
+    "en": "This is not a confirmed Steam client process. It was not force-closed."
+  },
+  {
+    "source": " | 观察到新进程 PID {0}，未自动结束，请刷新确认。",
+    "en": " | New process IDs observed: {0}. They were left untouched; refresh to review them."
+  },
+  {
+    "source": " | 稳定检查未完成：{0}",
+    "en": " | Stability check incomplete: {0}"
+  },
+  {
+    "source": "跳过：进程所属会话已变化",
+    "en": "Skipped: the process session changed"
+  },
+  {
+    "source": "Steam 目标身份不完整或受系统保护。",
+    "en": "The Steam process identity is incomplete or system-protected."
+  },
+  {
+    "source": "Steam 目标已退出或身份发生变化。",
+    "en": "The Steam process has exited or its identity changed."
+  },
+  {
+    "source": "Steam 目标的关键进程检查未通过。",
+    "en": "The Steam process failed the critical-process check."
+  },
+  {
+    "source": "Steam 主程序的数字签名未通过 Windows 信任验证，未启动此文件。",
+    "en": "Windows could not verify the Steam executable's digital signature. This file was not launched."
+  },
+  {
+    "source": "此文件的签名发布者不是 Valve，未发送 Steam 退出请求。",
+    "en": "The executable is not signed by Valve. No Steam shutdown request was sent."
+  },
+  {
+    "source": "Steam 主程序路径无法核实，未发送退出请求。",
+    "en": "The Steam executable path could not be verified. No shutdown request was sent."
+  },
+  {
+    "source": "Windows 未能发送 Steam 正常退出请求。",
+    "en": "Windows could not send the normal Steam shutdown request."
+  },
+  {
+    "source": "Steam 服务或其他账户会话不在正常退出范围，未执行操作。",
+    "en": "Steam services and other users or sessions are outside this shutdown action. No action was taken."
+  },
+  {
+    "source": "未找到唯一且可核实的 Steam 主进程，未执行操作。",
+    "en": "A unique, verifiable Steam client was not found. No action was taken."
+  },
+  {
+    "source": "仅选择了部分 Steam 进程或清单已变化。正常退出需要确认完整客户端组，未执行操作。",
+    "en": "Only part of Steam is selected, or the process list changed. Confirm the complete client group for normal shutdown. No action was taken."
+  },
+  {
+    "source": "Steam 组内有受保护进程，未发送退出请求。",
+    "en": "A process in the Steam group is protected. No shutdown request was sent."
+  },
+  {
+    "source": "Steam 进程组在确认后发生变化，未发送退出请求。",
+    "en": "The Steam process group changed after confirmation. No shutdown request was sent."
+  },
+  {
+    "source": "已请求 Steam 正常退出，正在等待客户端和辅助进程结束；不会自动强制结束。",
+    "en": "Steam was asked to exit normally. Waiting for the client and its helpers; they will not be force-closed automatically."
+  },
+  {
+    "source": "保护规则已变化，已停止等待和后续操作；此前的正常退出请求无法撤销。",
+    "en": "Protection changed. Waiting and further actions stopped; the earlier shutdown request cannot be undone."
+  },
+  {
+    "source": "原 Steam 进程已退出，但观察到新进程；未自动关闭新进程，请刷新确认。",
+    "en": "The original Steam processes exited, but new processes appeared. They were left untouched; refresh to review them."
+  },
+  {
+    "source": "Steam 客户端已退出并通过短时稳定检查；此结果不代表游戏存档或云同步已完成。",
+    "en": "Steam exited and passed a brief stability check. This does not confirm saved games or completed cloud sync."
+  },
+  {
+    "source": "Steam 仍在运行或退出尚未稳定，可能在处理游戏、下载或同步。未强制结束；需要再次确认才能结束原清单。",
+    "en": "Steam is still running or has not remained closed. A game, download or sync may be pending. Nothing was force-closed; ending the original list requires another confirmation."
+  },
+  {
+    "source": "已取消等待 Steam；已发送的正常退出请求无法撤销，未强制结束。",
+    "en": "Stopped waiting for Steam. The earlier shutdown request cannot be undone; nothing was force-closed."
+  },
+  {
+    "source": "已取消，未发送 Steam 退出请求。",
+    "en": "Cancelled. No Steam shutdown request was sent."
+  },
+  {
+    "source": "Steam 退出未完成：{0}",
+    "en": "Steam shutdown incomplete: {0}"
+  }
+]

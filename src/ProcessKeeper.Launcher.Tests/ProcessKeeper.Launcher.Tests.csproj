@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../ProcessKeeper.Launcher/LauncherBootstrapText.cs" Link="LauncherBootstrapText.cs" />
+    <EmbeddedResource Include="$(TestPayloadZip)" LogicalName="ProcessKeeper.Payload.zip" Condition="'$(TestPayloadZip)' != ''" />
+    <EmbeddedResource Include="$(TestPayloadManifest)" LogicalName="ProcessKeeper.Payload.json" Condition="'$(TestPayloadManifest)' != ''" />
+    <Compile Include="../ProcessKeeper.Launcher/PayloadContract.cs" Link="PayloadContract.cs" />
+    <Compile Include="../ProcessKeeper.Launcher/CacheStore.cs" Link="CacheStore.cs" />
+    <Compile Include="../ProcessKeeper.Launcher/CacheSecurity.cs" Link="CacheSecurity.cs" />
+    <Compile Include="../ProcessKeeper.Launcher/UserCacheSecurity.cs" Link="UserCacheSecurity.cs" />
+    <Compile Include="../ProcessKeeper.Launcher/OriginalLauncher.cs" Link="OriginalLauncher.cs" />
+    <Compile Include="../ProcessKeeper.Launcher/ElevationBroker.cs" Link="ElevationBroker.cs" />
+    <Compile Include="../ProcessKeeper.Launcher/StartupElevationFlow.cs" Link="StartupElevationFlow.cs" />
+    <Compile Include="../ProcessKeeper.App/ElevationBrokerClient.cs" Link="ElevationBrokerClient.cs" />
+  </ItemGroup>
+</Project>

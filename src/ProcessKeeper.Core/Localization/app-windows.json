@@ -1,0 +1,442 @@
+[
+  {
+    "en": "\nAfter confirmation, send one request and wait for an actual window. The background engine will not restart automatically.",
+    "source": "\n确认后只发送一次请求，并等待实际窗口；不会自动重启后台核心。"
+  },
+  {
+    "en": " | Open view",
+    "source": " | 唤起界面"
+  },
+  {
+    "en": "{0} has {1} windows. Choose a window for this action: {2}.",
+    "source": "{0} 有 {1} 个窗口，请选择要{2}的窗口。"
+  },
+  {
+    "en": "{0} has {1} hidden main windows to try. Choose one; Process Keeper will request visibility and verify the result. The app may hide its window again.",
+    "source": "{0} 有 {1} 个可尝试恢复的隐藏主窗口。选择窗口后，Process Keeper会请求显示并检查实际结果。程序可能自行再次隐藏窗口。"
+  },
+  {
+    "en": "Try to reveal",
+    "source": "尝试显示"
+  },
+  {
+    "en": "Window action",
+    "source": "窗口操作"
+  },
+  {
+    "en": "Window verification",
+    "source": "窗口核验结果"
+  },
+  {
+    "en": "This process has no restorable window or supported view. A background service may have no UI.",
+    "source": "此进程没有可恢复窗口或已支持的界面入口。纯后台服务可能没有页面。"
+  },
+  {
+    "en": "Open app view",
+    "source": "打开对应界面"
+  },
+  {
+    "en": "Open app interface...",
+    "source": "打开对应页面…"
+  },
+  {
+    "en": "No visible window can be minimized. Refresh the list.",
+    "source": "当前没有可最小化的可见窗口，请刷新状态。"
+  },
+  {
+    "en": "App window shown",
+    "source": "对应窗口已显示"
+  },
+  {
+    "en": "Preview paused | Browser is still running",
+    "source": "画面已暂停 | 原浏览器仍在运行"
+  },
+  {
+    "en": "Open view",
+    "source": "唤起界面"
+  },
+  {
+    "en": "Resume preview",
+    "source": "继续画面"
+  },
+  {
+    "en": "A headless Android emulator is running without a native main window. ",
+    "source": "检测到 headless 安卓模拟器核心，目前没有可恢复的原生主窗口。"
+  },
+  {
+    "en": "A window is on another virtual desktop or hidden by Windows. Switch to its desktop first; only existing main windows on this desktop can be restored here.",
+    "source": "检测到其他虚拟桌面或被系统隐藏的窗口，请先切换到对应桌面。此处只能恢复当前桌面上已经存在的普通主窗口。"
+  },
+  {
+    "en": "Check app views",
+    "source": "检查界面入口"
+  },
+  {
+    "en": "The selected AVD will close and restart. Running tasks will be interrupted; save your work first.",
+    "source": "将退出并重新启动所选 AVD。正在运行的任务会中断，请先保存。"
+  },
+  {
+    "en": "Visible",
+    "source": "可见"
+  },
+  {
+    "en": "Use Restart AVD with native window and confirm the restart. Embedded views may also be available in Android Studio's Running Devices.",
+    "source": "可使用“以原生窗口重启 AVD”，确认后自动重新启动。嵌入 Android Studio 的窗口也可从 Running Devices 查看。"
+  },
+  {
+    "en": "Connect live preview",
+    "source": "连接页面画面"
+  },
+  {
+    "en": "Browser page",
+    "source": "浏览器页面"
+  },
+  {
+    "en": "No available window",
+    "source": "没有可操作的窗口"
+  },
+  {
+    "en": "No verifiable device was found. Refresh and try again.",
+    "source": "没有找到可核实的设备，请刷新后重试。"
+  },
+  {
+    "en": "No restorable main window was found. Background services may have no UI; tray apps may need their tray icon to recreate a window. Open the app through its own entry point, then refresh.",
+    "source": "没有找到可恢复的主窗口。后台服务和辅助进程可能从未创建界面；托盘程序也可能需要点击托盘图标重新创建窗口。请先从程序自身的入口打开页面，再刷新列表。"
+  },
+  {
+    "en": "Other desktop / system hidden",
+    "source": "其他桌面 / 系统隐藏"
+  },
+  {
+    "en": "Launch details",
+    "source": "启动详情"
+  },
+  {
+    "en": "Cancel",
+    "source": "取消"
+  },
+  {
+    "en": "Cancel remaining steps",
+    "source": "取消后续操作"
+  },
+  {
+    "en": "Confirm open",
+    "source": "确认打开"
+  },
+  {
+    "en": "Confirm restart",
+    "source": "确认重启"
+  },
+  {
+    "en": "The app may have been removed or moved, or its location is inaccessible. Refresh the list.",
+    "source": "软件可能已卸载、移动或路径不可访问，请刷新列表。"
+  },
+  {
+    "en": "No exit or launch request was sent.",
+    "source": "尚未发送退出或启动请求。"
+  },
+  {
+    "en": "Identify AVD",
+    "source": "识别 AVD"
+  },
+  {
+    "en": "Live preview | ",
+    "source": "实时画面 | "
+  },
+  {
+    "en": "Live preview shown",
+    "source": "实时画面已显示"
+  },
+  {
+    "en": "Live preview disconnected | ",
+    "source": "实时画面已中断 | "
+  },
+  {
+    "en": "Stop waiting",
+    "source": "停止等待"
+  },
+  {
+    "en": "Page image not shown",
+    "source": "图像未显示"
+  },
+  {
+    "en": "Recommended",
+    "source": "推荐"
+  },
+  {
+    "en": "No valid page image was displayed. See the preview window for details.",
+    "source": "未获取并显示有效页面图像，详情见预览窗口。"
+  },
+  {
+    "en": "Could not display preview",
+    "source": "未能显示画面"
+  },
+  {
+    "en": "Could not display page | ",
+    "source": "未能显示页面 | "
+  },
+  {
+    "en": "No accessible file path. Scan Installed apps to locate an app that is not running.",
+    "source": "未找到可访问的文件路径；未运行的规则可先在已安装应用页扫描软件。"
+  },
+  {
+    "en": "No restorable Android emulator main window was found. ",
+    "source": "未找到可恢复的安卓模拟器主窗口。"
+  },
+  {
+    "en": "No available view",
+    "source": "未找到可用入口"
+  },
+  {
+    "en": "Location unavailable",
+    "source": "位置已失效"
+  },
+  {
+    "en": "Window action failed",
+    "source": "无法操作窗口"
+  },
+  {
+    "en": "Cannot open app view",
+    "source": "无法打开界面"
+  },
+  {
+    "en": "Cannot open file location",
+    "source": "无法打开文件位置"
+  },
+  {
+    "en": "Headless browser preview | PID {0} | {1}",
+    "source": "无头浏览器画面 | PID {0} | {1}"
+  },
+  {
+    "en": "Headless live view | Process Keeper",
+    "source": "无头页面实时画面 | Process Keeper"
+  },
+  {
+    "en": "Shown",
+    "source": "显示"
+  },
+  {
+    "en": "Show window",
+    "source": "显示窗口"
+  },
+  {
+    "en": "Show in folder",
+    "source": "显示文件所在目录"
+  },
+  {
+    "en": "Reveal hidden window",
+    "source": "显示隐藏窗口"
+  },
+  {
+    "en": "Show hidden window...",
+    "source": "显示隐藏窗口…"
+  },
+  {
+    "en": "Show a read-only live preview of the existing headless page. Its task keeps running; closing the preview only disconnects the view.",
+    "source": "显示原无头页面的只读实时画面。原任务继续运行；关闭预览只断开画面连接。"
+  },
+  {
+    "en": "Choose a window",
+    "source": "选择窗口"
+  },
+  {
+    "en": "Keep the original device directory and runtime options, and cold-start with a native window.\n",
+    "source": "沿用原设备目录和运行参数，改为原生窗口冷启动。\n"
+  },
+  {
+    "en": "The page image could not be decoded.",
+    "source": "页面图像未能解码。"
+  },
+  {
+    "en": "Cancelled",
+    "source": "已取消"
+  },
+  {
+    "en": "Identification cancelled",
+    "source": "已取消识别"
+  },
+  {
+    "en": "Possible native AVD view. Its identity and visibility will be verified before success is reported.",
+    "source": "已识别为 AVD 原生设备页面候选；显示前仍会重新核实，不代表已经打开成功。"
+  },
+  {
+    "en": "Remaining steps were cancelled. Windows already opened stay open.",
+    "source": "已停止后续操作；已经打开的窗口保留。"
+  },
+  {
+    "en": "A read-only live preview of the existing page is open in a separate window.",
+    "source": "已在独立窗口显示原页面的只读实时画面。"
+  },
+  {
+    "en": "Minimized",
+    "source": "已最小化"
+  },
+  {
+    "en": "Restart AVD with native window",
+    "source": "以原生窗口重启 AVD"
+  },
+  {
+    "en": "Hidden",
+    "source": "隐藏"
+  },
+  {
+    "en": "AVD native restart confirmed | {0} | Original PID {1} | Port {2}",
+    "source": "用户确认 AVD 原生窗口重启 | {0} | 原 PID {1} | 端口 {2}"
+  },
+  {
+    "en": "Headless preview confirmed | PID {0}",
+    "source": "用户确认无头页面预览 | PID {0}"
+  },
+  {
+    "en": "App view confirmed | {0} | PID {1}",
+    "source": "用户确认专用界面 | {0} | PID {1}"
+  },
+  {
+    "en": "The preview window has no visible display area.",
+    "source": "预览窗口没有可见的画面区域。"
+  },
+  {
+    "en": "Original processes: {0} / {1}\nSDK: {2}\n",
+    "source": "原进程：{0} / {1}\nSDK：{2}\n"
+  },
+  {
+    "en": "Native window shown",
+    "source": "原生窗口已显示"
+  },
+  {
+    "en": "Automatic restart unavailable",
+    "source": "暂时无法自动重启"
+  },
+  {
+    "en": "Pause preview",
+    "source": "暂停画面"
+  },
+  {
+    "en": "Page image shown",
+    "source": "真实图像已显示"
+  },
+  {
+    "en": "Reading and verifying page frames…",
+    "source": "正在读取并核验真实图像…"
+  },
+  {
+    "en": "Reading page frames…",
+    "source": "正在读取真实页面图像…"
+  },
+  {
+    "en": "Updating preview…",
+    "source": "正在更新画面…"
+  },
+  {
+    "en": "Verifying the device and launch options. The emulator will stay running until you confirm.",
+    "source": "正在核实设备和启动方式，确认前不会退出模拟器。"
+  },
+  {
+    "en": "Checking available views for the selected process…",
+    "source": "正在核实所选进程的可用方式…"
+  },
+  {
+    "en": "Read-only live view | {0:HH:mm:ss} | Closing the preview keeps the browser running",
+    "source": "只读实时画面 | {0:HH:mm:ss} | 关闭预览不会关闭原浏览器"
+  },
+  {
+    "en": "App view | ",
+    "source": "专用界面 | "
+  },
+  {
+    "en": "App view | {0} | {1}",
+    "source": "专用界面 | {0} | {1}"
+  },
+  {
+    "en": "App view incomplete | ",
+    "source": "专用界面未完成 | "
+  },
+  {
+    "en": "Minimize",
+    "source": "最小化"
+  },
+  {
+    "en": "Minimize window",
+    "source": "最小化窗口"
+  },
+  {
+    "en": "AVD operation incomplete",
+    "source": "AVD 操作未完成"
+  },
+  {
+    "en": "AVD operation incomplete | ",
+    "source": "AVD 操作未完成 | "
+  },
+  {
+    "en": "AVD identification | ",
+    "source": "AVD 识别 | "
+  },
+  {
+    "en": "AVD restart result",
+    "source": "AVD 重启结果"
+  },
+  {
+    "en": "AVD restart cancelled | No exit or launch request was sent.",
+    "source": "AVD 重启已取消 | 尚未发送退出或启动请求。"
+  },
+  {
+    "en": "AVD view",
+    "source": "AVD画面"
+  },
+  {
+    "en": "MyDock service: ",
+    "source": "MyDock 服务："
+  },
+  {
+    "en": "MyDock service: skipped because its install path changed or could not be verified.",
+    "source": "MyDock 服务：安装路径已改变或无法核实，已跳过。"
+  },
+  {
+    "en": "MyDock service: skipped because its configuration does not match the confirmed path or cannot be verified.",
+    "source": "MyDock 服务：打开后的服务配置与确认路径不一致或无法核实，已跳过。"
+  },
+  {
+    "en": "MyDock service: skipped because it is not accepting stop requests.",
+    "source": "MyDock 服务：当前不接受停止请求，已跳过。"
+  },
+  {
+    "en": "MyDock service: skipped because its configuration changed.",
+    "source": "MyDock 服务：服务配置发生变化，已跳过。"
+  },
+  {
+    "en": "MyDock service: stop failed, ",
+    "source": "MyDock 服务：停止失败，"
+  },
+  {
+    "en": "MyDock service: could not open. Run as administrator.",
+    "source": "MyDock 服务：无法打开，请以管理员权限运行。"
+  },
+  {
+    "en": "MyDock service: skipped because its dependencies could not be verified.",
+    "source": "MyDock 服务：无法核实依赖，已跳过。"
+  },
+  {
+    "en": "MyDock service: skipped because its running state could not be verified.",
+    "source": "MyDock 服务：无法核实运行状态，已跳过。"
+  },
+  {
+    "en": "MyDock service: stop requested, but not yet confirmed.",
+    "source": "MyDock 服务：已发送停止请求，但尚未确认停止。"
+  },
+  {
+    "en": "MyDock service: already stopping.",
+    "source": "MyDock 服务：已经处于停止过程中。"
+  },
+  {
+    "en": "MyDock service: already stopped.",
+    "source": "MyDock 服务：已经停止。"
+  },
+  {
+    "en": "MyDock service: stopped.",
+    "source": "MyDock 服务：已停止。"
+  },
+  {
+    "en": "MyDock service: skipped because other running services depend on it.",
+    "source": "MyDock 服务：有其他运行中的依赖服务，已跳过。"
+  }
+]

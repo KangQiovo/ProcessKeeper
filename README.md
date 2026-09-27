@@ -1,0 +1,139 @@
+<div align="center">
+  <img src="src/ProcessKeeper.App/Assets/ProcessKeeper.png" width="88" alt="Process Keeper icon" />
+  <h1>Process Keeper</h1>
+  <p>Understand what is running. Keep what matters. Close the rest deliberately.</p>
+  <p><strong>English</strong> | <a href="README.zh-CN.md">简体中文</a> | <a href="README.zh-TW.md">繁體中文</a></p>
+  <p>
+    <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue" /></a>
+    <a href="docs/COMPATIBILITY.md"><img alt="Windows: modern and compatibility UI" src="https://img.shields.io/badge/Windows-modern%20%2B%20compatibility-0078D4" /></a>
+    <a href="https://github.com/KangQiovo/ProcessKeeper/issues"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-2ea44f" /></a>
+  </p>
+  <p><a href="#features">Features</a> | <a href="#screenshots">Screenshots</a> | <a href="#compatibility">Compatibility</a> | <a href="docs/BUILDING.md">Build</a> | <a href="https://github.com/KangQiovo/ProcessKeeper/issues">Report an issue</a></p>
+</div>
+
+Process Keeper is a Windows application and process manager with an editable whitelist, startup management, and tools for restoring supported hidden application windows. Related processes are grouped under their application, so you can inspect what an action will affect before confirming it.
+
+The modern interface uses **WinUI 3**. An **x86 WPF / WPF UI compatibility interface** shares the core behavior and provides a route for older systems. A native launcher can package both interfaces into one portable EXE.
+
+> Download the official portable EXE from [Releases](https://github.com/KangQiovo/ProcessKeeper/releases/latest). Release packages are unsigned, so Windows may show **Unknown publisher**. Ordinary builds retain the **“Test version — does not represent final quality”** notice; official stable builds remove it. Older-system support remains a compatibility target, not completed device certification.
+
+## Features
+
+| Area | What you can do |
+| --- | --- |
+| Running applications | Separate visible, minimized, hidden and system/service processes; expand applications to inspect identity, memory, children and windows. |
+| Installed applications | Load the catalog in the background, filter by drive and whitelist software before it runs. Expand discovered executable components. |
+| Whitelist | Search software and processes, inspect matches, enable/disable rules, and share portable rules or complete local backups. |
+| Profiles and grouping | Keep up to five editable whitelist profiles; group Steam, Epic Games, Ubisoft Connect and EA app games; optionally hide verified Microsoft software. |
+| Startup | Switch simple common/hidden categories and advanced sources; change supported entries with confirmation, backup and state revalidation. |
+| Hidden windows | Restore existing windows or use dedicated actions for supported AVD, virtual-machine, browser and tray scenarios. |
+| Settings | English, 简体中文 and 繁體中文; system-language detection; theme/material controls; settings backup; repeatable onboarding. |
+| Activity | Live history, oldest first, including year, milliseconds and time-zone offset, with optional auto-scroll. |
+| Updates | Fixed official repository, actual release notes/assets, source selection, verified update handoff and desktop shortcuts. |
+
+## Screenshots
+
+These captures show the actual Windows UI in isolated fixtures on a modern Windows host, with anonymous demonstration data. They are not mockups and **do not demonstrate Windows 7 execution**. Complete application windows use the Stable channel.
+
+![Modern running applications](docs/images/modern-running.png)
+*Expand an application to inspect its relationship to the processes underneath it.*
+
+| Startup management | Settings and updates |
+| --- | --- |
+| ![Modern startup management](docs/images/modern-startup.png) | ![Modern settings and updates](docs/images/modern-settings.png) |
+| Check the source and current state before making a supported change. | Native controls, theme-aware content and explicit update confirmation. |
+
+![WPF compatibility interface](docs/images/legacy-overview.png)
+*The compatibility interface preserves the main workflow, with documented material and capability differences.*
+
+| Platform grouping | Whitelist profiles |
+| --- | --- |
+| ![Expandable platform and game rows](docs/images/modern-platforms.png) | ![Native whitelist profile editor](docs/images/modern-profiles.png) |
+| Expand a platform, game, then its processes; each app keeps its own actions. | Preview and validate rules before explicitly applying a profile. |
+
+## Getting started
+
+1. Launch the portable EXE. Windows requests administrator permission; cancelling opens the permission page instead of management.
+2. Complete the environment check and onboarding. Automatic language selection prefers the system display language.
+3. Review running or installed software and mark applications to keep. Click a row to inspect matching processes or executable components.
+4. Choose a close action and review its exact target list. Graceful exit is the default; forced termination requires an explicit choice.
+5. Read the activity log. Failures, unavailable capabilities and unverifiable identities are not counted as success.
+
+**New installations start with an empty whitelist.** Existing users keep their own rules. Missing software produces an unmatched rule; it is not installed or launched. Portable sharing omits machine-specific rules; imported local rules default to disabled until reviewed.
+
+In **Settings → Backup**, create up to **five named profiles**. Select one to preview its rules, edit the JSON and check its format, then save. **Apply** switches the active whitelist after confirmation; selecting an inactive profile does not change protection. Saving the active profile also asks for confirmation. Full settings backups include every profile; whitelist-only exports contain only the active rules.
+
+### Applications and processes
+
+Running, installed and whitelist pages search application names, process names, paths and exact PIDs. A matching child keeps its parent application visible. Available details include executable identity, account/session, parent PID, services and windows. Icons come from the original local executable when readable.
+
+Installed-software discovery uses registrations, shortcuts and supported package metadata across drives. It does **not** promise to find every portable EXE on every disk. Dormant applications show discovered executable components and associated live processes, not a fabricated future process tree.
+
+Running, installed and startup lists can group games under **Steam, Epic Games, Ubisoft Connect or EA app**. Expand a platform to see the independent application rows. Membership uses supported local installation records, not process ancestry. Platform headings are display groups: expanding or collapsing one does not whitelist or close its children. Unidentified games remain ordinary rows. **Hide Microsoft apps** requires verified publisher or Windows component evidence; a company-name string alone is insufficient, and unknown items remain visible.
+
+Only the three application-list pages expose the shared real-time update switch. Pausing it does not pause logging. Lists use virtualization, bounded caches and background collection; slow disks or system providers can still delay completion.
+
+### Closing software safely
+
+Process identity and protection rules are rechecked before acting. Restarted or newly created processes are not silently added to a confirmed list. Bulk close follows the confirmation list, not just the current search results.
+
+Steam receives a verified graceful shutdown request first; this cannot prove game saves or Steam Cloud synchronization completed. Supported sensitive desktop components require a separate risk confirmation and countdown. Optional risk-ignoring mode is session-only with a persistent red warning; it does not remove identity checks, critical-process protection or update confirmation.
+
+**Save your work first.** Closing applications or changing startup configuration can interrupt work. Administrator rights do not make every protected process readable or controllable.
+
+### Startup management
+
+Sources include Run/RunOnce, startup folders, scheduled tasks, services, drivers, selected advanced registry mechanisms, WMI subscriptions and supported package startup declarations. Some entries trigger at login or under specific conditions, not necessarily at boot.
+
+Simple mode groups common and other non-system entries. Advanced mode reveals detailed sources and protected entries. This is not an exact Task Manager clone or exhaustive persistence detector.
+
+Supported entries can be enabled or disabled after confirmation. Recognized Windows startup-approval records preserve the original command or shortcut. Original state is backed up and rechecked. Drivers, system/policy entries, unknown formats and services without a safely recoverable startup type remain read-only, with an explanation. Changing configuration does not immediately start or stop the program.
+
+### Hidden windows
+
+| Scenario | Behavior and boundary |
+| --- | --- |
+| Existing main window | Restore a verified graphical window; report focus restrictions separately. |
+| Android Emulator / AVD | Exclude terminals, crash handlers and internal helper windows; recommend graphical candidates. A native-window restart requires identification and confirmation. No scrcpy dependency; a visible window does not prove Android finished booting. |
+| Virtual machines | Use supported VirtualBox, Hyper-V and VMware interfaces to identify and connect to an existing guest. Product availability and identity checks apply. |
+| Headless browser | Supported modern Chrome/Edge instances may offer live preview through their existing verified debugging capability. The compatibility build has no live preview. |
+| Tray software | Offer supported activation routes. The program may re-hide or show login; a launch request alone is not successful recovery. |
+
+## Compatibility
+
+| System | Interface | Runtime |
+| --- | --- | --- |
+| Windows 10 2004 / build 19041+ x64; Windows 11 x64 | WinUI 3 modern UI | .NET / Windows App SDK included in packaged builds |
+| Windows 7 **SP1** x86/x64; Windows 8.1 x86/x64; older/x86 Windows 10 | x86 WPF compatibility UI | .NET Framework **4.6.2** or a compatible newer 4.x runtime |
+| Windows 7 without SP1, original Windows 8, XP, Vista, ARM | No supported management route | Launcher explains requirements |
+
+**Still open:** no real Windows 7 / 8.1 / 10 machine validation has been completed. The compatibility build lacks WinRT package inventory/startup declarations, live browser preview and x64 AVD environment reconstruction. Materials, animations, fonts, graphics behavior and old-hardware performance can differ. Modern-host x86 tests do not prove old-OS support.
+
+Read the [compatibility matrix and known limitations](docs/COMPATIBILITY.md). Reproducible [issues](https://github.com/KangQiovo/ProcessKeeper/issues/new/choose), screenshots and focused fixes are welcome.
+
+## Packaging, settings and updates
+
+The intended distribution is one native EXE containing both interfaces. Portable means no installer registration, **not no disk writes**: verified runtime files use a restricted ProgramData cache; personal settings/logs use `%LOCALAPPDATA%\ProcessKeeper`; startup backups use protected ProgramData storage.
+
+Whitelist-only and complete-settings exports are separate formats. Imports show a preview; local path rules are not widened into broad name rules. Profile edits use revision checks and one atomic whitelist file, so a stale editor cannot overwrite newer rules. Complete-settings imports keep backups and attempt rollback on failure, but cannot guarantee multi-file atomicity across sudden power loss.
+
+Update authority is fixed to **`KangQiovo/ProcessKeeper`** in configuration, official metadata, assets and installation handoff. GitHub supplies release identity and digests; third parties only supply allowed download routes. Automatic source choice measures actual asset requests. Missing releases/digests, rate limits, network errors and invalid packages are reported. Restart requires confirmation.
+
+Build time is preserved to the second with a UTC+8 baseline and displayed in the computer's current time zone, refreshed every five seconds. Current builds are unsigned: hash checks and fixed repository identity do not make a locally rewritten EXE impossible. Real public-release upgrades and production UAC/cache cold starts still need field testing.
+
+## Build and contribute
+
+- [Build from source](docs/BUILDING.md): modern, compatibility and native packaging steps.
+- [Testing](docs/TESTING.md): fixtures, evidence and remaining validation gaps.
+- [Contributing](CONTRIBUTING.md): bugs, translations, accessibility and older-system reports.
+- [Security](SECURITY.md): reporting guidance and sensitive data.
+
+Source, generic rule examples, docs and screenshots belong in Git. Binaries, test packages, caches, personal rules and logs do not. There is no automatic binary-release publishing workflow.
+
+## Credits and license
+
+Created by **KangQi**: [GitHub](https://github.com/KangQiovo) | [Coolapk](https://www.coolapk.com/u/21241695) | [Bilibili](https://space.bilibili.com/329073257).
+
+Built with references from [Microsoft WinUI Gallery](https://github.com/microsoft/WinUI-Gallery), [Windows App SDK](https://github.com/microsoft/WindowsAppSDK), [.NET](https://github.com/dotnet/runtime) and [WPF UI](https://github.com/lepoco/wpfui). [Third-party notices](THIRD-PARTY-NOTICES.md) describe components, icons and licenses. This project is independent of Microsoft and the software it displays.
+
+Process Keeper source uses the [MIT license](LICENSE). Third-party components retain their licenses and trademarks. The application icon was AI-generated; screenshots are actual UI captures, not generated images.

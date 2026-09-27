@@ -1,0 +1,9 @@
+[
+  {"source":"简单","en":"Simple"},
+  {"source":"复杂","en":"Advanced"},
+  {"source":"全部启动项","en":"All startup entries"},
+  {"source":"常规启动项","en":"Common startup entries"},
+  {"source":"隐藏启动项","en":"Hidden startup entries"},
+  {"source":"查看原因","en":"View reason"},
+  {"source":"通过 Windows 启动审批切换，保留原始启动命令或文件。","en":"Switches Windows startup approval while preserving the original startup command or file."}
+]

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ProcessKeeper.Launcher</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\ProcessKeeper.App\Assets\ProcessKeeper.ico</ApplicationIcon>
+    <Version>1.4.0</Version>
+    <Product>Process Keeper</Product>
+    <Description>Process Keeper portable single-file launcher</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="ProcessKeeper.Payload.zip" Condition="'$(PayloadZip)' != ''" />
+    <EmbeddedResource Include="$(PayloadManifest)" LogicalName="ProcessKeeper.Payload.json" Condition="'$(PayloadManifest)' != ''" />
+  </ItemGroup>
+  <Target Name="CheckEmbeddedPayload" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(PayloadZip)' == '' Or !Exists('$(PayloadZip)')" Text="Supply PayloadZip through package-single-file.ps1." />
+    <Error Condition="'$(PayloadManifest)' == '' Or !Exists('$(PayloadManifest)')" Text="Supply PayloadManifest through package-single-file.ps1." />
+  </Target>
+</Project>

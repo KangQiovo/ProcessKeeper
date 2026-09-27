@@ -1,0 +1,9 @@
+[
+  { "source": "白名单读取失败", "en": "Could not load the whitelist" },
+  { "source": "所属软件：{0}", "en": "Application: {0}" },
+  { "source": "搜索软件、进程、PID 或路径", "en": "Search apps, processes, PIDs or paths" },
+  { "source": "搜索白名单软件与进程", "en": "Search whitelist apps and processes" },
+  { "source": "没有符合条件的软件或进程", "en": "No matching applications or processes" },
+  { "source": "盘符筛选无效。", "en": "Invalid drive filter." },
+  { "source": "已安装软件盘符：{0}", "en": "Installed apps drive: {0}" }
+]

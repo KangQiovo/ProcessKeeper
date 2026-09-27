@@ -1,0 +1,1010 @@
+[
+  {
+    "source": "白名单配置无法读取",
+    "en": "Cannot read whitelist"
+  },
+  {
+    "source": "关闭功能暂时停用。可在白名单页恢复默认规则；原配置会备份。",
+    "en": "Closing is temporarily disabled. Restore the default rules on the Whitelist page; the existing file will be backed up. "
+  },
+  {
+    "source": "配置保存在本机：",
+    "en": "Local configuration: "
+  },
+  {
+    "source": "更新于 {0:HH:mm:ss}  |  本机只读采集",
+    "en": "Updated {0:HH:mm:ss}  |  Read-only local scan"
+  },
+  {
+    "source": "读取失败",
+    "en": "Could not read data"
+  },
+  {
+    "source": "有可见窗口",
+    "en": "Visible window"
+  },
+  {
+    "source": "已最小化",
+    "en": "Minimized"
+  },
+  {
+    "source": "隐藏后台",
+    "en": "Hidden background"
+  },
+  {
+    "source": "服务与系统",
+    "en": "System and services"
+  },
+  {
+    "source": " | 当前焦点",
+    "en": " | In focus"
+  },
+  {
+    "source": "{0}{1}  |  {2} 个进程  |  {3}",
+    "en": "{0}{1}  |  {2} processes  |  {3}"
+  },
+  {
+    "source": "白名单保护",
+    "en": "Protected by whitelist"
+  },
+  {
+    "source": "系统 / 身份保护",
+    "en": "System / identity protection"
+  },
+  {
+    "source": "{0} 个进程受保护",
+    "en": "{0} protected processes"
+  },
+  {
+    "source": "可在确认后关闭",
+    "en": "Can close after confirmation"
+  },
+  {
+    "source": "收起",
+    "en": "Collapse"
+  },
+  {
+    "source": "展开",
+    "en": "Expand"
+  },
+  {
+    "source": "{0}\n{1}\n单击{2} {3} 个进程",
+    "en": "{0}\n{1}\nClick to {2} {3} processes"
+  },
+  {
+    "source": "系统 / 服务",
+    "en": "System / service"
+  },
+  {
+    "source": "用户进程",
+    "en": "User process"
+  },
+  {
+    "source": "由 {0}（{1}）启动",
+    "en": "Started by {0} ({1})"
+  },
+  {
+    "source": "启动来源：父进程已退出或无法核实",
+    "en": "Parent has exited or could not be verified"
+  },
+  {
+    "source": "{0} 个程序 | {1} 个进程 | {2} 条保留规则",
+    "en": "{0} apps | {1} processes | {2} whitelist rules"
+  },
+  {
+    "source": " | {0} 个系统 / 服务进程已隐藏",
+    "en": " | {0} system / service processes hidden"
+  },
+  {
+    "source": "选择一个程序",
+    "en": "Select an app"
+  },
+  {
+    "source": "单击左侧程序展开进程，再选中进程查看详情。",
+    "en": "Expand an app on the left, then select a process to view its details."
+  },
+  {
+    "source": "{0} | {1} 个进程 | {2}",
+    "en": "{0} | {1} processes | {2}"
+  },
+  {
+    "source": "（另 {0} 个系统 / 服务已隐藏）",
+    "en": " ({0} more system / service processes hidden)"
+  },
+  {
+    "source": "未知",
+    "en": "Unknown"
+  },
+  {
+    "source": "\n文件声明公司：{0}",
+    "en": "\nCompany declared by file: {0}"
+  },
+  {
+    "source": "未加入白名单，可在确认后关闭",
+    "en": "Not whitelisted; can close after confirmation"
+  },
+  {
+    "source": "移出程序白名单",
+    "en": "Remove from whitelist"
+  },
+  {
+    "source": "保留此程序",
+    "en": "Keep this app"
+  },
+  {
+    "source": "显示窗口",
+    "en": "Show window"
+  },
+  {
+    "source": "显示隐藏窗口…",
+    "en": "Show hidden window..."
+  },
+  {
+    "source": "以原生窗口重启…",
+    "en": "Restart with native window..."
+  },
+  {
+    "source": "打开对应页面…",
+    "en": "Open app interface..."
+  },
+  {
+    "source": "窗口说明",
+    "en": "Window details"
+  },
+  {
+    "source": "程序身份",
+    "en": "App identity"
+  },
+  {
+    "source": "程序与进程的区别",
+    "en": "Apps and processes"
+  },
+  {
+    "source": "一个程序可以包含多个进程。主界面、网页渲染、崩溃报告、后台服务可能分别运行。列表按可核实的程序身份分组；没有足够证据的程序保持独立。",
+    "en": "An app can use separate processes for its interface, web content, crash reports and services. Processes are grouped by verified app identity. Those without enough evidence stay separate."
+  },
+  {
+    "source": "树状连线的含义",
+    "en": "What the tree shows"
+  },
+  {
+    "source": "连线表示父进程启动了子进程，启动时间先后顺序已核对。它不能单独证明两个进程属于同一软件；树中只展示当前程序内的启动关系。",
+    "en": "A connection means the parent started the child, with start times checked. It does not prove they belong to the same app. This tree only includes processes within the selected app."
+  },
+  {
+    "source": "关联到其他程序",
+    "en": "Connections to other apps"
+  },
+  {
+    "source": "{0} / {1}（{2}）→ {3}（{4}）：启动来源",
+    "en": "{0} / {1} ({2}) → {3} ({4}): started by"
+  },
+  {
+    "source": "{0}（{1}）→ {2} / {3}（{4}）：启动了其他程序",
+    "en": "{0} ({1}) → {2} / {3} ({4}): started another app"
+  },
+  {
+    "source": "当前快照没有可核实的跨程序启动关系。父进程可能已经退出。",
+    "en": "No verified links to other apps in this snapshot. The parent may have exited."
+  },
+  {
+    "source": "文件版本信息由程序自行声明，不等于验证过的数字签名。未知或无法读取的信息不会补猜。",
+    "en": "File version details are declared by the app, not verified digital signatures. Unavailable information is left unknown."
+  },
+  {
+    "source": "{0}（已退出或未采集）",
+    "en": "{0} (exited or not captured)"
+  },
+  {
+    "source": "{0} | {1}（核实的启动关系）",
+    "en": "{0} | {1} (verified parent)"
+  },
+  {
+    "source": "{0}（父 PID 已复用或时间未知，不能确认关联）",
+    "en": "{0} (PID reused or start time unknown; relationship unverified)"
+  },
+  {
+    "source": "无法读取",
+    "en": "Unavailable"
+  },
+  {
+    "source": "权限不足或已退出",
+    "en": "Access denied or exited"
+  },
+  {
+    "source": "无可读取标题的顶层窗口",
+    "en": "No top-level window with a readable title"
+  },
+  {
+    "source": "没有采集到服务映射",
+    "en": "No associated service captured"
+  },
+  {
+    "source": "{0}  |  PID {1}\n用途：{2}\n父进程：{3}\n启动于：{4}\n状态：{5}\n内存：{6}\n产品：{7}\n文件说明：{8}\n路径：{9}\n账户 SID：{10}\n窗口：{11}\n关联服务：{12}\n保留判定：{13}",
+    "en": "{0}  |  PID {1}\nRole: {2}\nParent: {3}\nStarted: {4}\nStatus: {5}\nMemory: {6}\nProduct: {7}\nDescription: {8}\nPath: {9}\nAccount SID: {10}\nWindows: {11}\nServices: {12}\nProtection: {13}"
+  },
+  {
+    "source": "完整文件路径",
+    "en": "Full file path"
+  },
+  {
+    "source": "进程名",
+    "en": "Process name"
+  },
+  {
+    "source": "安装目录",
+    "en": "Installation folder"
+  },
+  {
+    "source": "需要先恢复配置",
+    "en": "Restore configuration first"
+  },
+  {
+    "source": "请在白名单页恢复默认规则，再进行修改。",
+    "en": "Restore the default rules on the Whitelist page before making changes."
+  },
+  {
+    "source": "保存失败",
+    "en": "Could not save"
+  },
+  {
+    "source": "加入",
+    "en": "Added to"
+  },
+  {
+    "source": "移出",
+    "en": "Removed from"
+  },
+  {
+    "source": "{0}程序白名单：{1}",
+    "en": "{0} app whitelist: {1}"
+  },
+  {
+    "source": "启用",
+    "en": "Enabled"
+  },
+  {
+    "source": "停用",
+    "en": "Disabled"
+  },
+  {
+    "source": "{0}规则：{1}",
+    "en": "{0} rule: {1}"
+  },
+  {
+    "source": "移除规则：",
+    "en": "Removed rule: "
+  },
+  {
+    "source": "规则名称",
+    "en": "Rule name"
+  },
+  {
+    "source": "例如：我的编辑器",
+    "en": "For example: My editor"
+  },
+  {
+    "source": "匹配方式",
+    "en": "Match by"
+  },
+  {
+    "source": "程序身份（从程序列表添加）",
+    "en": "App identity (add from app list)"
+  },
+  {
+    "source": "完整可执行文件路径",
+    "en": "Full executable path"
+  },
+  {
+    "source": "进程名，例如 editor.exe",
+    "en": "Process name, e.g. editor.exe"
+  },
+  {
+    "source": "安装目录（保留整个目录内程序）",
+    "en": "Installation folder (all apps inside)"
+  },
+  {
+    "source": "匹配值",
+    "en": "Match value"
+  },
+  {
+    "source": "同时保留由它启动的子进程",
+    "en": "Also keep verified child processes"
+  },
+  {
+    "source": "进程名规则会匹配所有同名进程。目录规则覆盖该目录及其子目录。包含子进程会扩大保留范围。",
+    "en": "Process-name rules match every process with that name. Folder rules include subfolders. Including child processes broadens protection."
+  },
+  {
+    "source": "选择可执行文件…",
+    "en": "Choose executable..."
+  },
+  {
+    "source": "文件选择器不可用，可手动填写完整路径：",
+    "en": "File picker unavailable. Enter the full path manually: "
+  },
+  {
+    "source": "添加白名单规则",
+    "en": "Add whitelist rule"
+  },
+  {
+    "source": "编辑白名单规则",
+    "en": "Edit whitelist rule"
+  },
+  {
+    "source": "保存",
+    "en": "Save"
+  },
+  {
+    "source": "请填写规则名称和匹配值。",
+    "en": "Enter a rule name and match value."
+  },
+  {
+    "source": "程序身份请在运行程序列表中勾选添加，或选择另外一种匹配方式。",
+    "en": "Add app-identity rules from the running apps list, or choose another match type."
+  },
+  {
+    "source": "保存规则：",
+    "en": "Saved rule: "
+  },
+  {
+    "source": "恢复默认白名单？",
+    "en": "Restore default whitelist?"
+  },
+  {
+    "source": "恢复空白名单会停用当前自定义规则。",
+    "en": "Restoring an empty whitelist deactivates the current custom rules."
+  },
+  {
+    "source": "恢复默认",
+    "en": "Restore defaults"
+  },
+  {
+    "source": "已恢复默认白名单，原配置已备份。",
+    "en": "Default whitelist restored; previous configuration backed up."
+  },
+  {
+    "source": "恢复失败",
+    "en": "Restore failed"
+  },
+  {
+    "source": "导出用途",
+    "en": "Export mode"
+  },
+  {
+    "source": "分享给其他电脑（仅通用程序身份）",
+    "en": "Share with another PC (portable app identities only)"
+  },
+  {
+    "source": "完整备份（包含本机路径与名称规则）",
+    "en": "Full backup (includes local paths and process names)"
+  },
+  {
+    "source": "分享模式可导出 {0} 条通用规则，省略 {1} 条依赖本机路径、进程名称或未知身份的规则。对方没有或未运行的软件只会显示未匹配。\n\n完整备份包含本机盘符和目录；导入其他电脑时，需要先核对才能启用这些规则。",
+    "en": "Sharing exports {0} portable rules and omits {1} rules tied to local paths, process names or unknown identities. Apps missing or not running on the other PC simply remain unmatched.\n\nA full backup includes local drives and folders. Review these rules before enabling them on another PC."
+  },
+  {
+    "source": "导出白名单",
+    "en": "Export whitelist"
+  },
+  {
+    "source": "选择保存位置",
+    "en": "Choose save location"
+  },
+  {
+    "source": "没有可分享的通用规则",
+    "en": "No portable rules to share"
+  },
+  {
+    "source": "本机路径和单独进程名不会自动转换为跨电脑规则。可以导出完整备份，由接收方核对后启用。",
+    "en": "Local paths and process-name rules cannot be converted automatically. Export a full backup so the recipient can review and enable them."
+  },
+  {
+    "source": "分享规则-",
+    "en": "Shared-rules-"
+  },
+  {
+    "source": "完整备份-",
+    "en": "Full-backup-"
+  },
+  {
+    "source": "白名单规则 JSON",
+    "en": "Whitelist JSON"
+  },
+  {
+    "source": "分享规则",
+    "en": "shared rules"
+  },
+  {
+    "source": "完整备份规则",
+    "en": "backup rules"
+  },
+  {
+    "source": "已导出 {0} 条{1}：{2}",
+    "en": "Exported {0} {1}: {2}"
+  },
+  {
+    "source": "规则已导出",
+    "en": "Rules exported"
+  },
+  {
+    "source": "导出失败",
+    "en": "Export failed"
+  },
+  {
+    "source": "未导入规则",
+    "en": "Rules not imported"
+  },
+  {
+    "source": "现有白名单保持不变。",
+    "en": "Your existing whitelist is unchanged. "
+  },
+  {
+    "source": "导入方式",
+    "en": "Import mode"
+  },
+  {
+    "source": "合并到现有规则（相同规则保留现有设置）",
+    "en": "Merge with current rules (keep existing settings for matches)"
+  },
+  {
+    "source": "替换全部现有规则",
+    "en": "Replace all current rules"
+  },
+  {
+    "source": "{0}\n已校验 {1} 条规则；其中 {2} 条本机路径、名称或未知身份规则默认停用。没有或未运行的软件只显示未匹配，不会自动安装或启动。",
+    "en": "{0}\nValidated {1} rules. The {2} rules tied to local paths, names or unknown identities are disabled by default. Missing or stopped apps stay unmatched; nothing is installed or launched."
+  },
+  {
+    "source": "我已核对，按文件设置启用 {0} 条本机规则",
+    "en": "I reviewed the {0} local rules; use their saved enabled state"
+  },
+  {
+    "source": "通用程序身份",
+    "en": "Portable app identity"
+  },
+  {
+    "source": "本机规则，需核对",
+    "en": "Local rule; review on another PC"
+  },
+  {
+    "source": "\n含子进程",
+    "en": "\nIncludes child processes"
+  },
+  {
+    "source": "替换会移除未包含在文件中的保留规则。确认前请检查范围。当前配置会自动保留一份 .bak 备份。",
+    "en": "Replacing removes rules that are absent from this file. Review the scope before confirming. A .bak copy of your current configuration will be saved."
+  },
+  {
+    "source": "预览导入的白名单",
+    "en": "Preview whitelist import"
+  },
+  {
+    "source": "确认导入",
+    "en": "Import"
+  },
+  {
+    "source": "替换",
+    "en": "Replaced"
+  },
+  {
+    "source": "合并",
+    "en": "Merged"
+  },
+  {
+    "source": "从 {0} {1}白名单，当前 {2} 条规则",
+    "en": "{1} whitelist from {0}; now {2} rules"
+  },
+  {
+    "source": "未保留的程序",
+    "en": "Apps outside the whitelist"
+  },
+  {
+    "source": "没有可关闭的进程",
+    "en": "No processes to close"
+  },
+  {
+    "source": "当前选择中的进程均已受保护或已经退出。",
+    "en": "The selected processes are protected or have already exited."
+  },
+  {
+    "source": "将关闭 {0} 个程序中的 {1} 个进程。请先保存文件。确认清单被冻结，新启动的进程不会追加。",
+    "en": "Close {1} processes in {0} apps. Save your work first. The confirmed list is fixed; newly started processes will not be added."
+  },
+  {
+    "source": "等待 5 秒后强制结束仍未退出的进程",
+    "en": "Force remaining processes to exit after 5 seconds"
+  },
+  {
+    "source": "强制结束可能丢失未保存的内容。未勾选时，只发送正常关闭请求，后台无窗口进程可能继续运行。",
+    "en": "Forcing an exit may lose unsaved work. Without this option, only normal close requests are sent; background processes without windows may remain running."
+  },
+  {
+    "source": "同时停止 MyDockFinder 的 MyDock 后台服务",
+    "en": "Also stop the MyDockFinder MyDock service"
+  },
+  {
+    "source": "需要管理员权限；只停止此服务，不修改开机设置。",
+    "en": "Requires administrator access. Stops this service without changing startup settings."
+  },
+  {
+    "source": "确认关闭 | ",
+    "en": "Confirm closing | "
+  },
+  {
+    "source": "确认关闭",
+    "en": "Close apps"
+  },
+  {
+    "source": "已退出或 PID 已复用",
+    "en": "Exited or PID reused"
+  },
+  {
+    "source": "本次清单已处理",
+    "en": "Close requests processed"
+  },
+  {
+    "source": "{0} 项完成，{1} 项未关闭或已跳过。详情见操作记录。",
+    "en": "{0} completed; {1} still running or skipped. See Activity for details."
+  },
+  {
+    "source": "关闭操作异常：",
+    "en": "Closing failed: "
+  },
+  {
+    "source": "操作中止",
+    "en": "Operation stopped"
+  },
+  {
+    "source": "取消",
+    "en": "Cancel"
+  },
+  {
+    "source": "日志未保存",
+    "en": "Could not save activity"
+  },
+  {
+    "source": "白名单",
+    "en": "Whitelist"
+  },
+  {
+    "source": "操作记录",
+    "en": "Activity"
+  },
+  {
+    "source": "设置",
+    "en": "Settings"
+  },
+  {
+    "source": "已安装程序",
+    "en": "Installed apps"
+  },
+  {
+    "source": "运行中的程序",
+    "en": "Running apps"
+  },
+  {
+    "source": "把需要的程序留下，规则由你决定。",
+    "en": "Choose which apps and processes to keep."
+  },
+  {
+    "source": "每次更改和关闭，即时记录。",
+    "en": "Changes and close requests appear as they happen."
+  },
+  {
+    "source": "外观、备份迁移与应用诊断。",
+    "en": "Language, appearance, backups and diagnostics."
+  },
+  {
+    "source": "软件未运行，也可以提前加入白名单。",
+    "en": "Whitelist installed apps before you run them."
+  },
+  {
+    "source": "看清每个程序，让需要的留下。",
+    "en": "See what is running. Keep what you need."
+  },
+  {
+    "source": "无法打开位置",
+    "en": "Could not open location"
+  },
+  {
+    "source": "程序：{0}\n进程：{1}\nPID：{2}\n父 PID：{3}\n用途：{4}\n状态：{5}\n路径：{6}",
+    "en": "App: {0}\nProcess: {1}\nPID: {2}\nParent PID: {3}\nRole: {4}\nStatus: {5}\nPath: {6}"
+  },
+  {
+    "source": "进程信息已复制",
+    "en": "Process details copied"
+  },
+  {
+    "source": "文件路径已复制",
+    "en": "File path copied"
+  },
+  {
+    "source": "路径不可用",
+    "en": "Path unavailable"
+  },
+  {
+    "source": "当前进程的路径无法读取。",
+    "en": "The selected process path could not be read."
+  },
+  {
+    "source": "复制失败",
+    "en": "Copy failed"
+  },
+  {
+    "source": "列表设置已使用默认值",
+    "en": "Using default list settings"
+  },
+  {
+    "source": "列表设置未保存",
+    "en": "List settings not saved"
+  },
+  {
+    "source": "无法打开配置目录",
+    "en": "Could not open configuration folder"
+  },
+  {
+    "source": "诊断信息已复制",
+    "en": "Diagnostics copied"
+  },
+  {
+    "source": "尚未采集",
+    "en": "Not captured yet"
+  },
+  {
+    "source": "Process Keeper {0}\n",
+    "en": "Process Keeper {0}\n"
+  },
+  {
+    "source": "运行环境：{0} | {1}\n",
+    "en": "Runtime: {0} | {1}\n"
+  },
+  {
+    "source": "应用内存：{0}\n",
+    "en": "App memory: {0}\n"
+  },
+  {
+    "source": "当前快照：{0} 个程序 | {1} 个进程\n",
+    "en": "Snapshot: {0} apps | {1} processes\n"
+  },
+  {
+    "source": "采集时间：{0}\n",
+    "en": "Captured: {0}\n"
+  },
+  {
+    "source": "每 2 秒",
+    "en": "Every 2 seconds"
+  },
+  {
+    "source": "已暂停",
+    "en": "Paused"
+  },
+  {
+    "source": "进程自动刷新：{0}\n",
+    "en": "Process auto-refresh: {0}\n"
+  },
+  {
+    "source": "可用",
+    "en": "Available"
+  },
+  {
+    "source": "需要恢复配置",
+    "en": "Restore configuration required"
+  },
+  {
+    "source": "配置状态：{0}\n",
+    "en": "Configuration: {0}\n"
+  },
+  {
+    "source": "操作记录：始终即时显示",
+    "en": "Activity: always live"
+  },
+  {
+    "source": "部分诊断信息暂时无法读取。",
+    "en": "Some diagnostics are temporarily unavailable."
+  },
+  {
+    "source": "诊断信息读取失败",
+    "en": "Could not read diagnostics"
+  },
+  {
+    "source": "分享设置（全部界面设置 + 通用白名单）",
+    "en": "Share settings (all UI settings + portable whitelist)"
+  },
+  {
+    "source": "完整备份（全部设置和本机规则）",
+    "en": "Full backup (all settings and local rules)"
+  },
+  {
+    "source": "包含背景材质、颜色主题、排序、筛选、系统进程显示和实时刷新选项。\n\n分享模式包含 {0} 条通用白名单，省略 {1} 条本机规则。完整备份包含全部 {2} 条规则。\n\n不包含日志、当前搜索内容、进程清单和缓存文件。",
+    "en": "Includes language, background material, theme, sorting, filters, system-process visibility and live refresh.\n\nSharing includes {0} portable rules and omits {1} local rules. A full backup includes all {2} rules.\n\nLogs, search text, process snapshots and cache files are excluded."
+  },
+  {
+    "source": "导出全部设置",
+    "en": "Export all settings"
+  },
+  {
+    "source": "分享设置",
+    "en": "Shared-settings"
+  },
+  {
+    "source": "全部设置备份",
+    "en": "Settings-backup"
+  },
+  {
+    "source": "全部设置 JSON",
+    "en": "Settings JSON"
+  },
+  {
+    "source": "已导出全部设置：",
+    "en": "Exported all settings: "
+  },
+  {
+    "source": "全部设置已导出",
+    "en": "Settings exported"
+  },
+  {
+    "source": "设置导出失败",
+    "en": "Settings export failed"
+  },
+  {
+    "source": "未导入设置",
+    "en": "Settings not imported"
+  },
+  {
+    "source": "白名单处理方式",
+    "en": "Whitelist import mode"
+  },
+  {
+    "source": "合并到现有白名单（保留已有设置）",
+    "en": "Merge with current whitelist (keep existing rule settings)"
+  },
+  {
+    "source": "替换现有白名单",
+    "en": "Replace current whitelist"
+  },
+  {
+    "source": "跟随系统",
+    "en": "System default"
+  },
+  {
+    "source": "浅色",
+    "en": "Light"
+  },
+  {
+    "source": "深色",
+    "en": "Dark"
+  },
+  {
+    "source": "默认顺序",
+    "en": "Default order"
+  },
+  {
+    "source": "名称",
+    "en": "Name"
+  },
+  {
+    "source": "内存占用",
+    "en": "Memory"
+  },
+  {
+    "source": "进程数量",
+    "en": "Process count"
+  },
+  {
+    "source": "全部运行状态",
+    "en": "All states"
+  },
+  {
+    "source": "云母 Mica",
+    "en": "Mica"
+  },
+  {
+    "source": "亚克力磨砂 Acrylic",
+    "en": "Acrylic"
+  },
+  {
+    "source": "纯色背景",
+    "en": "Solid background"
+  },
+  {
+    "source": "显示",
+    "en": "Shown"
+  },
+  {
+    "source": "隐藏",
+    "en": "Hidden"
+  },
+  {
+    "source": "开启",
+    "en": "On"
+  },
+  {
+    "source": "暂停",
+    "en": "Paused"
+  },
+  {
+    "source": "{0}\n\n背景：{1}　主题：{2}\n排序：{3}　筛选：{4}\n系统与服务：{5}　实时刷新：{6}\n\n白名单 {7} 条，本机规则 {8} 条默认停用。现有配置会先备份。",
+    "en": "{0}\n\nBackground: {1} | Theme: {2}\nSort: {3} | Filter: {4}\nSystem / services: {5} | Live refresh: {6}\n\n{7} whitelist rules; {8} local rules disabled by default. Your current configuration will be backed up."
+  },
+  {
+    "source": "确认后立即应用界面设置。规则导入只更新白名单，不触发关闭操作。",
+    "en": "UI settings apply after confirmation. Importing rules only changes the whitelist; it does not close anything."
+  },
+  {
+    "source": "预览全部设置",
+    "en": "Preview settings import"
+  },
+  {
+    "source": "已导入全部设置：",
+    "en": "Imported all settings: "
+  },
+  {
+    "source": "全部设置已应用",
+    "en": "Settings applied"
+  },
+  {
+    "source": "白名单、外观与列表设置已更新，原配置已备份。",
+    "en": "Whitelist, appearance, language and list settings updated. Previous configuration backed up."
+  },
+  {
+    "source": "全部设置未能完整导入",
+    "en": "Settings import incomplete"
+  },
+  {
+    "source": "已关闭背景材质，使用随主题切换的纯色背景。",
+    "en": "Background material is off. Using a solid background that follows your theme."
+  },
+  {
+    "source": "Mica 云母",
+    "en": "Mica"
+  },
+  {
+    "source": "Acrylic 亚克力",
+    "en": "Acrylic"
+  },
+  {
+    "source": "当前 Windows 环境不支持 {0}，已回退为纯色背景。",
+    "en": "{0} is unavailable on this Windows environment. Using a solid background."
+  },
+  {
+    "source": "已启用 {0}。Windows 会根据透明效果、对比度和电源等系统设置自动调整材质。",
+    "en": "{0} is on. Windows adjusts the material to its transparency, contrast and power settings."
+  },
+  {
+    "source": "当前环境无法启用背景材质，已回退为纯色背景。",
+    "en": "Background material could not be enabled. Using a solid background."
+  },
+  {
+    "source": "当前外观已应用，但未能保存；下次启动可能恢复原设置。",
+    "en": "Appearance applied but not saved. It may revert next time."
+  },
+  {
+    "source": "外观设置未保存",
+    "en": "Appearance not saved"
+  },
+  {
+    "source": "{0}\n当前主题：{1}",
+    "en": "{0}\nCurrent theme: {1}"
+  },
+  {
+    "source": "（跟随系统）",
+    "en": " (system default)"
+  },
+  {
+    "source": "列表配置不能超过 16 KiB。",
+    "en": "List settings exceed 16 KiB."
+  },
+  {
+    "source": "列表显示配置无法读取，原文件未修改。",
+    "en": "Could not read list settings. The original file is unchanged. "
+  },
+  {
+    "source": "设置字段必须是对象，不能为 null。",
+    "en": "Settings must be an object, not null."
+  },
+  {
+    "source": "设置包含重复或未知字段：",
+    "en": "Duplicate or unknown setting: "
+  },
+  {
+    "source": "设置缺少必要字段。",
+    "en": "Required settings are missing."
+  },
+  {
+    "source": " 必须是整数。",
+    "en": " must be an integer."
+  },
+  {
+    "source": " 必须是布尔值。",
+    "en": " must be a boolean."
+  },
+  {
+    "source": " 包含未知选项。",
+    "en": " contains an unknown option."
+  },
+  {
+    "source": "设置版本不受支持。",
+    "en": "Unsupported settings version."
+  },
+  {
+    "source": "列表选项无效；系统分类需要同时启用显示系统进程。",
+    "en": "Invalid list settings. The system category requires showing system processes."
+  },
+  {
+    "source": "外观设置包含未知选项。",
+    "en": "Appearance settings contain an unknown option."
+  },
+  {
+    "source": "外观配置过大。",
+    "en": "Appearance configuration is too large."
+  },
+  {
+    "source": "外观配置无法读取，已临时使用默认外观。原文件保留；更改选项或恢复默认可重新保存。",
+    "en": "Could not read appearance settings. Using defaults temporarily; the original file is preserved. Change an option or restore defaults to save again."
+  },
+  {
+    "source": "全部设置包不能超过 2 MiB。",
+    "en": "The settings bundle exceeds 2 MiB."
+  },
+  {
+    "source": "文件不是Process Keeper的全部设置包；仅白名单文件请使用白名单导入。",
+    "en": "This is not a Process Keeper settings bundle. For whitelist-only files, use the Whitelist import command."
+  },
+  {
+    "source": "白名单规则必须是数组。",
+    "en": "Whitelist rules must be an array."
+  },
+  {
+    "source": "全部设置包无法读取，当前设置未修改。",
+    "en": "Could not read the settings bundle. Current settings are unchanged. "
+  },
+  {
+    "source": "设置文件位置被目录占用：",
+    "en": "A directory occupies the settings file path: "
+  },
+  {
+    "source": "设置导入失败，原有配置已保留或恢复。备份目录：{0}。原因：{1}",
+    "en": "Settings import failed. The original configuration was kept or restored. Backup: {0}. Reason: {1}"
+  },
+  {
+    "source": "设置导入失败，部分配置无法自动恢复，请停止关闭操作并从备份恢复。备份目录：{0}。{1}",
+    "en": "Settings import failed and some files could not be restored. Stop closing apps and restore the backup at {0}. {1}"
+  },
+  {
+    "source": "设置包或白名单不能为空。",
+    "en": "The settings bundle and whitelist cannot be null."
+  },
+  {
+    "source": "Process Keeper",
+    "en": "Process Keeper"
+  },
+  {
+    "source": "正在切换Process Keeper实例",
+    "en": "Switching Process Keeper instances"
+  },
+  {
+    "source": "旧窗口尚未退出，或无法读取实例状态。为避免重复操作，当前还没有进入管理页面。请关闭旧窗口后重试。",
+    "en": "The previous window has not exited, or its status cannot be read. Close the previous window and retry to open the management page."
+  },
+  {
+    "source": "重试",
+    "en": "Retry"
+  },
+  {
+    "source": "以管理员身份继续",
+    "en": "Continue as admin"
+  },
+  {
+    "source": "未完成管理员授权。可以重试，或先手动关闭旧版本的Process Keeper。",
+    "en": "Administrator access was not granted. Retry, or close the previous Process Keeper window first."
+  },
+  {
+    "source": "未能完成管理员授权，请重新打开原始单文件「ProcessKeeper.exe」。",
+    "en": "Administrator access could not be requested. Reopen the original portable ProcessKeeper.exe."
+  },
+  {
+    "source": "退出",
+    "en": "Exit"
+  }
+]

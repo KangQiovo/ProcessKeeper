@@ -1,0 +1,7 @@
+[
+  {"source":"此兼容版本不读取打包应用启动项。","en":"Packaged startup apps are unavailable in this compatibility version."},
+  {"source":"此兼容版本仅扫描传统桌面软件，不读取打包应用。","en":"This compatibility version scans desktop software. Packaged apps are unavailable."},
+  {"source":"此兼容版本不支持浏览器实时页面预览；可尝试打开已有窗口。","en":"Live browser preview is unavailable in this compatibility version. Try opening an existing window."},
+  {"source":"无法核实关键进程标志，已保守保护此进程。","en":"The critical-process flag could not be verified. This process is protected."},
+  {"source":"32 位兼容模式不能安全重启 AVD 以恢复页面；仍可显示已经存在的图形窗口。","en":"32-bit compatibility mode cannot safely restart an AVD to restore its page. Existing graphical windows can still be shown."}
+]

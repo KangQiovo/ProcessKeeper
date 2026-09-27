@@ -1,0 +1,6 @@
+[
+ {"source":"语言选项无效。","en":"Invalid language option."},
+ {"source":"当前界面语言：{0}","en":"Current interface language: {0}"},
+ {"source":"界面语言：{0}","en":"Interface language: {0}"},
+ {"source":"语言设置未保存","en":"Language setting not saved"}
+]

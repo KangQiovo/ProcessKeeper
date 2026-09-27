@@ -1,0 +1,40 @@
+name: Source validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Validate source publication and documentation
+        run: ./scripts/Test-Repository.ps1
+      - name: Validate Preview and Stable build gates
+        run: ./scripts/Test-BuildPipeline.ps1
+      - name: Test and publish modern Preview locally
+        run: ./build.ps1
+      - name: Test compatibility core
+        run: dotnet run --project src/ProcessKeeper.Legacy.Core.Tests/ProcessKeeper.Legacy.Core.Tests.csproj -c Release
+      - name: Build compatibility Preview
+        run: dotnet build src/ProcessKeeper.Legacy.App/ProcessKeeper.Legacy.App.csproj -c Release --nologo
+      - name: Test native launcher and update boundaries
+        run: ./src/ProcessKeeper.UniversalLauncher/build-native.ps1 -TestsOnly
+      # No artifact upload, release creation, deployment, or signing step.

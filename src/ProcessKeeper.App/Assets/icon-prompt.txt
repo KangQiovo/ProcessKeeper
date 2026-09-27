@@ -1,0 +1,12 @@
+Generator: Built-in image_gen (image_gen.imagegen), edit mode using the original ProcessKeeper.png.
+Generation date: 2026-09-23
+User refinement: simpler, restrained, flat bookmark mark; remove the earlier glass/3D treatment.
+ICO conversion: Pillow format conversion and resizing only; no SVG or programmatic drawing.
+ICO sizes: 16, 20, 24, 32, 40, 48, 64, 128, 256 pixels.
+
+Use case: style-transfer.
+Asset type: final Windows desktop utility app icon, a square PNG with real transparent alpha background.
+Edit target: the provided Process Keeper icon. Preserve only its meaning as a bookmark that keeps something important.
+Primary request: redesign this into an exceptionally simple, restrained, professional FLAT icon. Replace the entire dimensional object with ONE single-color solid jade-teal bookmark silhouette. The silhouette has a broad upright body, gently rounded top corners, straight sides, and ONE crisp centered V notch cut out of the bottom. Balance the proportions so the mark is clear at 16 and 24 pixels. Use a calm jade-teal close to #24A98E. Keep the outline compact and confident, with approximately 15% clear transparent padding around the outer mark.
+Remove every 3D effect, folded surface, glass appearance, translucency inside the mark, texture, bevel, shine, glow, shadow, gradient, perspective, reflected light, second layer and decorative detail. Use a completely uniform solid fill with no tonal change. The only transparency is the background and the V cutout. Edges should be clean and antialiased.
+This should feel like a mature, understated desktop utility icon, not a glossy AI illustration. Just one unmistakable bookmark shape. No lettering, no symbol inside it, no border, no enclosing tile, no check mark, no pin, no shield, no extra object, no visual flourish, no patterned background. Square PNG on genuine transparent background.

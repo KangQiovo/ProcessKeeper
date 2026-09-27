@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <Company>KangQi</Company>
+    <Authors>KangQi</Authors>
+    <!-- Release is an optimization configuration, not permission to ship a stable release. -->
+    <ProcessKeeperReleaseChannel Condition="'$(ProcessKeeperReleaseChannel)' == ''">Preview</ProcessKeeperReleaseChannel>
+    <DefineConstants Condition="'$(ProcessKeeperReleaseChannel)' == 'Stable'">$(DefineConstants);PROCESSKEEPER_STABLE_RELEASE</DefineConstants>
+    <PowerShellExe Condition="'$(PowerShellExe)' == '' and '$(PROCESSKEEPER_PWSH)' != ''">$(PROCESSKEEPER_PWSH)</PowerShellExe>
+    <PowerShellExe Condition="'$(PowerShellExe)' == ''">pwsh</PowerShellExe>
+  </PropertyGroup>
+</Project>

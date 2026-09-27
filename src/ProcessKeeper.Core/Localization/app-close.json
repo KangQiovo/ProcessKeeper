@@ -1,0 +1,9 @@
+[
+ {"source":"Steam 会先通过客户端正常退出，最多等待 30 秒。请先在游戏中保存并退出；若客户端仍在运行，需要再次确认才能强制结束。","en":"Steam will receive a normal exit request, with up to 30 seconds to finish. Save and exit your games first. If Steam remains running, forcing it to exit requires another confirmation."},
+ {"source":"正在正常退出","en":"Waiting for apps to exit"},
+ {"source":"Steam 尚未完成退出。它可能在等待游戏、下载或同步。Process Keeper 无法确认文件已保存；建议保留运行并在 Steam 内处理提示。","en":"Steam has not finished exiting. It may be waiting for a game, download or sync. Process Keeper cannot confirm that files are saved. Leave it running and check any prompts in Steam."},
+ {"source":"我了解强制结束可能丢失尚未保存或同步的数据","en":"I understand that forcing an exit may lose unsaved or unsynced data"},
+ {"source":"Steam 仍在运行","en":"Steam is still running"},
+ {"source":"强制结束清单内进程","en":"Force listed processes to exit"},
+ {"source":"保留运行","en":"Leave running"}
+]

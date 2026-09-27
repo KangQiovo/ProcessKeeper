@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net462</TargetFramework><LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><PlatformTarget>x86</PlatformTarget>
+    <AssemblyName>ProcessKeeper.Legacy.Core.Tests</AssemblyName><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <PolySharpUseEmbeddedAttributeForGeneratedTypes>false</PolySharpUseEmbeddedAttributeForGeneratedTypes>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="PolySharp" Version="1.16.0" PrivateAssets="all" />
+    <ProjectReference Include="../ProcessKeeper.Legacy.Core/ProcessKeeper.Legacy.Core.csproj" />
+    <Compile Include="../ProcessKeeper.Autorun.Tests/AutorunSafetyVerification.cs" Link="Shared/AutorunSafetyVerification.cs" />
+    <Compile Include="../ProcessKeeper.Autorun.Tests/AutorunAdvancedVerification.cs" Link="Shared/AutorunAdvancedVerification.cs" />
+    <Compile Include="../ProcessKeeper.Autorun.Tests/AutorunApprovalVerification.cs" Link="Shared/AutorunApprovalVerification.cs" />
+    <Compile Include="../ProcessKeeper.Autorun.Tests/AutorunSearchVerification.cs" Link="Shared/AutorunSearchVerification.cs" />
+    <Compile Include="../ProcessKeeper.Autorun.Tests/AutorunOwnershipVerification.cs" Link="Shared/AutorunOwnershipVerification.cs" />
+    <Compile Include="../ProcessKeeper.Tests/SensitiveProcessCloseVerification.cs" Link="Shared/SensitiveProcessCloseVerification.cs" />
+    <Compile Include="../ProcessKeeper.Tests/RiskConfirmationModeVerification.cs" Link="Shared/RiskConfirmationModeVerification.cs" />
+    <Compile Include="../ProcessKeeper.Tests/ReleaseBoundaryVerification.cs" Link="Shared/ReleaseBoundaryVerification.cs" />
+    <Compile Include="../ProcessKeeper.Tests/WhitelistProfilesVerification.cs" Link="Shared/WhitelistProfilesVerification.cs" />
+    <Compile Include="../ProcessKeeper.Tests/HistoricalWhitelistFixture.cs" Link="Shared/HistoricalWhitelistFixture.cs" />
+  </ItemGroup>
+  <Target Name="GenerateInstalledFixture" BeforeTargets="CoreCompile">
+    <Exec Command="&quot;$(PowerShellExe)&quot; -NoProfile -File &quot;$(MSBuildProjectDirectory)\GenerateLegacyFixtures.ps1&quot; -OutputFile &quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath)InstalledSearchVerification.g.cs&quot;" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)InstalledSearchVerification.g.cs" /></ItemGroup>
+  </Target>
+</Project>

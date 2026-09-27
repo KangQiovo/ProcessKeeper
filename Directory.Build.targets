@@ -1,0 +1,6 @@
+<Project>
+  <Target Name="ValidateProcessKeeperReleaseChannel" BeforeTargets="CoreCompile">
+    <Error Condition="'$(ProcessKeeperReleaseChannel)' != 'Preview' and '$(ProcessKeeperReleaseChannel)' != 'Stable'"
+           Text="ProcessKeeperReleaseChannel must be Preview (default) or explicitly Stable." />
+  </Target>
+</Project>

@@ -1,0 +1,502 @@
+[
+  {
+    "source": "运行中的程序",
+    "en": "Running apps"
+  },
+  {
+    "source": "已安装软件",
+    "en": "Installed apps"
+  },
+  {
+    "source": "白名单",
+    "en": "Whitelist"
+  },
+  {
+    "source": "操作记录",
+    "en": "Activity"
+  },
+  {
+    "source": "设置",
+    "en": "Settings"
+  },
+  {
+    "source": "测试版本不代表最终品质",
+    "en": "Test build | Not final quality"
+  },
+  {
+    "source": "本地运行 | 不上传数据",
+    "en": "Runs locally | No uploads"
+  },
+  {
+    "source": "管理员模式",
+    "en": "Administrator mode"
+  },
+  {
+    "source": "此程序需要管理员权限；未授权时不会启动。",
+    "en": "Administrator access is required to manage processes."
+  },
+  {
+    "source": "看清每个程序，让需要的留下。",
+    "en": "See what is running. Keep what you need."
+  },
+  {
+    "source": "搜索程序、进程、PID 或路径",
+    "en": "Search apps, processes, PIDs or paths"
+  },
+  {
+    "source": "搜索运行中的程序",
+    "en": "Search running apps"
+  },
+  {
+    "source": "运行状态筛选",
+    "en": "Filter by running state"
+  },
+  {
+    "source": "全部运行状态",
+    "en": "All states"
+  },
+  {
+    "source": "有可见窗口",
+    "en": "Visible window"
+  },
+  {
+    "source": "已最小化",
+    "en": "Minimized"
+  },
+  {
+    "source": "隐藏后台",
+    "en": "Hidden background"
+  },
+  {
+    "source": "服务与系统",
+    "en": "System and services"
+  },
+  {
+    "source": "排序方式",
+    "en": "Sort by"
+  },
+  {
+    "source": "默认排序",
+    "en": "Default order"
+  },
+  {
+    "source": "按名称",
+    "en": "Name"
+  },
+  {
+    "source": "按内存占用",
+    "en": "Memory use"
+  },
+  {
+    "source": "按进程数量",
+    "en": "Process count"
+  },
+  {
+    "source": "立即刷新",
+    "en": "Refresh now"
+  },
+  {
+    "source": "实时更新",
+    "en": "Live updates"
+  },
+  {
+    "source": "已暂停",
+    "en": "Paused"
+  },
+  {
+    "source": "实时更新进程状态",
+    "en": "Update process state live"
+  },
+  {
+    "source": "每 2 秒刷新；三个程序页面共用此设置。操作记录始终实时。",
+    "en": "Refreshes every 2 seconds. Shared across all three lists; activity history always stays live."
+  },
+  {
+    "source": "正在读取本机进程…",
+    "en": "Reading local processes..."
+  },
+  {
+    "source": "单击展开进程 | 勾选保留",
+    "en": "Click to expand | Select to keep"
+  },
+  {
+    "source": "显示系统与服务进程",
+    "en": "Show system and service processes"
+  },
+  {
+    "source": "默认隐藏系统与服务进程；显示后仍受系统保护。",
+    "en": "System and service processes are hidden by default. They remain protected when shown."
+  },
+  {
+    "source": "查看详情",
+    "en": "View details"
+  },
+  {
+    "source": "先选择程序或进程，再查看详情",
+    "en": "Select an app or process to view details"
+  },
+  {
+    "source": "程序详情",
+    "en": "App details"
+  },
+  {
+    "source": "关闭详情",
+    "en": "Close details"
+  },
+  {
+    "source": "选择一个程序",
+    "en": "Select an app"
+  },
+  {
+    "source": "查看它是什么、关联哪些进程，以及为什么被保留。",
+    "en": "See what it does, its related processes and why it is protected."
+  },
+  {
+    "source": "系统组件始终受保护",
+    "en": "System components are always protected"
+  },
+  {
+    "source": "父子关系表示启动来源，不一定属于同一程序。",
+    "en": "A parent process launched its child; they do not necessarily belong to the same app."
+  },
+  {
+    "source": "进程详情",
+    "en": "Process details"
+  },
+  {
+    "source": "选中进程的详细信息",
+    "en": "Selected process details"
+  },
+  {
+    "source": "启动关系",
+    "en": "Launch relationships"
+  },
+  {
+    "source": "显示窗口",
+    "en": "Show window"
+  },
+  {
+    "source": "恢复已有窗口；只有隐藏主窗口时可尝试显示，没有窗口时查看原因",
+    "en": "Restore an existing window, try revealing a hidden main window, or see why no window is available."
+  },
+  {
+    "source": "更多",
+    "en": "More"
+  },
+  {
+    "source": "尝试显示隐藏窗口…",
+    "en": "Try showing hidden windows..."
+  },
+  {
+    "source": "以原生窗口重启 AVD…",
+    "en": "Restart AVD with native UI..."
+  },
+  {
+    "source": "打开专用界面…",
+    "en": "Open dedicated interface..."
+  },
+  {
+    "source": "最小化窗口…",
+    "en": "Minimize windows..."
+  },
+  {
+    "source": "复制进程信息",
+    "en": "Copy process details"
+  },
+  {
+    "source": "复制文件路径",
+    "en": "Copy file path"
+  },
+  {
+    "source": "打开文件位置",
+    "en": "Open file location"
+  },
+  {
+    "source": "保留此程序",
+    "en": "Keep this app"
+  },
+  {
+    "source": "关闭此程序…",
+    "en": "Close this app..."
+  },
+  {
+    "source": "保留",
+    "en": "Keep"
+  },
+  {
+    "source": "为这个程序添加或移除程序白名单规则",
+    "en": "Add or remove this app's whitelist rule"
+  },
+  {
+    "source": "没有符合筛选条件的程序",
+    "en": "No apps match these filters"
+  },
+  {
+    "source": "正在连接本机进程信息",
+    "en": "Connecting to local process information"
+  },
+  {
+    "source": "关闭前会显示清单并再次确认；不会自动关闭任何程序。",
+    "en": "Review the list and confirm before closing. No apps are closed automatically."
+  },
+  {
+    "source": "关闭未保留程序…",
+    "en": "Close unprotected apps..."
+  },
+  {
+    "source": "搜索已安装软件、发布者或可执行文件",
+    "en": "Search installed apps, publishers or executables"
+  },
+  {
+    "source": "搜索已安装软件",
+    "en": "Search installed apps"
+  },
+  {
+    "source": "重新扫描",
+    "en": "Scan again"
+  },
+  {
+    "source": "更新运行状态",
+    "en": "Update running state"
+  },
+  {
+    "source": "添加软件",
+    "en": "Add app"
+  },
+  {
+    "source": "选择可执行文件…",
+    "en": "Choose executable..."
+  },
+  {
+    "source": "选择程序安装目录…",
+    "en": "Choose app install folder..."
+  },
+  {
+    "source": "管理白名单",
+    "en": "Manage whitelist"
+  },
+  {
+    "source": "尚未扫描",
+    "en": "Not scanned yet"
+  },
+  {
+    "source": "单击展开组件 | 勾选提前保留 | 白名单页调整规则",
+    "en": "Click to expand components | Select to keep | Edit rules in Whitelist"
+  },
+  {
+    "source": "与运行中的程序页共用显示设置。",
+    "en": "Shares the display setting with Running apps."
+  },
+  {
+    "source": "勾选加入白名单；已保留项目可在白名单页调整，避免误删来自其他规则的保护。",
+    "en": "Select to whitelist. Edit protected items in Whitelist to avoid removing protection from other rules."
+  },
+  {
+    "source": "没有符合条件的软件；可以手动添加 EXE 或安装目录。",
+    "en": "No matching apps. You can add an EXE or install folder manually."
+  },
+  {
+    "source": "来源、文件路径与扫描范围",
+    "en": "Source, file paths and scan scope"
+  },
+  {
+    "source": "选择程序或组件查看来源和路径。",
+    "en": "Select an app or component to view its source and path."
+  },
+  {
+    "source": "扫描范围有上限，文件未试运行。手动添加仅保留本次列表，白名单规则会保存。",
+    "en": "Scan scope is limited; files are not launched. Manually added items last for this session; whitelist rules are saved."
+  },
+  {
+    "source": "添加规则",
+    "en": "Add rule"
+  },
+  {
+    "source": "导入规则",
+    "en": "Import rules"
+  },
+  {
+    "source": "导出规则",
+    "en": "Export rules"
+  },
+  {
+    "source": "恢复默认",
+    "en": "Restore defaults"
+  },
+  {
+    "source": "单击展开关联进程 | 规则自动保存 | 系统保护始终生效",
+    "en": "Click to expand processes | Rules save automatically | System protection stays on"
+  },
+  {
+    "source": "启用",
+    "en": "Enabled"
+  },
+  {
+    "source": "规则操作",
+    "en": "Rule actions"
+  },
+  {
+    "source": "编辑规则…",
+    "en": "Edit rule..."
+  },
+  {
+    "source": "移除规则",
+    "en": "Remove rule"
+  },
+  {
+    "source": "记录白名单变更和关闭结果，方便检查未退出或权限不足的程序。",
+    "en": "Tracks whitelist changes and close results so you can review apps that stayed open or lacked permission."
+  },
+  {
+    "source": "语言",
+    "en": "Language"
+  },
+  {
+    "source": "界面语言",
+    "en": "Interface language"
+  },
+  {
+    "source": "自动（系统语言优先）",
+    "en": "Automatic (system language first)"
+  },
+  {
+    "source": "自动模式优先使用系统显示语言，地区与时区仅辅助判断。更改后立即应用，包括首次引导与所有提示。",
+    "en": "Automatic mode prioritizes the Windows display language, with region and time zone as hints. Changes apply immediately to all pages, introductions and notices."
+  },
+  {
+    "source": "外观",
+    "en": "Appearance"
+  },
+  {
+    "source": "窗口背景",
+    "en": "Window background"
+  },
+  {
+    "source": "使用 Windows 原生材质；关闭后显示纯色背景。",
+    "en": "Use native Windows materials, or turn them off for a solid background."
+  },
+  {
+    "source": "启用原生背景效果",
+    "en": "Enable native background effects"
+  },
+  {
+    "source": "背景材质",
+    "en": "Background material"
+  },
+  {
+    "source": "云母 | Mica",
+    "en": "Mica"
+  },
+  {
+    "source": "亚克力磨砂 | Acrylic",
+    "en": "Acrylic"
+  },
+  {
+    "source": "颜色主题",
+    "en": "Color theme"
+  },
+  {
+    "source": "跟随系统",
+    "en": "System default"
+  },
+  {
+    "source": "浅色",
+    "en": "Light"
+  },
+  {
+    "source": "深色",
+    "en": "Dark"
+  },
+  {
+    "source": "恢复默认外观",
+    "en": "Reset appearance"
+  },
+  {
+    "source": "设置即时保存；材质效果遵循 Windows 的透明度与节能设置。",
+    "en": "Changes save immediately. Materials follow Windows transparency and power settings."
+  },
+  {
+    "source": "备份与迁移",
+    "en": "Backup and migration"
+  },
+  {
+    "source": "全部设置",
+    "en": "All settings"
+  },
+  {
+    "source": "导出全部设置…",
+    "en": "Export all settings..."
+  },
+  {
+    "source": "导入全部设置…",
+    "en": "Import all settings..."
+  },
+  {
+    "source": "包含白名单、外观与列表设置。导入前可预览，原配置自动备份。",
+    "en": "Includes whitelist, appearance and list settings. Preview before importing; existing settings are backed up automatically."
+  },
+  {
+    "source": "导出方式",
+    "en": "Export mode"
+  },
+  {
+    "source": "分享设置：省略本机路径规则，对方未安装的软件不会匹配。",
+    "en": "Share settings: omit local path rules. Apps not installed on the other PC will not match."
+  },
+  {
+    "source": "完整备份：保留本机规则，跨电脑导入时默认停用。",
+    "en": "Full backup: keep local rules, disabled by default when imported on another PC."
+  },
+  {
+    "source": "不包含操作记录、当前进程和缓存。白名单页可单独迁移规则。",
+    "en": "Excludes activity history, current processes and caches. Export rules separately from Whitelist."
+  },
+  {
+    "source": "打开配置与备份目录",
+    "en": "Open settings and backup folder"
+  },
+  {
+    "source": "关于与诊断",
+    "en": "About and diagnostics"
+  },
+  {
+    "source": "查看程序与进程关系，保留需要的程序；关闭前始终确认。",
+    "en": "Explore app and process relationships, keep needed apps and confirm before closing others."
+  },
+  {
+    "source": "本地运行 | 管理员权限 | 实时记录",
+    "en": "Runs locally | Administrator access | Live history"
+  },
+  {
+    "source": "运行诊断",
+    "en": "Diagnostics"
+  },
+  {
+    "source": "刷新诊断信息",
+    "en": "Refresh diagnostics"
+  },
+  {
+    "source": "复制诊断信息",
+    "en": "Copy diagnostics"
+  },
+  {
+    "source": "应用运行诊断信息",
+    "en": "App diagnostics"
+  },
+  {
+    "source": "不包含进程名称、路径或白名单内容。",
+    "en": "Excludes process names, paths and whitelist contents."
+  },
+  {
+    "source": "本机文件",
+    "en": "Local files"
+  },
+  {
+    "source": "打开配置与记录目录",
+    "en": "Open settings and history folder"
+  },
+  {
+    "source": "规则、设置、备份和记录与分享的 EXE 分开保存。",
+    "en": "Rules, settings, backups and history are stored separately from the shared EXE."
+  }
+]

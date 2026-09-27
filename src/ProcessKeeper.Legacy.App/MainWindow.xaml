@@ -1,0 +1,58 @@
+<Window x:Class="ProcessKeeper.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:Wpf.Ui.Controls;assembly=Wpf.Ui" Title="Process Keeper" Width="1280" Height="820" MinWidth="900" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource PageBrush}" Foreground="{DynamicResource InkBrush}">
+ <Window.Resources>
+  <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+  <SolidColorBrush x:Key="PageBrush" Color="#F4F5F7"/><SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF"/><SolidColorBrush x:Key="InkBrush" Color="#17191C"/><SolidColorBrush x:Key="MutedBrush" Color="#505763"/>
+  <Style TargetType="Button"><Setter Property="Padding" Value="12,7"/><Setter Property="Margin" Value="0,0,8,0"/><Setter Property="MinHeight" Value="34"/><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="ButtonBackground" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBackground" Property="Opacity" Value="0.78"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+  <Style TargetType="TextBox"><Setter Property="Padding" Value="10,7"/><Setter Property="MinHeight" Value="34"/><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource MutedBrush}"/><Setter Property="BorderThickness" Value="0,0,0,1"/></Style>
+  <Style TargetType="ComboBox"><Setter Property="Padding" Value="8,6"/><Setter Property="MinHeight" Value="34"/></Style>
+  <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
+  <Style x:Key="LanguageCardStyle" TargetType="RadioButton"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Border x:Name="Card" Background="{DynamicResource PanelBrush}" BorderBrush="Transparent" BorderThickness="2" CornerRadius="8" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Card" Property="BorderBrush" Value="#A654B5"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Opacity" Value="0.8"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+  <DataTemplate x:Key="RowTemplate">
+   <Grid Margin="4,6" Background="Transparent">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="36"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <TextBlock Text="{Binding Chevron}" VerticalAlignment="Top" FontSize="20"/>
+    <Image Grid.Column="1" Source="{Binding Icon}" Width="28" Height="28" VerticalAlignment="Top" Margin="0,2,8,0" Loaded="RowIconLoaded"/>
+    <StackPanel Grid.Column="2" Margin="{Binding Indent}">
+     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
+     <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,8,0" TextTrimming="CharacterEllipsis"/>
+     <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Margin="0,4,8,0" Visibility="{Binding Expanded,Converter={StaticResource BoolVisibility}}"/>
+    </StackPanel>
+    <Button Grid.Column="3" Content="{Binding ActionLabel}" IsEnabled="{Binding CanAct}" Visibility="{Binding HasAction,Converter={StaticResource BoolVisibility}}" Click="RowAction" Margin="10,0,0,0" VerticalAlignment="Top"/>
+   </Grid>
+  </DataTemplate>
+ </Window.Resources>
+ <Grid x:Name="Root" Background="{DynamicResource PageBrush}">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <Grid x:Name="RiskNoticeHost"/>
+  <Grid x:Name="Shell" Grid.Row="1">
+   <Grid.ColumnDefinitions><ColumnDefinition x:Name="NavColumn" Width="196"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Grid Background="{DynamicResource PanelBrush}" Margin="0,0,14,0">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel Margin="12,18"><Button Content="☰" HorizontalAlignment="Left" Click="ToggleNavigation"/><TextBlock x:Name="Brand" Text="Process Keeper" FontSize="19" FontWeight="SemiBold" Margin="0,18,0,8"/></StackPanel>
+    <ListBox x:Name="Navigation" Grid.Row="1" SelectionChanged="Navigate" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Stretch"/>
+    <StackPanel Grid.Row="2" Margin="14"><TextBlock x:Name="TestingText" TextWrapping="Wrap" FontSize="11"/><TextBlock x:Name="LocalText" FontSize="11" Margin="0,7,0,0"/></StackPanel>
+   </Grid>
+   <Grid Grid.Column="1" Margin="10,24,24,18">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Border x:Name="CompatibilityNotice" Background="#FFFDE7E9" Padding="12" Margin="0,0,0,14" CornerRadius="6"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="CompatibilityText" Foreground="#FFA4262C" TextWrapping="Wrap" VerticalAlignment="Center"/><Button Grid.Column="1" Content="×" Foreground="#FFA4262C" Background="Transparent" BorderThickness="0" Margin="8,0,0,0" Click="DismissCompatibility"/></Grid></Border>
+    <StackPanel Grid.Row="1"><TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold"/><TextBlock x:Name="SubtitleText" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,16" TextWrapping="Wrap"/></StackPanel>
+    <Grid x:Name="Toolbar" Grid.Row="2" Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="Search" TextChanged="SearchChanged"/><CheckBox x:Name="Live" Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" Checked="LiveChanged" Unchecked="LiveChanged"/></Grid>
+    <WrapPanel x:Name="PresentationOptions" Grid.Row="3" Margin="0,0,0,8">
+     <CheckBox x:Name="GroupPlatforms" Checked="PresentationChanged" Unchecked="PresentationChanged" Margin="0,0,18,4"/>
+     <CheckBox x:Name="HideMicrosoft" Checked="PresentationChanged" Unchecked="PresentationChanged" Margin="0,0,0,4"/>
+    </WrapPanel>
+    <WrapPanel x:Name="Filters" Grid.Row="4" Margin="0,0,0,10">
+     <ComboBox x:Name="Category" SelectionChanged="FilterChanged" MinWidth="124" Margin="0,0,8,6"/><ComboBox x:Name="Sort" SelectionChanged="FilterChanged" MinWidth="130" Margin="0,0,8,6"/><ComboBox x:Name="Drive" SelectionChanged="FilterChanged" MinWidth="100" Margin="0,0,8,6"/>
+     <CheckBox x:Name="ShowSystem" VerticalAlignment="Center" Checked="SystemChanged" Unchecked="SystemChanged" Margin="0,0,12,6"/>
+     <ui:ToggleSwitch x:Name="AutorunMode" Visibility="Collapsed" VerticalAlignment="Center" Checked="AutorunModeChanged" Unchecked="AutorunModeChanged" Margin="0,0,12,6"/>
+     <Button x:Name="RefreshButton" Click="RefreshClick"/><Button x:Name="AddButton" Click="AddClick"/><Button x:Name="CloseButton" Click="CloseClick"/><Button x:Name="ImportButton" Click="ImportRulesClick"/><Button x:Name="ExportButton" Click="ExportRulesClick"/>
+    </WrapPanel>
+    <ListBox x:Name="List" Grid.Row="5" ItemTemplate="{StaticResource RowTemplate}" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" PreviewMouseLeftButtonUp="RowClicked" ContextMenuOpening="RowContextMenu"/>
+    <Grid x:Name="HistoryPage" Grid.Row="5" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><CheckBox x:Name="HistoryAuto" Checked="HistoryAutoChanged" Unchecked="HistoryAutoChanged" Margin="0,0,0,10"/><ScrollViewer x:Name="HistoryScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><TextBlock x:Name="HistoryText" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"/></ScrollViewer></Grid>
+    <ScrollViewer x:Name="SettingsScroll" Grid.Row="5" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"><StackPanel x:Name="SettingsContent" HorizontalAlignment="Stretch"/></ScrollViewer>
+    <TextBlock x:Name="Status" Grid.Row="6" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"/>
+   </Grid>
+  </Grid>
+  <Grid x:Name="Overlay" Grid.Row="1" Background="{DynamicResource PageBrush}" Visibility="Collapsed"/>
+ </Grid>
+</Window>

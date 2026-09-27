@@ -1,0 +1,52 @@
+# Generated products and local build tools. Never commit an application package.
+/App/
+/artifacts/
+/work/
+**/bin/
+**/obj/
+**/build/
+.vs/
+.vscode/
+*.user
+*.suo
+*.exe
+*.dll
+*.pdb
+*.cab
+*.zip
+*.7z
+*.msix
+*.msixbundle
+*.appx
+*.nupkg
+*.package.json
+*.pe.txt
+*.log
+*.tmp
+*.bak
+/build-info.json
+/avd-environment-path-tests.json
+# Historical machine-specific notes remain local; maintained public docs are in docs/.
+/兼容性评估.md
+/验证记录.md
+/隐藏窗口适配候选.md
+# Personal state / credentials (generic rule examples under rules/ are public).
+whitelist.json*
+appearance.json*
+view.json*
+onboarding.json*
+settings.json*
+context.txt
+job.txt
+ready.txt
+commit.txt
+accepted.txt
+execute.txt
+status.txt
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+# Runtime update preferences; keep the unrelated localization source tracked.
+/update.json*

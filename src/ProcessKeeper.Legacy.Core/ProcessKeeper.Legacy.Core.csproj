@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>ProcessKeeper.Legacy.Core</AssemblyName>
+    <RootNamespace>ProcessKeeper.Core</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <PolySharpUseEmbeddedAttributeForGeneratedTypes>false</PolySharpUseEmbeddedAttributeForGeneratedTypes>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
+    <PackageReference Include="PolySharp" Version="1.16.0" PrivateAssets="all" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.CSharp" />
+    <EmbeddedResource Include="../ProcessKeeper.Core/Localization/*.json" Link="Localization/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Localization/*.json" />
+  </ItemGroup>
+  <Target Name="GenerateCompatibleCore" BeforeTargets="CoreCompile">
+    <Exec Command="&quot;$(PowerShellExe)&quot; -NoProfile -File &quot;$(MSBuildProjectDirectory)\GenerateCompatibleCore.ps1&quot; -OutputDirectory &quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath)SharedCore&quot;" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)SharedCore/*.cs" /></ItemGroup>
+  </Target>
+</Project>

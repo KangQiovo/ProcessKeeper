@@ -1,0 +1,57 @@
+# 測試指南
+
+[English](TESTING.md) | [简体中文](TESTING.zh-CN.md) | **繁體中文**
+
+工具鏈要求見[建置指南](BUILDING.zh-TW.md)，執行路線和限制見[相容指南](COMPATIBILITY.zh-TW.md)。以下命令均從儲存庫根目錄，在 Windows 上使用 PowerShell 7 和所需 .NET SDK 執行。不要同時對同一專案的 `obj` 目錄執行多個建置。
+
+## 先執行受改動影響的測試
+
+```powershell
+# 在儲存庫根目錄使用 PowerShell 7 執行。
+dotnet run --project src/ProcessKeeper.Tests/ProcessKeeper.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Settings.Tests/ProcessKeeper.Settings.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
+dotnet run --project src/ProcessKeeper.Search.Tests/ProcessKeeper.Search.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Autorun.Tests/ProcessKeeper.Autorun.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Update.Tests/ProcessKeeper.Update.Tests.csproj -c Release
+```
+
+這些命令只是範例，並非完整發布檢查。其他專案涵蓋已安裝應用程式目錄、圖示、操作記錄、AVD 參數與恢復、特殊視窗、瀏覽器預覽、視窗路由、啟動、單一執行個體、在地化和正常結束。
+
+驗證實際 x86 Framework 後端：
+
+```powershell
+dotnet build src/ProcessKeeper.Legacy.Core.Tests/ProcessKeeper.Legacy.Core.Tests.csproj -c Release
+& ./src/ProcessKeeper.Legacy.Core.Tests/bin/Release/net462/ProcessKeeper.Legacy.Core.Tests.exe
+dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests.csproj -c Release --framework net462
+```
+
+Legacy 測試程式必須在裝有相容 .NET Framework 的 Windows 中實際執行；僅建置成功不代表執行通過。它使用共用測試夾具、隔離檔案和唯讀處理程序身分檢查。選用參數 `--read-only-live` 會列舉真實自動啟動來源但不修改它們，一般迴歸請省略此參數。
+
+## 測試通過說明什麼
+
+| 測試類型 | 能證明的範圍 | 不能據此證明 |
+| --- | --- | --- |
+| 純邏輯或注入後端 | 在受控輸入下的規則比對、狀態轉換、取消、身分拒絕與錯誤處理 | 對所有已安裝軟體都有效 |
+| 隔離檔案或原生測試夾具 | 真實檔案、ACL、管道、視窗 API，以及僅由夾具擁有的輔助處理程序或回送接聽 | 已成功操作使用者真實模擬器、服務或應用程式 |
+| 現代系統上的 Framework x86 執行 | 產生的共用程式碼可在該系統的 32 位元 CLR 中建置執行 | Windows 7/8.1 執行情況或舊硬體效能 |
+| 注入式 UI 測試夾具 | 已測尺寸、佈景主題、語言及 DPI 下的呈現和互動 | 所有顯示驅動程式、螢幕閱讀器或真實顯示器配置 |
+| 主動進行的真實系統測試 | 測試者記錄的具體情境、系統與結果 | 未測系統、無損結束或雲端同步完成 |
+
+更新測試使用假 HTTP 和隔離下載檔案，不安裝真實發布。自動啟動修改測試使用記憶體後端或夾具檔案；選用的實際列舉屬於另一項唯讀範圍。近期邊界迴歸涵蓋損壞備份隔離、逾時虛擬機器查詢數量限制及嚴格的更新資產名稱。共用斷言會在多個專案中執行，不能累加成不同的真實情境。
+
+詳細說明見 [AVD](../src/ProcessKeeper.Avd.Tests/README.zh-TW.md)、[啟動器](../src/ProcessKeeper.Launcher.Tests/README.zh-TW.md)、[搜尋](../src/ProcessKeeper.Search.Tests/README.zh-TW.md)及 [Legacy Core](../src/ProcessKeeper.Legacy.Core/README.zh-TW.md)。
+
+## 建置檢查與手動驗證
+
+`build.ps1` 會執行腳本列出的受控測試並發布現代應用程式，不是僅測試命令。原生啟動器、更新助手和相容介面另有建置要求，請參閱建置指南。一般建置即使使用 Release 組態也仍為 **Preview**；穩定通道參數只用於明確準備的官方 Stable 發布。
+
+驗證真實關閉、自動啟動或更新操作前，使用可捨棄的測試環境及你擁有的處理程序和資料。記錄 UAC 取消、身分複核失敗、中斷後的恢復，以及確切受影響設定。不能把合成成功描述成真實安裝或應用程式結束成功。
+
+真實舊系統和舊硬體驗證仍未完成。不能因為 Framework 程式在新系統執行，就標示 Windows 7 已實測。
+
+## 回報可重現結果
+
+記錄原始碼提交、命令、系統組建號、架構、執行階段、結束代碼、通過/失敗/略過數量，以及相關佈景主題、語言、尺寸和 DPI。非零結束、失敗案例或未解釋的略過不算完整通過。測試數量會變化，應以實際主控台或 JSON 結果為準，不依賴歷史固定總數。
+
+提交中不要包含程式包、快取、完整記錄或個人設定。只附去識別化摘要或最少重現資料。公開 CI 結果連結可在存在後補充，不得用虛構的通過記錄取代缺失連結。

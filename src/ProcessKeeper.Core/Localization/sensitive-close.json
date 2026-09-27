@@ -1,0 +1,21 @@
+[
+  { "source": "强制关闭敏感进程…", "en": "Force close sensitive process…" },
+  { "source": "确认关闭敏感进程", "en": "Confirm sensitive process closure" },
+  { "source": "此操作仅针对下列进程。继续后还需确认风险。", "en": "Only the process below will be affected. Continuing opens a separate risk confirmation." },
+  { "source": "敏感操作 | 二次确认", "en": "Sensitive action | Second confirmation" },
+  { "source": "关闭桌面、开始菜单或输入组件可能导致桌面、任务栏或输入功能暂时不可用，并中断正在进行的任务或丢失未保存的数据。", "en": "Closing desktop, Start menu or input components may temporarily disable the desktop, taskbar or typing, interrupt ongoing tasks, or lose unsaved data." },
+  { "source": "风险与免责说明", "en": "Risk notice and disclaimer" },
+  { "source": "此操作由你主动选择。请先保存工作；Process Keeper 无法保证界面自动恢复，也无法找回丢失的数据。", "en": "You are choosing this action. Save your work first. Process Keeper cannot guarantee automatic interface recovery or restore lost data." },
+  { "source": "我已了解上述风险并确认继续", "en": "I understand these risks and choose to continue" },
+  { "source": "确认强制关闭（{0} 秒）", "en": "Force close ({0}s)" },
+  { "source": "确认强制关闭", "en": "Confirm force close" },
+  { "source": "敏感进程仍受保护", "en": "Sensitive process remains protected" },
+  { "source": "用户确认敏感进程关闭 | {0} | PID {1}", "en": "User confirmed sensitive process closure | {0} | PID {1}" },
+  { "source": "敏感进程关闭结果", "en": "Sensitive process closure result" },
+  { "source": "此进程不属于可单独关闭的桌面组件。", "en": "This process is not an eligible desktop component for individual closure." },
+  { "source": "关键进程标志未明确为非关键，不能关闭。", "en": "The process has not been verified as non-critical and cannot be closed." },
+  { "source": "关联 Windows 服务的进程不能通过此入口关闭。", "en": "Processes associated with Windows services cannot be closed through this action." },
+  { "source": "进程身份已变化或无法唯一核实，请刷新后重试。", "en": "The process identity changed or could not be uniquely verified. Refresh and try again." },
+  { "source": "进程状态已变化，不能通过敏感关闭入口结束。", "en": "The process state changed and it cannot be closed through this sensitive action." },
+  { "source": "系统关键进程始终受保护", "en": "Critical system processes are always protected" }
+]

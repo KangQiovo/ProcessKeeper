@@ -1,0 +1,116 @@
+[
+  { "source": "新配置 {0}", "en": "New profile {0}" },
+  { "source": "当前配置：分享 {0} 条通用规则；完整备份 {1} 条规则。", "en": "Active profile: {0} portable rules for sharing; {1} rules for a full backup." },
+  { "source": "全部设置包含所有白名单配置。", "en": "All-settings exports include every whitelist profile." },
+  { "source": "将清空全部白名单配置，恢复为一套空配置。原始文件会另存为备份，所有自定义规则将不再生效。", "en": "Reset all whitelist profiles to one empty profile. The original file will be backed up; all custom rules will stop applying." },
+  { "source": "确认", "en": "Confirm" },
+  { "source": "包含 {0} 套配置；将整体恢复配置列表。", "en": "Contains {0} profiles. The entire profile list will be restored." },
+  {
+    "source": "白名单配置",
+    "en": "Whitelist profiles"
+  },
+  {
+    "source": "最多五套。选择后可预览编辑；应用后才切换当前白名单。",
+    "en": "Up to five profiles. Select to preview or edit; apply to switch the active whitelist."
+  },
+  {
+    "source": "选择配置",
+    "en": "Select a profile"
+  },
+  {
+    "source": "配置名称",
+    "en": "Profile name"
+  },
+  {
+    "source": "规则 JSON",
+    "en": "Rules JSON"
+  },
+  {
+    "source": "新建空配置",
+    "en": "Create empty"
+  },
+  {
+    "source": "应用此配置",
+    "en": "Apply profile"
+  },
+  {
+    "source": "重命名",
+    "en": "Rename"
+  },
+  {
+    "source": "删除配置",
+    "en": "Delete profile"
+  },
+  {
+    "source": "重新读取",
+    "en": "Reload"
+  },
+  {
+    "source": "检查格式",
+    "en": "Validate"
+  },
+  {
+    "source": "保存规则",
+    "en": "Save rules"
+  },
+  {
+    "source": "格式正确 | {0} 条规则",
+    "en": "Valid format | {0} rules"
+  },
+  {
+    "source": "放弃未保存的编辑？",
+    "en": "Discard unsaved edits?"
+  },
+  {
+    "source": "未保存的规则编辑将被丢弃。",
+    "en": "Unsaved rule edits will be discarded."
+  },
+  {
+    "source": "当前使用",
+    "en": "Active"
+  },
+  {
+    "source": "{0} 条规则 | {1}/5 套配置",
+    "en": "{0} rules | {1}/5 profiles"
+  },
+  {
+    "source": "仅预览，尚未应用",
+    "en": "Preview only | not active"
+  },
+  {
+    "source": "请先重新读取配置。",
+    "en": "Reload the profiles first."
+  },
+  {
+    "source": "白名单配置已保存",
+    "en": "Whitelist profiles saved"
+  },
+  {
+    "source": "已创建空配置，尚未应用。",
+    "en": "Empty profile created; it is not active yet."
+  },
+  {
+    "source": "删除配置？",
+    "en": "Delete this profile?"
+  },
+  {
+    "source": "当前使用的配置不能删除。",
+    "en": "The active profile cannot be deleted."
+  },
+  {
+    "source": "应用此配置？",
+    "en": "Apply this profile?"
+  },
+  {
+    "source": "将切换当前白名单；不会立即关闭任何程序。",
+    "en": "This switches the active whitelist. No application will be closed."
+  },
+  {
+    "source": "保存当前配置？",
+    "en": "Save the active profile?"
+  },
+  {
+    "source": "保存后立即更新白名单保护，不会执行关闭操作。",
+    "en": "Saving updates whitelist protection immediately. It does not close any application."
+  }
+]

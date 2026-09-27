@@ -1,0 +1,39 @@
+name: Bug report / 问题反馈 / 問題回報
+description: Report a reproducible bug, including compatibility and layout problems.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English, 简体中文 and 繁體中文 are welcome. Remove personal paths, tokens and account details from logs and screenshots. Please do not test by closing critical Windows processes.
+  - type: input
+    id: version
+    attributes:
+      label: Version and build date / 版本与构建时间
+      description: Copy from Settings → About. Include Preview or Stable.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows, architecture and UI / 系统、架构和界面
+      placeholder: Windows 11 24H2, x64, modern WinUI, 150% DPI, light theme
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected result / 复现步骤与预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result / 实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots / 已脱敏的记录或截图
+      description: For old hardware, include RAM, GPU and .NET Framework version if available. Do not paste complete process arguments containing credentials.

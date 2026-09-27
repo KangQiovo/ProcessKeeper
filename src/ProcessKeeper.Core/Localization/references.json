@@ -1,0 +1,114 @@
+[
+  {
+    "source": "引用项目",
+    "en": "Referenced projects"
+  },
+  {
+    "source": "项目依赖与图标来源，完整许可见随附的第三方声明。",
+    "en": "Dependencies and icon sources. Full licenses are included in the third-party notices."
+  },
+  {
+    "source": "打开项目主页？",
+    "en": "Open project page?"
+  },
+  {
+    "source": "将在默认浏览器打开以下网址：",
+    "en": "The following address will open in your default browser:"
+  },
+  {
+    "source": "打开浏览器",
+    "en": "Open browser"
+  },
+  {
+    "source": "无法打开浏览器",
+    "en": "Could not open the browser"
+  },
+  {
+    "source": "可复制此网址后在浏览器中打开。",
+    "en": "You can copy this address and open it in a browser."
+  },
+  {
+    "source": "兼容环境",
+    "en": "Compatibility environment"
+  },
+  {
+    "source": "部分视觉效果与功能可能与新系统的体验不同。",
+    "en": "Some visual effects and features may differ from the experience on newer systems."
+  },
+  {
+    "source": "B站",
+    "en": "Bilibili"
+  },
+  {
+    "source": "原生控件与页面交互的参考示例。",
+    "en": "Reference examples for native controls and interactions."
+  },
+  {
+    "source": "现代界面的导航、列表、对话框与提示组件。",
+    "en": "Navigation, lists, dialogs and notifications for the modern interface."
+  },
+  {
+    "source": "窗口、文件选择器与现代 Windows 运行组件。",
+    "en": "Windowing, file pickers and modern Windows runtime components."
+  },
+  {
+    "source": "C# 与 Windows Runtime 接口之间的桥接。",
+    "en": "Interoperation between C# and Windows Runtime APIs."
+  },
+  {
+    "source": "兼容界面的 Fluent 控件、图标与主题资源。",
+    "en": "Fluent controls, icons and themes for the compatibility interface."
+  },
+  {
+    "source": "现代版运行时与通用基础类库。",
+    "en": "The modern runtime and shared base class libraries."
+  },
+  {
+    "source": "规则、设置、记录与通信数据的 JSON 处理。",
+    "en": "JSON handling for rules, settings, records and communication."
+  },
+  {
+    "source": "兼容运行环境中的内存、缓冲区与底层访问支持。",
+    "en": "Memory, buffers and low-level access for the compatibility runtime."
+  },
+  {
+    "source": "兼容运行环境中的异步接口、任务与元组支持。",
+    "en": "Async interfaces, tasks and tuples for the compatibility runtime."
+  },
+  {
+    "source": "基础数值类库；张量组件随 Windows App SDK 附带。",
+    "en": "Numeric libraries; tensor support is bundled with Windows App SDK."
+  },
+  {
+    "source": "随 Windows App SDK 附带；本应用不使用模型推理。",
+    "en": "Bundled with Windows App SDK; this app does not run model inference."
+  },
+  {
+    "source": "随 .NET 运行时提供的压缩支持。",
+    "en": "Compression support bundled with the .NET runtime."
+  },
+  {
+    "source": "随 .NET 运行时提供的压缩与归档支持。",
+    "en": "Compression and archive support bundled with the .NET runtime."
+  },
+  {
+    "source": "GitHub 与 B 站平台图标。",
+    "en": "Platform icons for GitHub and Bilibili."
+  },
+  {
+    "source": "酷安平台图标。",
+    "en": "The Coolapk platform icon."
+  },
+  {
+    "en": "Virtualized layout components included in WPF UI.",
+    "source": "WPF UI 内含的虚拟化布局组件。"
+  },
+  {
+    "en": "Fluent system icons included in WPF UI.",
+    "source": "WPF UI 内含的 Fluent 系统图标。"
+  },
+  {
+    "en": "The compatibility UI framework and control implementations used by WPF UI.",
+    "source": "兼容界面的基础框架与 WPF UI 中采用的控件实现。"
+  }
+]

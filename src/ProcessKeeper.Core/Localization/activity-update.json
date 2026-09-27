@@ -1,0 +1,7 @@
+[
+  { "source": "自动滚动", "en": "Auto-scroll" },
+  { "source": "跟随最新记录", "en": "Follow new records" },
+  { "source": "手动滚动", "en": "Scroll manually" },
+  { "source": "只控制滚动，操作记录始终实时更新。", "en": "Controls scrolling only. Records always update live." },
+  { "source": "操作记录自动滚动：{0}", "en": "Activity log auto-scroll: {0}" }
+]

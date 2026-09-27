@@ -1,0 +1,102 @@
+<Window
+    x:Class="ProcessKeeper.App.StartupWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ProcessKeeper.App"
+    Title="Process Keeper">
+    <Grid x:Name="StartupRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid x:Name="StartupTitleBar" Margin="16,0,140,0" ColumnSpacing="10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Image Source="Assets/ProcessKeeper.png" Width="20" Height="20"/>
+            <TextBlock Grid.Column="1" Text="Process Keeper" VerticalAlignment="Center" FontSize="13"/>
+        </Grid>
+        <StackPanel Grid.Row="1" Margin="24,0,24,0" Spacing="8">
+            <InfoBar x:Name="RiskNotice" IsOpen="False" IsClosable="False" Severity="Error"/>
+            <InfoBar x:Name="CompatibilityNotice" IsOpen="False" IsClosable="True" Severity="Error" Title="{local:Loc Text='兼容环境'}" Message="{local:Loc Text='部分视觉效果与功能可能与新系统的体验不同。'}" CloseButtonClick="DismissCompatibilityNotice"/>
+        </StackPanel>
+        <ScrollViewer x:Name="IntroductionScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled" HorizontalContentAlignment="Stretch">
+            <Grid x:Name="IntroductionContent" Margin="48,24,48,20" MaxWidth="960" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel x:Name="IntroductionStack" Spacing="20">
+                    <FontIcon x:Name="HeroIcon" Glyph="&#xE80F;" FontSize="48" Foreground="{ThemeResource KeeperAccentBrush}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="StepEyebrow" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="StepTitle" Text="{local:Loc Text='欢迎使用Process Keeper'}" FontSize="38" FontWeight="SemiBold" TextWrapping="WrapWholeWords"/>
+                    <TextBlock x:Name="StepDescription" FontSize="18" LineHeight="28" TextWrapping="WrapWholeWords" Foreground="{ThemeResource TextFillColorSecondaryBrush}" MaxWidth="780" HorizontalAlignment="Left"/>
+                    <StackPanel x:Name="LanguageOptions" Spacing="8" Visibility="Collapsed" Margin="0,12,0,0" HorizontalAlignment="Stretch">
+                        <Grid MinHeight="68" Padding="16,12" ColumnSpacing="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Tapped="LanguageCardTapped">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <RadioButton x:Name="AutomaticLanguageRadio" GroupName="StartupLanguage" Tag="0" Checked="LanguageSelectionChanged" MinWidth="0" Width="20" Height="32" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center"><TextBlock x:Name="AutomaticLanguageTitle" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock x:Name="AutomaticLanguageDescription" FontSize="14" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+                        </Grid>
+                        <Grid MinHeight="68" Padding="16,12" ColumnSpacing="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Tapped="LanguageCardTapped">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <RadioButton x:Name="SimplifiedLanguageRadio" GroupName="StartupLanguage" Tag="1" Checked="LanguageSelectionChanged" MinWidth="0" Width="20" Height="32" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center" AutomationProperties.Name="简体中文"/>
+                            <TextBlock Grid.Column="1" Text="简体中文" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Grid MinHeight="68" Padding="16,12" ColumnSpacing="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Tapped="LanguageCardTapped">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <RadioButton x:Name="TraditionalLanguageRadio" GroupName="StartupLanguage" Tag="2" Checked="LanguageSelectionChanged" MinWidth="0" Width="20" Height="32" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center" AutomationProperties.Name="繁體中文"/>
+                            <TextBlock Grid.Column="1" Text="繁體中文" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Grid MinHeight="68" Padding="16,12" ColumnSpacing="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Tapped="LanguageCardTapped">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <RadioButton x:Name="EnglishLanguageRadio" GroupName="StartupLanguage" Tag="3" Checked="LanguageSelectionChanged" MinWidth="0" Width="20" Height="32" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center" AutomationProperties.Name="English"/>
+                            <TextBlock Grid.Column="1" Text="English" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel x:Name="FeatureRows" Spacing="22" Margin="0,18,0,12">
+                        <Grid ColumnSpacing="18">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <FontIcon x:Name="FeatureIcon1" Glyph="&#xE8A5;" FontSize="22" VerticalAlignment="Top" Margin="0,3,0,0" Foreground="{ThemeResource KeeperAccentBrush}"/>
+                            <StackPanel Grid.Column="1" Spacing="4"><TextBlock x:Name="FeatureTitle1" FontSize="18" FontWeight="SemiBold" TextWrapping="WrapWholeWords"/><TextBlock x:Name="FeatureBody1" FontSize="14" TextWrapping="WrapWholeWords" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+                        </Grid>
+                        <Grid ColumnSpacing="18">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <FontIcon x:Name="FeatureIcon2" Glyph="&#xE73E;" FontSize="22" VerticalAlignment="Top" Margin="0,3,0,0" Foreground="{ThemeResource KeeperAccentBrush}"/>
+                            <StackPanel Grid.Column="1" Spacing="4"><TextBlock x:Name="FeatureTitle2" FontSize="18" FontWeight="SemiBold" TextWrapping="WrapWholeWords"/><TextBlock x:Name="FeatureBody2" FontSize="14" TextWrapping="WrapWholeWords" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+                        </Grid>
+                        <Grid ColumnSpacing="18">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <FontIcon x:Name="FeatureIcon3" Glyph="&#xE946;" FontSize="22" VerticalAlignment="Top" Margin="0,3,0,0" Foreground="{ThemeResource KeeperAccentBrush}"/>
+                            <StackPanel Grid.Column="1" Spacing="4"><TextBlock x:Name="FeatureTitle3" FontSize="18" FontWeight="SemiBold" TextWrapping="WrapWholeWords"/><TextBlock x:Name="FeatureBody3" FontSize="14" TextWrapping="WrapWholeWords" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+        <ScrollViewer x:Name="EnvironmentScreen" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled" Visibility="Collapsed">
+            <StackPanel x:Name="EnvironmentPanel" Spacing="18" MaxWidth="780" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="48,24,48,24">
+                <FontIcon x:Name="EnvironmentIcon" Glyph="&#xE9CE;" FontSize="48" HorizontalAlignment="Left" Foreground="{ThemeResource KeeperAccentBrush}"/>
+                <TextBlock x:Name="EnvironmentTitle" Text="{local:Loc Text='运行环境检测'}" FontSize="32" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <ProgressBar x:Name="EnvironmentProgress" IsIndeterminate="True" Height="3"/>
+                <TextBlock x:Name="EnvironmentDetails" Text="{local:Loc Text='正在读取运行环境…'}" TextWrapping="Wrap" FontSize="16"/>
+                <TextBlock x:Name="EnvironmentGraphics" TextWrapping="Wrap" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <HyperlinkButton x:Name="EnvironmentDownload" Content="{local:Loc Text='打开官方下载页面'}" Visibility="Collapsed" HorizontalAlignment="Left"/>
+                <HyperlinkButton x:Name="EnvironmentHelp" Content="{local:Loc Text='查看官方解决说明'}" Visibility="Collapsed" HorizontalAlignment="Left"/>
+                <StackPanel Spacing="10" HorizontalAlignment="Left">
+                    <Button x:Name="EnvironmentRefresh" Content="{local:Loc Text='重新检测'}" Click="RecheckEnvironment"/>
+                    <Button x:Name="EnvironmentContinue" Content="{local:Loc Text='仍然继续'}" Click="ContinueAfterEnvironmentWarning" Visibility="Collapsed"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Grid x:Name="StartupFooter" Grid.Row="3" Margin="48,0,48,32" MaxWidth="960" HorizontalAlignment="Stretch" RowSpacing="16">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <InfoBar x:Name="StartupNotice" IsOpen="False" IsClosable="True" Severity="Warning"/>
+            <Grid Grid.Row="1" ColumnSpacing="20">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <ProgressBar x:Name="StepProgress" Minimum="0" Maximum="5" Value="1" Height="3" VerticalAlignment="Center"/>
+                <TextBlock x:Name="StepCounter" Grid.Column="1" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </Grid>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12">
+                <Button x:Name="BackButton" Content="{local:Loc Text='返回'}" Click="GoBack" MinWidth="104" Visibility="Collapsed"/>
+                <Button x:Name="NextButton" Content="{local:Loc Text='继续'}" Click="GoNext" MinWidth="144" Style="{StaticResource AccentButtonStyle}"/>
+                <Button x:Name="ExitButton" Content="{local:Loc Text='退出'}" Click="ExitStartup" MinWidth="104" Visibility="Collapsed"/>
+                <ProgressRing x:Name="StartupBusy" Width="24" Height="24" IsActive="False" Visibility="Collapsed"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

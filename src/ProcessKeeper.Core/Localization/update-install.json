@@ -1,0 +1,19 @@
+[
+  { "source": "更新下载身份不完整，请重新检查官方发布。", "en": "The update download identity is incomplete. Check the official release again." },
+  { "source": "更新下载身份与固定官方发布不一致，已拒绝安装。", "en": "The update download identity does not match the fixed official release. Installation was refused." },
+  { "source": "请从原始单文件 EXE 启动 Process Keeper 后使用此功能。", "en": "Start Process Keeper from its original single EXE to use this feature." },
+  { "source": "可信启动信息不属于当前运行的应用。", "en": "The trusted launcher context does not belong to this running app." },
+  { "source": "此功能需要已验证的管理员启动器。", "en": "This feature requires the verified administrator launcher." },
+  { "source": "更新文件未通过 SHA-256 校验。", "en": "The update file failed SHA-256 verification." },
+  { "source": "更新版本必须高于当前原始 EXE 的版本。", "en": "The update version must be newer than this original EXE." },
+  { "source": "更新助手在就绪前退出，原始 EXE 未被替换。", "en": "The update helper stopped before it was ready. The original EXE was not replaced." },
+  { "source": "已验证的更新助手已就绪，退出应用后完成更新。", "en": "The verified update helper is ready. Exit this app to finish updating." },
+  { "source": "更新助手未能就绪，原始 EXE 未被替换。", "en": "The update helper did not become ready. The original EXE was not replaced." },
+  { "source": "更新助手未确认接管，应用将保持运行，原始 EXE 不会被替换。", "en": "The update helper did not acknowledge the handoff. The app will stay open and the original EXE will not be replaced." },
+  { "source": "无法启动已验证的快捷方式助手。", "en": "The verified shortcut helper could not start." },
+  { "source": "快捷方式操作尚未完成，请稍后重试。", "en": "The shortcut operation has not finished. Try again later." },
+  { "source": "已创建指向原始 EXE 的桌面快捷方式。", "en": "A desktop shortcut to the original EXE was created." },
+  { "source": "桌面快捷方式已存在并指向原始 EXE。", "en": "The desktop shortcut already points to the original EXE." },
+  { "source": "桌面已有无关的同名快捷方式，未覆盖。", "en": "An unrelated shortcut with the same name already exists and was left unchanged." },
+  { "source": "无法创建桌面快捷方式，原有文件未被覆盖。", "en": "The desktop shortcut could not be created. Existing files were left unchanged." }
+]
