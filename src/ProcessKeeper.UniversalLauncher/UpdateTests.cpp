@@ -82,7 +82,15 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
     check(rejects([&] { ParseLaunchContext(malformed, session, L"unused"); }), L"launch record for a different account is rejected");
     malformed = fields; malformed[9] += L"suffix";
     check(rejects([&] { ParseLaunchContext(malformed, session, L"unused"); }), L"partial numeric process identifiers are rejected");
-    const auto base = self.path().substr(0, self.path().find_last_of(L'\\')) + L"\\update-fixture-" + NewContextId();
+    wchar_t fixtureTemp[MAX_PATH]{};
+    const auto tempLength = GetTempPathW(MAX_PATH, fixtureTemp);
+    if (!tempLength || tempLength >= MAX_PATH) Fail(L"Cannot locate the explicitly routed update fixture TEMP.");
+    // Packaging nests the native build beneath a unique work directory. Keep fixtures
+    // in the explicitly routed short TEMP so their Win7 paths stay below MAX_PATH.
+    const auto tempRoot = FullPath(std::wstring(fixtureTemp));
+    const auto base = FullPath(tempRoot + L"update-fixture-" + NewContextId());
+    if (base.rfind(tempRoot, 0) != 0 || base.size() + 128 >= MAX_PATH)
+        throw Failure(L"Update fixtures require an explicitly routed shorter TEMP within Win7 path limits.");
     check(CreateDirectoryW(base.c_str(), nullptr) != FALSE, L"update fixture creates only a new isolated workspace directory");
     auto path = [&](const wchar_t* name) { return base + L"\\" + name; };
     for (int run = 0; run < 5; ++run) {
@@ -169,9 +177,11 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
     check(!MatchesInstallation(mismatched, installed, PackageTarget::Windows10x64) && !MatchesInstallation(registration, path(L"renamed.exe"), PackageTarget::Windows10x64),
         L"different package marker or portable filename never modifies an installed registration");
     for (unsigned scenario = 0; scenario < 5; ++scenario) {
-        const auto cache = path((L"cache-" + std::to_wstring(scenario)).c_str()); CreateDirectoryW(cache.c_str(), nullptr);
+        const auto cache = path((L"cache-" + std::to_wstring(scenario)).c_str());
+        if (!CreateDirectoryW(cache.c_str(), nullptr)) { const auto error = GetLastError(); Fail((L"Cannot create fixture cache directory: " + cache).c_str(), error); }
         const auto identity = std::wstring(64, L'a'), root = cache + L"\\" + identity + L"-modern", modern = root + L"\\modern";
-        CreateDirectoryW(root.c_str(), nullptr); CreateDirectoryW(modern.c_str(), nullptr);
+        if (!CreateDirectoryW(root.c_str(), nullptr)) { const auto error = GetLastError(); Fail((L"Cannot create fixture payload directory: " + root).c_str(), error); }
+        if (!CreateDirectoryW(modern.c_str(), nullptr)) { const auto error = GetLastError(); Fail((L"Cannot create fixture application directory: " + modern).c_str(), error); }
         const auto app = modern + L"\\ProcessKeeper.exe", helper = modern + L"\\ProcessKeeper.Updater.exe";
         Bytes(app, "owned cache app"); Bytes(helper, "owned cache helper");
         Manifest old; old.identity = identity;
@@ -195,13 +205,13 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         check(GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES && GetFileAttributesW(receipt.c_str()) == INVALID_FILE_ATTRIBUTES &&
             GetFileAttributesW(foreign.c_str()) != INVALID_FILE_ATTRIBUTES, L"deferred cleanup deletes only one fully verified old payload tree and its owned receipt");
     }
-    wchar_t fixtureTemp[MAX_PATH]{}; if (!GetTempPathW(MAX_PATH, fixtureTemp)) Fail(L"Cannot locate the E-only guard fixture directory.");
-    const auto guardCache = FullPath(std::wstring(fixtureTemp) + L"setup-guard-" + NewContextId().substr(0, 8)), sidRoot = guardCache + L"\\" + UserSid(), guardSessions = sidRoot + L"\\sessions";
-    check(guardCache.rfind(L"E:\\", 0) == 0, L"setup guard fixture temp path is explicitly on E");
-    CreateDirectoryW(guardCache.c_str(), nullptr); CreateDirectoryW(sidRoot.c_str(), nullptr); CreateDirectoryW(guardSessions.c_str(), nullptr);
+    const auto guardCache = FullPath(tempRoot + L"setup-guard-" + NewContextId().substr(0, 8)), sidRoot = guardCache + L"\\" + UserSid(), guardSessions = sidRoot + L"\\sessions";
     const auto payloadRoot = sidRoot + L"\\" + std::wstring(64, L'a') + L"-legacy", payloadFolder = payloadRoot + L"\\legacy";
-    CreateDirectoryW(payloadRoot.c_str(), nullptr); CreateDirectoryW(payloadFolder.c_str(), nullptr);
     const auto guardApp = payloadFolder + L"\\ProcessKeeper.exe", guardHelper = payloadFolder + L"\\ProcessKeeper.Updater.exe";
+    check(guardCache.rfind(tempRoot, 0) == 0 && guardHelper.size() < MAX_PATH && guardSessions.size() + 80 < MAX_PATH - 2,
+        L"setup guard fixtures stay in routed TEMP within Win7 path limits");
+    CreateDirectoryW(guardCache.c_str(), nullptr); CreateDirectoryW(sidRoot.c_str(), nullptr); CreateDirectoryW(guardSessions.c_str(), nullptr);
+    CreateDirectoryW(payloadRoot.c_str(), nullptr); CreateDirectoryW(payloadFolder.c_str(), nullptr);
     check(CopyFileW(self.path().c_str(), guardApp.c_str(), TRUE) && CopyFileW(self.path().c_str(), guardHelper.c_str(), TRUE), L"setup guard executable fixtures are isolated copies of the inert native test binary");
     // The word Updater triggers Windows' legacy installer heuristic for an unmanifested
     // x86 fixture. Explicit asInvoker keeps this inert child non-elevated.
