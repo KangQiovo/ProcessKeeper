@@ -10,6 +10,8 @@ void Check(bool condition, string description)
 { if (!condition) throw new Exception("FAIL: " + description); count++; Console.WriteLine("PASS: " + description); }
 Check(IntPtr.Size == 4, "fixture actually runs in a 32-bit CLR process");
 LegacyCapabilitiesVerification.Run(Check);
+TimeDisplayVerification.Run(Check);
+BuildInfoVerification.Run(Check);
 AutorunSafetyVerification.Run(Check);
 AutorunAdvancedVerification.Run(Check);
 AutorunApprovalVerification.Run(Check);

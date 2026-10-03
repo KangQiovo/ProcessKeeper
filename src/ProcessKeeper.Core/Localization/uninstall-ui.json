@@ -1,0 +1,610 @@
+[
+  {
+    "source": "仅整理显示；卸载操作仍针对所选软件的具体版本。",
+    "en": "Display grouping only; uninstall actions apply to the selected software version."
+  },
+  {
+    "source": "展开查看此软件的所有版本与登记。",
+    "en": "Expand to see this application's versions and registrations."
+  },
+  {
+    "source": "{0} 个版本或登记",
+    "en": "{0} versions or registrations"
+  },
+  {
+    "source": "{0} 位登记",
+    "en": "{0}-bit registration"
+  },
+  {
+    "source": "全部应用",
+    "en": "All applications"
+  },
+  {
+    "source": "系统应用",
+    "en": "System applications"
+  },
+  {
+    "source": "第三方应用",
+    "en": "Third-party applications"
+  },
+  {
+    "source": "驱动与运行库",
+    "en": "Drivers and runtimes"
+  },
+  {
+    "source": "复制名称",
+    "en": "Copy name"
+  },
+  {
+    "source": "复制路径",
+    "en": "Copy path"
+  },
+  {
+    "source": "未找到可访问的应用目录。",
+    "en": "No accessible application location was found."
+  },
+  {
+    "source": "规则库",
+    "en": "Rule catalog"
+  },
+  {
+    "source": "检查规则更新",
+    "en": "Check catalog updates"
+  },
+  {
+    "source": "更新规则库",
+    "en": "Update catalog"
+  },
+  {
+    "source": "建议规则库 {0} | {1} | {2} 条",
+    "en": "Suggestion catalog {0} | {1} | {2} rules"
+  },
+  {
+    "source": "当前使用内置规则。",
+    "en": "Using built-in rules."
+  },
+  {
+    "source": "当前使用已验证签名的更新规则。",
+    "en": "Using a verified, signed catalog update."
+  },
+  {
+    "source": "只更新建议标签，不是病毒查杀库；不会上传软件清单。",
+    "en": "Updates suggestion labels, not antivirus signatures. Your application inventory is never uploaded."
+  },
+  {
+    "source": "正在检查官方规则库…",
+    "en": "Checking the official catalog…"
+  },
+  {
+    "source": "官方提供的规则版本与当前一致。",
+    "en": "The official server provides the same catalog revision as the current one."
+  },
+  {
+    "source": "可用规则版本：{0} | {1}。确认更新后生效。",
+    "en": "Available catalog: {0} | {1}. Confirm the update to apply it."
+  },
+  {
+    "source": "更新建议规则库？",
+    "en": "Update the suggestion catalog?"
+  },
+  {
+    "source": "新规则版本：{0} | {1} 条",
+    "en": "New catalog: {0} | {1} rules"
+  },
+  {
+    "source": "更新将重新标记当前列表中的建议卸载项，不会卸载任何软件。",
+    "en": "The update refreshes suggestion labels in the current list. It does not uninstall any software."
+  },
+  {
+    "source": "规则库已更新，建议标签已刷新。",
+    "en": "Catalog updated. Suggestion labels refreshed."
+  },
+  {
+    "source": "规则更新已取消。",
+    "en": "Catalog update cancelled."
+  },
+  {
+    "source": "规则更新网络超时，当前规则保持不变。",
+    "en": "Catalog request timed out. Current rules are unchanged."
+  },
+  {
+    "source": "规则更新失败：",
+    "en": "Catalog update failed: "
+  },
+  {
+    "source": "规则缓存格式无效，继续保留当前规则。",
+    "en": "Catalog cache is invalid. Current trusted rules are retained."
+  },
+  {
+    "source": "规则版本未增加，未重复应用。",
+    "en": "The catalog revision did not increase. It was not applied again."
+  },
+  {
+    "source": "规则版本倒退，已拒绝更新并保留当前规则。",
+    "en": "An older catalog revision was rejected. Current rules are retained."
+  },
+  {
+    "source": "相同规则修订号的内容不一致，已拒绝更新。",
+    "en": "Content changed without a new catalog revision. The update was rejected."
+  },
+  {
+    "source": "规则缓存路径包含重定向，已停止写入。",
+    "en": "The catalog cache path contains a redirect. Writing was stopped."
+  },
+  {
+    "source": "规则下载大小无效，已保留当前规则。",
+    "en": "Catalog download size is invalid. Current rules are retained."
+  },
+  {
+    "source": "规则签名验证失败，已保留当前规则。",
+    "en": "Catalog signature verification failed. Current rules are retained."
+  },
+  {
+    "source": "规则库架构、来源或匹配方式不受支持。",
+    "en": "Unsupported catalog schema, repository or matching method."
+  },
+  {
+    "source": "规则修订号无效。",
+    "en": "Invalid catalog revision."
+  },
+  {
+    "source": "规则版本格式无效。",
+    "en": "Invalid catalog version format."
+  },
+  {
+    "source": "规则发布日期无效。",
+    "en": "Invalid catalog publication date."
+  },
+  {
+    "source": "规则条目数量无效。",
+    "en": "Invalid number of catalog rules."
+  },
+  {
+    "source": "规则标识重复或无效。",
+    "en": "Duplicate or invalid catalog rule ID."
+  },
+  {
+    "source": "规则证据类型无效。",
+    "en": "Invalid catalog evidence type."
+  },
+  {
+    "source": "规则别名数量无效。",
+    "en": "Invalid number of catalog aliases."
+  },
+  {
+    "source": "规则名称重复、未规范化或超过上限。",
+    "en": "Catalog names are duplicated, not normalized or exceed the limit."
+  },
+  {
+    "source": "规则证据链接或关注名单来源无效。",
+    "en": "Invalid evidence link or watchlist provenance."
+  },
+  {
+    "source": "规则来源日期无效。",
+    "en": "Invalid evidence date."
+  },
+  {
+    "source": "规则 JSON 格式无效。",
+    "en": "Invalid catalog JSON format."
+  },
+  {
+    "source": "规则 JSON 包含未知或重复字段。",
+    "en": "Catalog JSON contains unknown or duplicate fields."
+  },
+  {
+    "source": "规则 JSON 缺少必需字段。",
+    "en": "Catalog JSON is missing required fields."
+  },
+  {
+    "source": "规则字段类型无效。",
+    "en": "Invalid catalog field type."
+  },
+  {
+    "source": "规则字段长度或字符无效。",
+    "en": "Invalid catalog field length or characters."
+  },
+  {
+    "source": "规则更新地址不受支持。",
+    "en": "Unsupported catalog update address."
+  },
+  {
+    "source": "规则更新请求失败，HTTP {0}。当前规则保持不变。",
+    "en": "Catalog request failed with HTTP {0}. Current rules are unchanged."
+  },
+  {
+    "source": "规则下载超过大小上限。",
+    "en": "Catalog download exceeds the size limit."
+  },
+  {
+    "source": "详细结果超过显示上限，仅显示汇总。",
+    "en": "Detailed results exceed the display limit; only the summary is shown."
+  },
+  {
+    "source": "建议项目超过单次核对上限 {0} 项，整批未执行。请先单独卸载部分项目后重新扫描。",
+    "en": "Suggested entries exceed the per-batch review limit of {0}. Nothing was executed. Review and uninstall some entries individually, then scan again."
+  },
+  {
+    "source": "确认内容超过 {0} 字符上限，整批未执行。请先单独核对相关项目。",
+    "en": "Confirmation content exceeds the {0}-character limit. Nothing was executed. Review the affected entries individually."
+  },
+  {
+    "source": "卸载所有建议卸载的应用",
+    "en": "Uninstall all suggested applications"
+  },
+  {
+    "source": "停止批量卸载",
+    "en": "Stop batch uninstall"
+  },
+  {
+    "source": "批量卸载",
+    "en": "Batch uninstall"
+  },
+  {
+    "source": "正在逐个卸载，请完成当前软件的卸载页面。",
+    "en": "Uninstalling one at a time. Complete the current application's uninstall window."
+  },
+  {
+    "source": "已完成：{0} | 未确认：{1} | 未执行：{2}",
+    "en": "Completed: {0} | Unconfirmed: {1} | Not started: {2}"
+  },
+  {
+    "source": "已完成",
+    "en": "Completed"
+  },
+  {
+    "source": "未确认",
+    "en": "Unconfirmed"
+  },
+  {
+    "source": "未执行",
+    "en": "Not started"
+  },
+  {
+    "source": "批量卸载已停止，未执行后续项目。",
+    "en": "Batch uninstall stopped. Later entries were not started."
+  },
+  {
+    "source": "卸载器退出代码：{0}。批量操作已停止，请检查是否需要重启或手动处理。",
+    "en": "Uninstaller exit code: {0}. The batch stopped; check whether a restart or manual action is needed."
+  },
+  {
+    "source": "当前扫描中没有可批量卸载的建议项目。",
+    "en": "This scan contains no eligible suggested applications for batch uninstall."
+  },
+  {
+    "source": "范围为当前完整扫描中的建议卸载项目，不受搜索或筛选影响。新增项目不会加入本次操作。",
+    "en": "This uses suggested applications from the complete current scan, regardless of search or filters. Newly discovered entries will not join this operation."
+  },
+  {
+    "source": "将卸载 {0} 项：",
+    "en": "Applications to uninstall ({0}):"
+  },
+  {
+    "source": "已排除 {0} 个只读或系统项目：",
+    "en": "Excluded read-only or system entries ({0}):"
+  },
+  {
+    "source": "扫描结果可能不完整，仅处理下面明确列出的项目。",
+    "en": "The scan may be incomplete. Only the explicitly listed targets will be processed."
+  },
+  {
+    "source": "第 1 / 3 步 | 核对卸载清单",
+    "en": "Step 1 / 3 | Review the uninstall list"
+  },
+  {
+    "source": "第 2 / 3 步 | 风险与免责声明",
+    "en": "Step 2 / 3 | Risks and disclaimer"
+  },
+  {
+    "source": "第 3 / 3 步 | 最终确认卸载",
+    "en": "Step 3 / 3 | Final uninstall confirmation"
+  },
+  {
+    "source": "批量卸载已取消，未启动任何卸载程序。",
+    "en": "Batch uninstall cancelled. No uninstallers were started."
+  },
+  {
+    "source": "批量核验失败，未启动任何卸载程序。",
+    "en": "Batch verification failed. No uninstallers were started."
+  },
+  {
+    "source": "以下清单、注册位置、卸载命令和 SHA-256 已固定。确认后逐个打开普通卸载器；每次启动前再次核验，任何变化或未确认结果都会停止后续。",
+    "en": "The following targets, registrations, uninstall commands and SHA-256 hashes are fixed. Confirmation opens normal uninstallers one at a time. Each is checked again before launch; a change or unconfirmed result stops the remaining entries."
+  },
+  {
+    "source": "建议标签来自用户关注名单或历史公开报告，不是当前文件的病毒鉴定。请自行核对来源、版本及是否仍需使用，由你决定是否卸载。\n\n卸载可能永久移除文件、设置或关联功能，影响其他软件，要求重启，并可能保留残留文件。请先保存工作并备份重要数据。Process Keeper 不能保证厂商卸载器完整或安全地完成操作。\n\n本次只逐个运行已注册的普通卸载器，需要你完成软件自身的页面。不会强删文件、注册表或驱动。结果无法确认时停止后续项目；停止等待或关闭本应用不会终止已经启动的卸载器。\n\n即使处于无视风险模式，这三次确认也不会跳过。确认即表示你已阅读以上说明，并自主决定继续。",
+    "en": "Suggested labels reflect the user's watchlist or historical public reports, not a virus verdict on the current files. Check the origin, version and whether you still need each application. You decide whether to uninstall.\n\nUninstalling may permanently remove files, settings or related features, affect other software, require a restart and leave remnants. Save your work and back up important data first. Process Keeper cannot guarantee that vendor uninstallers finish completely or safely.\n\nOnly registered normal uninstallers run, one at a time. Complete each application's own window. No files, registry entries or drivers are forcibly deleted. Unconfirmed results stop later entries. Stopping observation or closing this app does not terminate an uninstaller that has already started.\n\nThese three confirmations remain mandatory even in Ignore risks mode. Confirming means you have read this notice and choose to continue."
+  },
+  {
+    "source": "应用卸载",
+    "en": "Uninstall"
+  },
+  {
+    "source": "查看常规与隐藏卸载项，确认后移除不需要的软件。",
+    "en": "Review regular and hidden uninstall entries, then confirm which software to remove."
+  },
+  {
+    "source": "隐藏注册项",
+    "en": "Hidden registrations"
+  },
+  {
+    "source": "常规注册项",
+    "en": "Regular registrations"
+  },
+  {
+    "source": "建议卸载",
+    "en": "Suggested removal"
+  },
+  {
+    "source": "卸载",
+    "en": "Uninstall"
+  },
+  {
+    "source": "注册的静默卸载",
+    "en": "Registered silent uninstall"
+  },
+  {
+    "source": "全部卸载项",
+    "en": "All uninstall entries"
+  },
+  {
+    "source": "可卸载",
+    "en": "Uninstall available"
+  },
+  {
+    "source": "搜索软件、发布者或卸载路径",
+    "en": "Search software, publisher or uninstaller path"
+  },
+  {
+    "source": "选择软件后查看卸载入口。",
+    "en": "Select software to inspect its uninstall entry."
+  },
+  {
+    "source": "{0} 个卸载项目",
+    "en": "{0} uninstall entries"
+  },
+  {
+    "source": "结果已截断",
+    "en": "Results truncated"
+  },
+  {
+    "source": "确认卸载此软件？",
+    "en": "Uninstall this software?"
+  },
+  {
+    "source": "确认注册的静默卸载？",
+    "en": "Confirm registered silent uninstall?"
+  },
+  {
+    "source": "静默卸载可能直接移除软件且无法撤销。确定继续？",
+    "en": "Silent uninstall may remove the software immediately and cannot be undone. Continue?"
+  },
+  {
+    "source": "将运行此软件注册的卸载程序，请在其页面中完成操作。",
+    "en": "The registered uninstaller will open. Complete the removal in its own interface."
+  },
+  {
+    "source": "将使用软件注册的静默卸载命令，可能不再显示软件自身的确认页面。",
+    "en": "The registered silent uninstall command may run without another confirmation from the software."
+  },
+  {
+    "source": "请先保存工作。卸载程序可能请求重启；取消等待不会停止已启动的卸载程序。",
+    "en": "Save your work first. The uninstaller may request a restart. Stopping observation will not stop an uninstaller that has already started."
+  },
+  {
+    "source": "读取当前用户和系统的 32/64 位卸载注册项，包括隐藏项目。未注册软件、商店应用和残留文件不保证包含。",
+    "en": "Reads current-user and machine 32/64-bit uninstall registrations, including hidden entries. Unregistered software, Store apps and leftover files may not be included."
+  },
+  {
+    "source": "建议卸载按用户关注名单标记，不代表恶意软件判定。",
+    "en": "Suggested removal follows the user's watchlist; it is not a malware verdict."
+  },
+  {
+    "source": "仅使用软件已注册的静默卸载命令，不强删文件、注册表或驱动。",
+    "en": "Uses only the software's registered silent uninstall command. No forced deletion of files, registry entries or drivers."
+  },
+  {
+    "source": "卸载操作已取消。",
+    "en": "Uninstall operation cancelled."
+  },
+  {
+    "source": "请等待当前卸载操作完成。",
+    "en": "Wait for the current uninstall operation to finish."
+  },
+  {
+    "source": "卸载注册信息或程序文件已变化，请重新扫描。",
+    "en": "The uninstall registration or executable changed. Scan again."
+  },
+  {
+    "source": "没有可验证的注册卸载命令。",
+    "en": "No supported registered uninstall command is available."
+  },
+  {
+    "source": "卸载程序未启动。",
+    "en": "The uninstaller did not start."
+  },
+  {
+    "source": "已停止等待。卸载程序可能仍在运行，请稍后重新扫描确认。",
+    "en": "Observation stopped. The uninstaller may still be running. Scan again later to verify."
+  },
+  {
+    "source": "卸载程序已运行，但无法核实注册项状态。请重新扫描。",
+    "en": "The uninstaller ran, but its registration could not be checked. Scan again."
+  },
+  {
+    "source": "原卸载注册项已移除。此结果不代表所有残留文件均已清理。",
+    "en": "The original uninstall registration was removed. This does not prove that every leftover file was cleaned up."
+  },
+  {
+    "source": "卸载注册项仍存在。请完成软件卸载页面，或重新扫描确认；未执行额外清理。",
+    "en": "The uninstall registration still exists. Complete the uninstaller or scan again. No additional cleanup was performed."
+  },
+  {
+    "source": "部分卸载注册项无法读取。",
+    "en": "Some uninstall registrations could not be read."
+  },
+  {
+    "source": "卸载项目已达到扫描上限，请缩小筛选范围或使用 Windows 设置。",
+    "en": "The uninstall scan limit was reached. Some entries may be missing; use Windows Settings for additional entries."
+  },
+  {
+    "source": "卸载注册值格式不受支持。",
+    "en": "The uninstall registration value format is unsupported."
+  },
+  {
+    "source": "系统更新或子组件注册项仅供查看。",
+    "en": "System update and child-component registrations are view only."
+  },
+  {
+    "source": "卸载操作需要管理员权限。",
+    "en": "Administrator permission is required to uninstall."
+  },
+  {
+    "source": "Windows Installer 无法确认此产品已安装，未执行卸载。",
+    "en": "Windows Installer could not confirm this product is installed. Uninstall was not started."
+  },
+  {
+    "source": "Windows Installer 产品身份与卸载注册项不一致，未执行。",
+    "en": "The Windows Installer product identity does not match this registration. Nothing was started."
+  },
+  {
+    "source": "卸载注册位置无效。",
+    "en": "The uninstall registration location is invalid."
+  },
+  {
+    "source": "卸载程序文件无法锁定或身份已变化，未执行。",
+    "en": "The uninstaller could not be locked or its identity changed. Nothing was started."
+  },
+  {
+    "source": "请先核对卸载器信息并确认。",
+    "en": "Review the uninstaller information and confirm first."
+  },
+  {
+    "source": "卸载器过大或无法读取，未执行。",
+    "en": "The uninstaller is too large or could not be read. Nothing was started."
+  },
+  {
+    "source": "Windows 保护的系统卸载组件",
+    "en": "Windows-protected system uninstall component"
+  },
+  {
+    "source": "已验证的数字签名",
+    "en": "Verified digital signature"
+  },
+  {
+    "source": "Windows 系统卸载组件无法验证，未执行。",
+    "en": "The Windows system uninstall component could not be verified. Nothing was started."
+  },
+  {
+    "source": "未签名或签名无法验证。仅在确认信任此注册卸载器时继续。",
+    "en": "Unsigned or signature could not be verified. Continue only if you trust this registered uninstaller."
+  },
+  {
+    "source": "此软件注册了 NoRemove，通常隐藏移除按钮。本次仅使用已有卸载器，不修改此注册标志。",
+    "en": "This software registered NoRemove, which usually hides its Remove button. Only its existing uninstaller will be used; this registration flag will not be changed."
+  },
+  {
+    "source": "建议强力卸载",
+    "en": "Strong removal recommendation"
+  },
+  {
+    "source": "用户关注名单",
+    "en": "User watchlist"
+  },
+  {
+    "source": "公开 PUA 报告",
+    "en": "Published PUA report"
+  },
+  {
+    "source": "注册名匹配：{0}",
+    "en": "Registration name match: {0}"
+  },
+  {
+    "source": "规则版本：{0} | 来源核对：{1}",
+    "en": "Rules: {0} | Sources checked: {1}"
+  },
+  {
+    "source": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+    "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict."
+  },
+  {
+    "source": "此标签仅供核对，由你决定是否卸载；注册名可能被冒用，不是文件病毒检测结果。",
+    "en": "This label is for review; you decide whether to uninstall. Registration names can be impersonated. No file was diagnosed as malware."
+  },
+  {
+    "source": "离线提示库仅匹配已知注册名及版本后缀，不是完整病毒库；未标记不代表安全。仅标签提示，不自动卸载。",
+    "en": "The offline catalog matches known registration names and version suffixes. It is not a complete antivirus database; no match does not mean safe. Labels never trigger automatic removal."
+  },
+  {
+    "source": "PUA 不等同于恶意软件；请使用受信任的安全软件核实文件。",
+    "en": "PUA is not the same as malware. Use trusted security software to assess files."
+  },
+  {
+    "source": "Malwarebytes 收录 Segurazo 的潜在不受欢迎程序报告。",
+    "en": "Malwarebytes publishes a potentially unwanted program report for Segurazo."
+  },
+  {
+    "source": "公开报告描述广告注入及浏览数据收集行为。",
+    "en": "The public report describes injected advertising and browsing-data collection."
+  },
+  {
+    "source": "公开报告描述捆绑分发及网络使用数据收集。",
+    "en": "The public report describes bundled distribution and internet-usage data collection."
+  },
+  {
+    "source": "公开报告描述捆绑安装及默认搜索设置变更。",
+    "en": "The public report describes bundled installation and default-search changes."
+  },
+  {
+    "source": "公开报告描述以误导性系统问题提示推销优化软件。",
+    "en": "The public report describes misleading problem warnings used to market an optimizer."
+  },
+  {
+    "source": "公开报告描述捆绑分发及反复付费注册提醒。",
+    "en": "The public report describes bundled distribution and recurring prompts to pay."
+  },
+  {
+    "source": "Malwarebytes 将相关 Windows 系统优化器列为潜在不受欢迎程序。",
+    "en": "Malwarebytes lists the related Windows optimizer as a potentially unwanted program."
+  },
+  {
+    "source": "公开报告描述浏览器额外广告及可能的捆绑分发。",
+    "en": "The public report describes extra browser ads and possible bundled distribution."
+  },
+  {
+    "source": "公开报告描述安装程序未经同意更改浏览器设置。",
+    "en": "The public report describes installer changes to browser settings without consent."
+  },
+  {
+    "source": "公开报告描述反复弹出感染提示以诱导购买。",
+    "en": "The public report describes repeated infection alerts intended to encourage a purchase."
+  },
+  {
+    "source": "公开报告描述替换浏览器以增加广告展示。",
+    "en": "The public report describes replacing the browser to increase advertising."
+  },
+  {
+    "source": "公开报告描述捆绑分发及浏览器劫持。",
+    "en": "The public report describes bundled distribution and browser hijacking."
+  },
+  {
+    "source": "公开风险报告",
+    "en": "Published risk report"
+  },
+  {
+    "source": "报告发布：{0}",
+    "en": "Report published: {0}"
+  },
+  {
+    "source": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+    "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious."
+  },
+  {
+    "source": "360 历史报告将此产品列为下载站的额外推广安装对象；这是安装来源核对提示，并非文件感染判定。",
+    "en": "The historical 360 report names this product as an extra application promoted by a download-site installer. This prompts checking its installation origin; it is not a file-infection verdict."
+  },
+  {
+    "source": "360 历史报告将相关聚众壁纸样本与祸乱僵尸网络关联；请核对来源和版本，并使用安全软件验证当前文件。",
+    "en": "The historical 360 report associates the analyzed Juzhong Wallpaper samples with the Huoluan botnet. Check the origin and version, and use security software to assess the currently installed files."
+  }
+]

@@ -29,3 +29,7 @@ A pull request should explain the problem, final behavior, tests actually run an
 Do not commit or upload built EXEs, DLLs, archives, installer/test packages, runtime caches, `bin`/`obj`, personal settings, activity logs, startup backups, credentials or signing keys. Use synthetic examples and sanitized excerpts. Check staged files even when an ignore rule exists.
 
 Ordinary builds are **Preview**, including `Configuration=Release`. Keep the test-quality notice in contribution builds and screenshots. **Stable is an explicit official release decision**, not a setting used to make a local build look finished. Follow the build and packaging checks; do not bypass channel or identity validation.
+
+## Community whitelist profiles
+
+To contribute a portable whitelist profile, add a JSON file directly to `community/profiles/` and submit a Pull Request. See [Cloud profiles](docs/CLOUD-PROFILES.md) for the exact schema, review process and limits. Never include personal paths or full local settings. Community templates require explicit user import and do not change the empty release default.

@@ -3,6 +3,7 @@
 [CmdletBinding()]
 param(
     [string]$InputDirectory = (Join-Path $PSScriptRoot 'App'),
+    [Parameter(Mandatory)][string]$Arm64Directory,
     [Parameter(Mandatory)][string]$LegacyDirectory,
     [Parameter(Mandatory)][string]$OutputPath,
     [string]$IntermediateDirectory = (Join-Path $PSScriptRoot 'artifacts/packages'),
@@ -13,8 +14,8 @@ param(
     [switch]$StableRelease
 )
 $ErrorActionPreference = 'Stop'
-Write-Host 'package-single-file now forwards to package-universal; both Modern and Legacy payloads are required.'
-$arguments = @{ ModernDirectory=$InputDirectory; LegacyDirectory=$LegacyDirectory; OutputPath=$OutputPath; IntermediateDirectory=$IntermediateDirectory; StableRelease=$StableRelease }
+Write-Host 'package-single-file forwards to package-universal; x64, ARM64 and Legacy payloads are required.'
+$arguments = @{ ModernDirectory=$InputDirectory; Arm64Directory=$Arm64Directory; LegacyDirectory=$LegacyDirectory; OutputPath=$OutputPath; IntermediateDirectory=$IntermediateDirectory; StableRelease=$StableRelease }
 foreach ($name in @('PowerShellPath','VisualStudioPath','WindowsSdkRoot','WindowsSdkVersion')) {
     $value = Get-Variable -Name $name -ValueOnly
     if ($value) { $arguments[$name] = $value }

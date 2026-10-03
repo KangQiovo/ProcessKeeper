@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace pk {
-enum class Route { Unsupported, MissingFramework, ModernX64, Legacy };
+enum class Route { Unsupported, MissingFramework, ModernX64, Legacy, ModernArm64 };
 struct Host {
     DWORD major = 0, minor = 0, build = 0;
     WORD servicePack = 0, machine = 0;
@@ -17,6 +17,7 @@ HMODULE LoadSystemLibrary(const wchar_t* name);
 bool IsRuntimeOverride(const std::wstring& name);
 std::vector<wchar_t> BuildChildEnvironment();
 Route ChooseRoute(const Host& host, bool forceLegacy = false);
+bool IsModernRoute(Route route);
 bool CanOfferLegacy(Route detected, bool forceLegacy, bool childRunning);
 bool IsApplicationWindowIdentity(const std::wstring& className, const std::wstring& title);
 bool IsAdministrator();

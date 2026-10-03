@@ -1,0 +1,1012 @@
+{
+  "schema": 1,
+  "repository": "KangQiovo/ProcessKeeper",
+  "revision": 2026093002,
+  "version": "2026.09.30.2",
+  "publishedUtc": "2026-09-29T21:03:59Z",
+  "checkedOn": "2026-09-30",
+  "matching": "exact-name-v1",
+  "rules": [
+    {
+      "id": "360-security",
+      "basis": "watchlist",
+      "names": [
+        "360安全卫士",
+        "360 安全卫士",
+        "360安全卫士极速版",
+        "360 Total Security",
+        "360 Internet Security"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "360-antivirus",
+      "basis": "watchlist",
+      "names": [
+        "360杀毒",
+        "360 杀毒"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "kingsoft-duba",
+      "basis": "watchlist",
+      "names": [
+        "金山毒霸",
+        "新毒霸",
+        "Kingsoft Antivirus",
+        "Kingsoft Duba"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "2345-security",
+      "basis": "watchlist",
+      "names": [
+        "2345安全卫士",
+        "2345 安全卫士",
+        "2345安全中心"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "2345-browser",
+      "basis": "published-report",
+      "names": [
+        "2345浏览器",
+        "2345加速浏览器",
+        "2345王牌浏览器"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/723",
+      "sourcePublishedOn": "2018-10-25"
+    },
+    {
+      "id": "2345-compression",
+      "basis": "published-report",
+      "names": [
+        "2345好压",
+        "好压",
+        "好压软件"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/723",
+      "sourcePublishedOn": "2018-10-25"
+    },
+    {
+      "id": "2345-image",
+      "basis": "published-report",
+      "names": [
+        "2345看图",
+        "2345看图王"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/723",
+      "sourcePublishedOn": "2018-10-25"
+    },
+    {
+      "id": "2345-input",
+      "basis": "published-report",
+      "names": [
+        "2345拼音",
+        "2345王牌输入法"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/723",
+      "sourcePublishedOn": "2018-10-25"
+    },
+    {
+      "id": "2345-assistant",
+      "basis": "watchlist",
+      "names": [
+        "2345软件管家"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "kingsoft-assistant",
+      "basis": "watchlist",
+      "names": [
+        "金山软件管家"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "drivergenius",
+      "basis": "watchlist",
+      "names": [
+        "驱动精灵",
+        "驱动精灵万能网卡版"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "driverlife",
+      "basis": "watchlist",
+      "names": [
+        "驱动人生",
+        "驱动人生8",
+        "驱动人生9"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "ludashi",
+      "basis": "published-report",
+      "names": [
+        "鲁大师"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "fastzip",
+      "basis": "published-report",
+      "names": [
+        "快压",
+        "快压软件",
+        "速压"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1669.html",
+      "sourcePublishedOn": "2018-07-11"
+    },
+    {
+      "id": "xiaoyu-zip",
+      "basis": "watchlist",
+      "names": [
+        "小鱼压缩"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "xiaobai-zip",
+      "basis": "watchlist",
+      "names": [
+        "小白压缩"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "kantu",
+      "basis": "watchlist",
+      "names": [
+        "万能看图王"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "hezip",
+      "basis": "watchlist",
+      "names": [
+        "嗨格式压缩大师"
+      ],
+      "reason": {
+        "en": "A specific product on the user watchlist. Check whether you chose to install it and still need it; this is not a malware verdict.",
+        "zh-Hans": "用户关注名单中的具体产品；请核对是否自行安装及仍需使用，不代表病毒判定。",
+        "zh-Hant": "用戶關注名單中的具體產品；請核對是否自行安裝及仍需使用，不代表病毒判定。"
+      },
+      "sourceUrl": "",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "segurazo",
+      "basis": "published-report",
+      "names": [
+        "Segurazo",
+        "Segurazo Antivirus"
+      ],
+      "reason": {
+        "en": "Malwarebytes publishes a potentially unwanted program report for Segurazo.",
+        "zh-Hans": "Malwarebytes 收录 Segurazo 的潜在不受欢迎程序报告。",
+        "zh-Hant": "Malwarebytes 收錄 Segurazo 的潛在不受歡迎程序報告。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-segurazo",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "wajam",
+      "basis": "published-report",
+      "names": [
+        "Wajam"
+      ],
+      "reason": {
+        "en": "The public report describes injected advertising and browsing-data collection.",
+        "zh-Hans": "公开报告描述广告注入及浏览数据收集行为。",
+        "zh-Hant": "公開報告描述廣告注入及瀏覽數據收集行為。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-wajam",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "relevantknowledge",
+      "basis": "published-report",
+      "names": [
+        "RelevantKnowledge",
+        "Relevant Knowledge"
+      ],
+      "reason": {
+        "en": "The public report describes bundled distribution and internet-usage data collection.",
+        "zh-Hans": "公开报告描述捆绑分发及网络使用数据收集。",
+        "zh-Hant": "公開報告描述捆綁分發及網絡使用數據收集。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-relevantknowledge",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "webcompanion",
+      "basis": "published-report",
+      "names": [
+        "Web Companion",
+        "WebCompanion",
+        "Adaware Web Companion",
+        "Lavasoft Web Companion"
+      ],
+      "reason": {
+        "en": "The public report describes bundled installation and default-search changes.",
+        "zh-Hans": "公开报告描述捆绑安装及默认搜索设置变更。",
+        "zh-Hant": "公開報告描述捆綁安裝及默認搜索設置變更。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-webcompanion",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "pcacceleratepro",
+      "basis": "published-report",
+      "names": [
+        "PC Accelerate Pro"
+      ],
+      "reason": {
+        "en": "The public report describes misleading problem warnings used to market an optimizer.",
+        "zh-Hans": "公开报告描述以误导性系统问题提示推销优化软件。",
+        "zh-Hant": "公開報告描述以誤導性系統問題提示推銷優化軟件。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-pcacceleratepro",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "mypcbackup",
+      "basis": "published-report",
+      "names": [
+        "MyPC Backup",
+        "MyPCBackup"
+      ],
+      "reason": {
+        "en": "The public report describes bundled distribution and recurring prompts to pay.",
+        "zh-Hans": "公开报告描述捆绑分发及反复付费注册提醒。",
+        "zh-Hant": "公開報告描述捆綁分發及反復付費注冊提醒。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-mypcbackup",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "reimage",
+      "basis": "published-report",
+      "names": [
+        "Reimage Repair",
+        "Reimage PC Repair",
+        "Reimage"
+      ],
+      "reason": {
+        "en": "Malwarebytes lists the related Windows optimizer as a potentially unwanted program.",
+        "zh-Hans": "Malwarebytes 将相关 Windows 系统优化器列为潜在不受欢迎程序。",
+        "zh-Hant": "Malwarebytes 將相關 Windows 系統優化器列為潛在不受歡迎程序。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-reimage",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "onestart",
+      "basis": "published-report",
+      "names": [
+        "OneStart"
+      ],
+      "reason": {
+        "en": "The public report describes extra browser ads and possible bundled distribution.",
+        "zh-Hans": "公开报告描述浏览器额外广告及可能的捆绑分发。",
+        "zh-Hant": "公開報告描述瀏覽器額外廣告及可能的捆綁分發。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-onestart",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "onelaunch",
+      "basis": "published-report",
+      "names": [
+        "OneLaunch"
+      ],
+      "reason": {
+        "en": "The public report describes installer changes to browser settings without consent.",
+        "zh-Hans": "公开报告描述安装程序未经同意更改浏览器设置。",
+        "zh-Hant": "公開報告描述安裝程序未經同意更改瀏覽器設置。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-onelaunch",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "bytefence",
+      "basis": "published-report",
+      "names": [
+        "ByteFence Anti-Malware",
+        "ByteFence"
+      ],
+      "reason": {
+        "en": "The public report describes repeated infection alerts intended to encourage a purchase.",
+        "zh-Hans": "公开报告描述反复弹出感染提示以诱导购买。",
+        "zh-Hant": "公開報告描述反復彈出感染提示以誘導購買。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-bytefence",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "crossbrowse",
+      "basis": "published-report",
+      "names": [
+        "CrossBrowse"
+      ],
+      "reason": {
+        "en": "The public report describes replacing the browser to increase advertising.",
+        "zh-Hans": "公开报告描述替换浏览器以增加广告展示。",
+        "zh-Hant": "公開報告描述替換瀏覽器以增加廣告展示。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-crossbrowse",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "searchprotect",
+      "basis": "published-report",
+      "names": [
+        "Search Protect",
+        "SearchProtect",
+        "Search Protect by Conduit"
+      ],
+      "reason": {
+        "en": "The public report describes bundled distribution and browser hijacking.",
+        "zh-Hans": "公开报告描述捆绑分发及浏览器劫持。",
+        "zh-Hant": "公開報告描述捆綁分發及瀏覽器劫持。"
+      },
+      "sourceUrl": "https://www.malwarebytes.com/blog/detections/pup-optional-searchprotect",
+      "sourcePublishedOn": ""
+    },
+    {
+      "id": "xiaoniao-wallpaper",
+      "basis": "published-report",
+      "names": [
+        "小鸟壁纸"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "dxrepair",
+      "basis": "published-report",
+      "names": [
+        "DXRepair"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "tabxexplorer",
+      "basis": "published-report",
+      "names": [
+        "TabXExplorer"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "huaban-eyecare",
+      "basis": "published-report",
+      "names": [
+        "花瓣护眼"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "xiaolange",
+      "basis": "published-report",
+      "names": [
+        "小蓝鸽"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "dali-shredder",
+      "basis": "published-report",
+      "names": [
+        "大力文件粉碎"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "xundu-pdf",
+      "basis": "published-report",
+      "names": [
+        "迅读PDF大师",
+        "迅读 PDF 大师"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "halo-wallpaper",
+      "basis": "published-report",
+      "names": [
+        "Halo壁纸",
+        "Halo 壁纸"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "mobile-emulator-master",
+      "basis": "published-report",
+      "names": [
+        "手机模拟大师"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1858",
+      "sourcePublishedOn": "2025-11-11"
+    },
+    {
+      "id": "universal-compression",
+      "basis": "published-report",
+      "names": [
+        "万能压缩"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/826",
+      "sourcePublishedOn": "2020-06-18"
+    },
+    {
+      "id": "qidian-pdf",
+      "basis": "published-report",
+      "names": [
+        "起点PDF阅读器",
+        "起点 PDF 阅读器"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/826",
+      "sourcePublishedOn": "2020-06-18"
+    },
+    {
+      "id": "mini-image-viewer",
+      "basis": "published-report",
+      "names": [
+        "迷你看图王"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/826",
+      "sourcePublishedOn": "2020-06-18"
+    },
+    {
+      "id": "xinsu-compression",
+      "basis": "published-report",
+      "names": [
+        "新速压缩"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/826",
+      "sourcePublishedOn": "2020-06-18"
+    },
+    {
+      "id": "zhigou-assistant",
+      "basis": "published-report",
+      "names": [
+        "直购助手"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/826",
+      "sourcePublishedOn": "2020-06-18"
+    },
+    {
+      "id": "ant-compression",
+      "basis": "published-report",
+      "names": [
+        "Ant压缩",
+        "Ant 压缩"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/safety-classroom/1714",
+      "sourcePublishedOn": "2020-11-19"
+    },
+    {
+      "id": "koala-wallpaper",
+      "basis": "published-report",
+      "names": [
+        "考拉壁纸"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/safety-classroom/1714",
+      "sourcePublishedOn": "2020-11-19"
+    },
+    {
+      "id": "xiaoshu-pdf",
+      "basis": "published-report",
+      "names": [
+        "小树PDF",
+        "小树 PDF"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/safety-classroom/1714",
+      "sourcePublishedOn": "2020-11-19"
+    },
+    {
+      "id": "qiaozip",
+      "basis": "published-report",
+      "names": [
+        "巧压"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/811",
+      "sourcePublishedOn": "2020-02-27"
+    },
+    {
+      "id": "winhome",
+      "basis": "published-report",
+      "names": [
+        "WinHome主页卫士",
+        "WinHome 主页卫士"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1669.html",
+      "sourcePublishedOn": "2018-07-11"
+    },
+    {
+      "id": "xiaohai-notepad",
+      "basis": "published-report",
+      "names": [
+        "小黑记事本"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1669.html",
+      "sourcePublishedOn": "2018-07-11"
+    },
+    {
+      "id": "abc-image",
+      "basis": "published-report",
+      "names": [
+        "ABC看图",
+        "ABC 看图"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1669.html",
+      "sourcePublishedOn": "2018-07-11"
+    },
+    {
+      "id": "bluedove-uninstall",
+      "basis": "published-report",
+      "names": [
+        "小蓝鸽极速卸载",
+        "BlueDove 小蓝鸽极速卸载"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1839",
+      "sourcePublishedOn": "2025-08-14"
+    },
+    {
+      "id": "dx-strong-repair",
+      "basis": "published-report",
+      "names": [
+        "DX强力修复",
+        "DX 强力修复"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1839",
+      "sourcePublishedOn": "2025-08-14"
+    },
+    {
+      "id": "echofind",
+      "basis": "published-report",
+      "names": [
+        "EchoFind",
+        "EchoFind 文件搜索",
+        "EchoFind文件搜索"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1839",
+      "sourcePublishedOn": "2025-08-14"
+    },
+    {
+      "id": "yunjiwan",
+      "basis": "published-report",
+      "names": [
+        "云即玩",
+        "云即玩模拟器"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/888.html",
+      "sourcePublishedOn": "2023-12-04"
+    },
+    {
+      "id": "sky-compression",
+      "basis": "published-report",
+      "names": [
+        "天空压缩"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/888.html",
+      "sourcePublishedOn": "2023-12-04"
+    },
+    {
+      "id": "quzip",
+      "basis": "published-report",
+      "names": [
+        "趣压"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1666.html",
+      "sourcePublishedOn": "2020-03-06"
+    },
+    {
+      "id": "copyrabbit",
+      "basis": "published-report",
+      "names": [
+        "拷贝兔"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1666.html",
+      "sourcePublishedOn": "2020-03-06"
+    },
+    {
+      "id": "xiaobai-image",
+      "basis": "published-report",
+      "names": [
+        "小白看图"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/1666.html",
+      "sourcePublishedOn": "2020-03-06"
+    },
+    {
+      "id": "yunai-pe",
+      "basis": "published-report",
+      "names": [
+        "云爱PE工具箱",
+        "云爱 PE 工具箱"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/778.html",
+      "sourcePublishedOn": "2017-12-01"
+    },
+    {
+      "id": "meijie-notes",
+      "basis": "published-report",
+      "names": [
+        "美捷便签"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/778.html",
+      "sourcePublishedOn": "2017-12-01"
+    },
+    {
+      "id": "swf-player-wizard",
+      "basis": "published-report",
+      "names": [
+        "swf播放精灵",
+        "swf 播放精灵"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/778.html",
+      "sourcePublishedOn": "2017-12-01"
+    },
+    {
+      "id": "meijie-alarm",
+      "basis": "published-report",
+      "names": [
+        "美捷闹钟"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/778.html",
+      "sourcePublishedOn": "2017-12-01"
+    },
+    {
+      "id": "jike-pdf",
+      "basis": "published-report",
+      "names": [
+        "即刻PDF阅读器",
+        "即刻 PDF 阅读器"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/858.html",
+      "sourcePublishedOn": "2022-08-19"
+    },
+    {
+      "id": "huoying-wallpaper",
+      "basis": "published-report",
+      "names": [
+        "火萤视频桌面"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/846.html",
+      "sourcePublishedOn": "2021-08-26"
+    },
+    {
+      "id": "wifi-share-master",
+      "basis": "published-report",
+      "names": [
+        "WIFI共享大师",
+        "WIFI 共享大师"
+      ],
+      "reason": {
+        "en": "A historical Huorong report describes promotion, bundling or malicious modules in related installers. Channels and versions may differ. Verify this installation's origin; its name alone does not establish that its files are malicious.",
+        "zh-Hans": "火绒历史报告记录相关安装包的推广、捆绑或恶意模块；渠道、版本可能不同，需核对当前安装来源，不能据名称认定当前文件有毒。",
+        "zh-Hant": "火絨歷史報告記錄相關安裝包的推廣、捆綁或惡意模塊；渠道、版本可能不同，需核對當前安裝來源，不能據名稱認定當前文件有毒。"
+      },
+      "sourceUrl": "https://www.huorong.cn/document/tech/vir_report/720.html",
+      "sourcePublishedOn": "2019-03-14"
+    },
+    {
+      "id": "xuanfeng-pdf",
+      "basis": "published-report",
+      "names": [
+        "旋风PDF",
+        "旋风 PDF"
+      ],
+      "reason": {
+        "en": "The historical 360 report names this product as an extra application promoted by a download-site installer. This prompts checking its installation origin; it is not a file-infection verdict.",
+        "zh-Hans": "360 历史报告将此产品列为下载站的额外推广安装对象；这是安装来源核对提示，并非文件感染判定。",
+        "zh-Hant": "360 歷史報告將此產品列為下載站的額外推廣安裝對象；這是安裝來源核對提示，并非文件感染判定。"
+      },
+      "sourceUrl": "https://www.360.cn/n/11465.html",
+      "sourcePublishedOn": "2020-01-03"
+    },
+    {
+      "id": "juzhong-wallpaper",
+      "basis": "published-report",
+      "names": [
+        "聚众壁纸"
+      ],
+      "reason": {
+        "en": "The historical 360 report associates the analyzed Juzhong Wallpaper samples with the Huoluan botnet. Check the origin and version, and use security software to assess the currently installed files.",
+        "zh-Hans": "360 历史报告将相关聚众壁纸样本与祸乱僵尸网络关联；请核对来源和版本，并使用安全软件验证当前文件。",
+        "zh-Hant": "360 歷史報告將相關聚眾壁紙樣本與禍亂僵尸網絡關聯；請核對來源和版本，并使用安全軟件驗證當前文件。"
+      },
+      "sourceUrl": "https://www.360.cn/n/11465.html",
+      "sourcePublishedOn": "2020-01-03"
+    }
+  ]
+}

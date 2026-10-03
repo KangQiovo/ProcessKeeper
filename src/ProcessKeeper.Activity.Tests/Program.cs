@@ -8,6 +8,7 @@ void Check(bool condition, string name)
     if (!condition) throw new InvalidOperationException("FAIL: " + name);
     Console.WriteLine("PASS: " + name);
 }
+TimeDisplayVerification.Run(Check);
 void Ordered(string text, params string[] markers)
 {
     var previous = -1;
@@ -22,6 +23,7 @@ var date = new DateTimeOffset(2026, 9, 27, 12, 34, 56, 789, TimeSpan.FromHours(8
 var buffer = new ActivityLogBuffer();
 var serialized = buffer.Append("saved", date);
 Check(serialized == "2026-09-27 12:34:56.789 +08:00  saved", "complete invariant timestamp with year and milliseconds");
+Check(buffer.Render() == "2026-09-27 12:34:56.789 UTC+8  saved", "human-readable event time uses compact UTC offset without changing storage");
 buffer.Append("earlier", date.AddMilliseconds(-1));
 buffer.Append("later", date.AddMilliseconds(1));
 Ordered(buffer.Render(), "earlier", "saved", "later");
@@ -84,7 +86,7 @@ try
     var eventText = buffer.Append("new", date);
     File.AppendAllText(path, eventText + Environment.NewLine);
     buffer.LoadFile(path);
-    Ordered(buffer.Render(), "12-31 23:59:59  old", "2026-09-27 12:34:56.789 +08:00  new");
+    Ordered(buffer.Render(), "12-31 23:59:59  old", "2026-09-27 12:34:56.789 UTC+8  new");
     Check(File.ReadAllText(path).StartsWith("12-31 23:59:59  old\n"), "appending preserves old bytes and format");
 }
 finally { File.Delete(path); }

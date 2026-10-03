@@ -63,7 +63,7 @@ public static partial class AvdNative
     /// Missing variables remain absent; the caller must not substitute its own environment.</summary>
     public static IReadOnlyDictionary<string, string> ReadAndroidEnvironment(ProcessRecord process)
     {
-        if (IntPtr.Size != 8) throw new PlatformNotSupportedException(L.T("仅支持核实 x64 模拟器环境。"));
+        if (!ProcessArchitecturePolicy.SupportsX64ProcessEnvironment) throw new PlatformNotSupportedException(L.T("仅支持核实 x64 模拟器环境。"));
         using var handle = OpenVerified(process, readMemory: true);
         if (!ProcessNative.IsWow64Process(handle, out bool wow64) || wow64)
             throw new InvalidOperationException(L.T("无法核实模拟器的 x64 环境，未使用当前应用环境代替。"));

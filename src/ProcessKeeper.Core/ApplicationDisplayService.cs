@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace ProcessKeeper.Core;
 
 /// <summary>Immutable display evidence. Never used as protection, mutation or process-close authority.</summary>
-public sealed class ApplicationDisplayCatalog
+public sealed partial class ApplicationDisplayCatalog
 {
     public static ApplicationDisplayCatalog Empty { get; } = new([], [], []);
     private readonly GameCatalogEntry[] _games;
@@ -13,11 +13,14 @@ public sealed class ApplicationDisplayCatalog
     public IReadOnlyList<string> Warnings { get; }
     public IReadOnlyList<GameCatalogEntry> Games { get; }
     public IReadOnlyList<GamePlatformClient> Clients { get; }
+    public bool HasSamePresentationAs(ApplicationDisplayCatalog other) =>
+        _games.SequenceEqual(other._games) && _clients.SequenceEqual(other._clients) && _microsoft.SetEquals(other._microsoft);
     /// <summary>The arguments are verified display evidence supplied by Capture; the constructor also supports isolated UI fixtures.</summary>
     public ApplicationDisplayCatalog(IEnumerable<GameCatalogEntry> games, IEnumerable<GamePlatformClient> clients, IEnumerable<string> verifiedMicrosoftPaths, IEnumerable<string>? warnings = null)
     {
         _games = games.Take(8192).Where(game => game is not null && DisplayPath.Normalize(game.InstallDirectory).Length > 3)
-            .Select(game => game with { InstallDirectory = DisplayPath.Normalize(game.InstallDirectory) }).Distinct().ToArray();
+            .Select(game => game with { InstallDirectory = DisplayPath.Normalize(game.InstallDirectory),
+                IconPath = DisplayPath.Normalize(game.IconPath), ExecutablePath = DisplayPath.Normalize(game.ExecutablePath) }).Distinct().ToArray();
         _clients = clients.Take(32).Where(client => client is not null && DisplayPath.Normalize(client.ExecutablePath).Length > 0)
             .Select(client => client with { ExecutablePath = DisplayPath.Normalize(client.ExecutablePath) }).Distinct().ToArray();
         _microsoft = new(verifiedMicrosoftPaths.Take(20000).Select(DisplayPath.Normalize).Where(path => path.Length > 0), StringComparer.OrdinalIgnoreCase);
@@ -43,17 +46,20 @@ public sealed class ApplicationDisplayCatalog
     { var paths = source.Take(20001).ToArray(); return paths.Length is > 0 and <= 20000 && paths.All(IsMicrosoftPath); }
     private bool IsMicrosoftPath(string path)
     { var normalized = DisplayPath.Normalize(path); return normalized.Length > 0 && !SharedHosts.Contains(Path.GetFileName(normalized)) && _microsoft.Contains(normalized); }
-    private GameCatalogEntry? FindGamePath(string path)
+    private GameCatalogEntry? FindGamePath(string path) => FindGamePath(path, out _);
+    private GameCatalogEntry? FindGamePath(string path, out bool ambiguous)
     {
+        ambiguous = false;
         var normalized = DisplayPath.Normalize(path); if (normalized.Length == 0) return null;
         GameCatalogEntry? match = null; var directory = Path.GetDirectoryName(normalized); int depth = 0;
         while (!string.IsNullOrEmpty(directory) && ++depth <= 128)
         {
             if (_gameDirectories.TryGetValue(directory, out var matches))
-            { if (matches.Length != 1 || match is not null) return null; match = matches[0]; }
+            { if (matches.Length != 1 || match is not null) { ambiguous = true; return null; } match = matches[0]; }
             directory = Path.GetDirectoryName(directory);
         }
-        return depth > 128 ? null : match;
+        ambiguous = depth > 128;
+        return ambiguous ? null : match;
     }
     private GameCatalogEntry? CommonGame(IEnumerable<string> source)
     {
@@ -101,6 +107,14 @@ public sealed class ApplicationDisplayService
     public ApplicationDisplayService(Func<CancellationToken, GamePlatformSnapshot>? scanGames = null, IMicrosoftPublisherProbe? publisherProbe = null, Func<DateTimeOffset>? utcNow = null)
     { _scanGames = scanGames ?? new GamePlatformCatalog().Scan; _probe = publisherProbe ?? new MicrosoftPublisherProbe(); _now = utcNow ?? (() => DateTimeOffset.UtcNow); }
     public ApplicationDisplayCatalog Capture(ProcessSnapshot snapshot, IReadOnlyList<InstalledApplication> installed, IReadOnlyList<AutorunEntry> autoruns, CancellationToken token = default)
+        => Capture(snapshot, installed, autoruns, true, token);
+
+    public ApplicationDisplayCatalog Capture(ProcessSnapshot snapshot, IReadOnlyList<InstalledApplication> installed,
+        IReadOnlyList<AutorunEntry> autoruns, bool verifyMicrosoft, CancellationToken token = default)
+        => Capture(snapshot, installed, autoruns, Array.Empty<UninstallEntry>(), verifyMicrosoft, token);
+
+    public ApplicationDisplayCatalog Capture(ProcessSnapshot snapshot, IReadOnlyList<InstalledApplication> installed,
+        IReadOnlyList<AutorunEntry> autoruns, IReadOnlyList<UninstallEntry> uninstall, bool verifyMicrosoft, CancellationToken token = default)
     {
         lock (_captureLock)
         {
@@ -108,8 +122,11 @@ public sealed class ApplicationDisplayService
             if (now - _platformsAt >= TimeSpan.FromMinutes(1))
             { _platforms = _scanGames(token); _platformsAt = now; }
             var warnings = _platforms.Warnings.ToList();
+            // Grouping games needs only launcher catalogs, not thousands of file identity/signature reads.
+            if (!verifyMicrosoft) return new(_platforms.Games, _platforms.Clients, [], warnings);
             var paths = snapshot.Processes.Select(process => process.Path).Concat(installed.SelectMany(app => app.Executables).Select(executable => executable.Path))
-                .Concat(autoruns.Select(entry => entry.TargetPath)).Select(DisplayPath.Normalize).Where(path => path.Length > 0)
+                .Concat(autoruns.Select(entry => entry.TargetPath)).Concat(uninstall.Take(20000).SelectMany(ApplicationDisplayCatalog.UninstallEvidencePaths))
+                .Select(DisplayPath.Normalize).Where(path => path.Length > 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(20000).ToArray();
             var verified = new List<string>(); var clock = Stopwatch.StartNew(); int started = 0;
             CompletePending();

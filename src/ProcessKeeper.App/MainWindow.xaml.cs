@@ -41,9 +41,11 @@ public sealed partial class MainWindow : Window
 
     public MainWindow() : this(null) { }
 
-    internal MainWindow(string? initialLanguagePreference)
+    internal MainWindow(string? initialLanguagePreference, Task<byte[]?>? authorAvatarTask = null)
     {
         InitializeComponent();
+        AuthorAvatar.Start(authorAvatarTask ?? Task.FromResult<byte[]?>(null));
+        Closed += (_, _) => AuthorAvatar.Dispose();
         InitializeRiskMode();
         CompatibilityNotice.IsOpen = CompatibilityNoticeState.ShouldShow();
         ReferencedProjectsList.ItemsSource = ReferencedProjects.All;
@@ -86,6 +88,11 @@ public sealed partial class MainWindow : Window
         InitializeSearch();
         InitializeRowInteractions();
         InitializeUpdates();
+        InitializeUninstallPage();
+        InitializePerformance();
+        InitializeMisc();
+        InitializeWhitelistScope();
+        InitializeClosePersistence();
         UpdateRules();
         _timer.Tick += async (_, _) => { if (LiveToggle.IsOn) await RefreshAsync(); QueueVisibleIcons(); };
         _successNoticeTimer.Tick += (_, _) =>
@@ -95,8 +102,8 @@ public sealed partial class MainWindow : Window
             _successNoticeTimer.Stop();
             Notice.IsOpen = false;
         };
-        Closed += (_, _) => { _closed = true; _autorunsView?.Close(); _timer.Stop(); _successNoticeTimer.Stop(); _avdCancellation?.Cancel(); _closeCancellation?.Cancel(); CloseRecoveryWindows(); _icons.Dispose(); _visibleIcons.Clear(); _realizedContainers.Clear(); };
-        Root.Loaded += async (_, _) => { StartInstalledPreload(); _autorunsView?.StartPreload(); await RefreshAsync(); _timer.Start(); };
+        Closed += (_, _) => { _closed = true; _memoryView?.Dispose(); _downloadView?.Dispose(); _performanceView?.Dispose(); _uninstallView?.Dispose(); _autorunsView?.Close(); _timer.Stop(); _successNoticeTimer.Stop(); _avdCancellation?.Cancel(); _closeCancellation?.Cancel(); CloseRecoveryWindows(); _icons.Dispose(); _visibleIcons.Clear(); _realizedContainers.Clear(); };
+        Root.Loaded += async (_, _) => { StartInstalledPreload(); _autorunsView?.StartPreload(); _ = _uninstallView?.ScanAsync(); await RefreshAsync(); _timer.Start(); };
         Closed += (_, _) => CancelInstalledWork();
     }
 
@@ -104,12 +111,15 @@ public sealed partial class MainWindow : Window
     {
         if (!_ready || _refreshing || _dialogOpen || _working || _closed) return;
         _refreshing = true;
-        LoadingRing.IsActive = true;
+        // Periodic sampling keeps the current list visible; show progress only before the first snapshot.
+        var showProgress = _snapshot.CapturedAt == DateTimeOffset.MinValue;
+        if (showProgress) LoadingRing.IsActive = true;
         try
         {
             var snapshot = await Task.Run(_collector.Capture);
             if (_closed) return;
             _snapshot = snapshot;
+            InvalidateSelectionTrees();
             RequestPresentationCapture();
             _autorunsView?.UpdateProcesses(snapshot);
             if (AppsPage.Visibility == Visibility.Visible) RenderApps();
@@ -118,10 +128,10 @@ public sealed partial class MainWindow : Window
             if (RulesPage.Visibility == Visibility.Visible) UpdateRules();
         }
         catch (Exception ex) { ShowNotice(L.T("读取失败"), ex.Message, InfoBarSeverity.Warning); }
-        finally { _refreshing = false; if (!_closed) LoadingRing.IsActive = false; }
+        finally { _refreshing = false; if (!_closed && showProgress) LoadingRing.IsActive = false; }
     }
 
-    private ProtectionDecision Decision(ProcessRecord process) => _policy.Evaluate(process, _snapshot, _rules);
+    private ProtectionDecision Decision(ProcessRecord process) => _policy.Evaluate(process, _snapshot, RunningRules);
     private bool DirectlyWhitelisted(ApplicationGroup app) => _rules.Any(r => r.Enabled && r.Kind == RuleKind.Application && r.Value.Equals(app.Key, StringComparison.OrdinalIgnoreCase));
     private ApplicationGroup? SelectedApp
     {
@@ -144,6 +154,7 @@ public sealed partial class MainWindow : Window
 
     private void RenderApps()
     {
+        NativeSelectionTree.For(AppsList)?.Invalidate(AppsPage.Visibility == Visibility.Visible);
         if (!_ready || _closed || AppsPage.Visibility != Visibility.Visible) return;
         var query = SearchBox.Text?.Trim() ?? "";
         IEnumerable<ApplicationGroup> source = _snapshot.Applications.Select(DisplayedApplication).Where(a => a.Processes.Count > 0);
@@ -185,7 +196,7 @@ public sealed partial class MainWindow : Window
                 var (app, process, rowKey) = entries[i];
                 existing.TryGetValue(rowKey, out var row);
                 if (row is null) { row = new AppRow { Key = app.Key, RowKey = rowKey, ProcessId = process?.Id }; _appRows.Insert(i, row); }
-                else if (!ReferenceEquals(_appRows[i], row)) _appRows.Move(_appRows.IndexOf(row), i);
+                else if (!ReferenceEquals(_appRows[i], row)) NativeListSelection.Move(AppsList, _appRows, _appRows.IndexOf(row), i, item => item.RowKey);
                 row.IsPresentationGroup = rowKey.StartsWith(PlatformRowPrefix, StringComparison.Ordinal);
                 var platform = _groupGamePlatforms && !row.IsPresentationGroup ? _displayCatalog.FindGamePlatform(app) : null;
                 row.PresentationPlatformId = row.IsPresentationGroup ? rowKey.Substring(PlatformRowPrefix.Length) : platform?.Id ?? "";
@@ -207,7 +218,7 @@ public sealed partial class MainWindow : Window
                     var protectedCount = decisions.Count(d => d.Protected);
                     row.ProtectionText = decisions.Any(d => d.RuleId is not null) ? L.T("白名单保护") :
                         protectedCount == app.Processes.Count ? L.T("系统 / 身份保护") : protectedCount > 0 ? L.F($"{protectedCount} 个进程受保护") : L.T("可在确认后关闭");
-                    row.Tooltip = L.F($"{app.Name}\n{app.Description}\n单击{(row.IsExpanded ? L.T("收起") : L.T("展开"))} {app.Processes.Count} 个进程");
+                    row.Tooltip = app.Name + "\n" + app.Description + "\n" + L.T("使用箭头展开或收起进程。");
                 }
                 else
                 {
@@ -218,7 +229,7 @@ public sealed partial class MainWindow : Window
                         ? L.F($"由 {parent.Name}（{parent.Id}）启动") : L.T("启动来源：父进程已退出或无法核实");
                     row.Tooltip = $"{process.Name} | PID {process.Id}\n{process.RoleDescription}\n{process.Path}\n{Decision(process).Reason}";
                 }
-                var iconPath = process?.Path ?? app.Processes.OrderByDescending(p => p.HasVisibleWindow).Select(p => p.Path).FirstOrDefault(p => !string.IsNullOrEmpty(p)) ?? "";
+                var iconPath = process?.Path ?? _displayCatalog.ResolveIconPath(app);
                 var recovery = process is null ? null : WindowRecoveryHints.ForProcess(process, _snapshot);
                 row.RecoveryText = recovery?.Text ?? "";
                 row.RecoveryTooltip = recovery?.Tooltip ?? "";
@@ -226,7 +237,7 @@ public sealed partial class MainWindow : Window
                 row.Notify();
             }
             var selectedRow = _appRows.FirstOrDefault(r => r.RowKey == _selectedRowKey) ?? _appRows.FirstOrDefault(r => r.RowKey == _selectedKey);
-            AppsList.SelectedItem = selectedRow;
+            // Observable row identities preserve every native selected item; updating inspector focus must not replace that set.
             _selectedKey = selectedRow?.Key;
             _selectedRowKey = selectedRow?.RowKey;
             if (selectedRow is null) _selectedProcessId = null;
@@ -236,7 +247,7 @@ public sealed partial class MainWindow : Window
             CloseOthersButton.IsEnabled = _configurationHealthy && !_working && (_snapshot.Processes.Any(p => !Decision(p).Protected) || GetDockPlan(_snapshot.Processes) is not null);
             UpdateDetail();
         }
-        finally { _rendering = false; QueueVisibleIcons(); }
+        finally { _rendering = false; QueueVisibleIcons(); RefreshSelectionButtons(); }
     }
 
     private IEnumerable<ProcessRecord> OrderedProcesses(ApplicationGroup app) => SortFilter.SelectedIndex switch
@@ -261,37 +272,25 @@ public sealed partial class MainWindow : Window
 
     private void AppItemClicked(object sender, ItemClickEventArgs e)
     {
-        if (_working || e.ClickedItem is not AppRow row) return;
-        if (row.IsPresentationGroup)
-        {
-            if (!_collapsedRunningPlatforms.Add(row.PresentationPlatformId)) _collapsedRunningPlatforms.Remove(row.PresentationPlatformId);
-            RenderApps(); return;
-        }
-        _selectedKey = row.Key;
-        _selectedRowKey = row.RowKey;
-        if (row.ProcessId is { } id)
-        {
-            _selectedProcessId = id;
-            UpdateDetail();
-            if (_snapshot.Processes.FirstOrDefault(p => p.Id == id) is { } process) ShowProcess(process);
-        }
-        else
-        {
-            if (row.IsExpanded)
-            {
-                _expandedApps.Remove(row.Key);
-                if (!string.IsNullOrWhiteSpace(SearchBox.Text)) _searchCollapsedApps.Add(row.Key);
-            }
-            else { _searchCollapsedApps.Remove(row.Key); _expandedApps.Add(row.Key); }
-            if (_appRenderQueued) return;
-            _appRenderQueued = DispatcherQueue.TryEnqueue(() =>
-            {
-                _appRenderQueued = false;
-                if (!_closed) RenderApps();
-            });
-        }
+        if (_working || e.ClickedItem is not AppRow row || row.IsPresentationGroup) return;
+        _selectedKey = row.Key; _selectedRowKey = row.RowKey; _selectedProcessId = row.ProcessId;
+        UpdateDetail(true);
+        if (row.ProcessId is { } id && _snapshot.Processes.FirstOrDefault(p => p.Id == id) is { } process) ShowProcess(process);
+        RefreshSelectionButtons();
     }
-
+    private void AppChevronClicked(object sender, RoutedEventArgs args)
+    {
+        if (_working || (sender as FrameworkElement)?.DataContext is not AppRow row) return;
+        if (row.IsPresentationGroup)
+        { if (!_collapsedRunningPlatforms.Add(row.PresentationPlatformId)) _collapsedRunningPlatforms.Remove(row.PresentationPlatformId); }
+        else if (row.ProcessId is null)
+        {
+            if (row.IsExpanded) { _expandedApps.Remove(row.Key); if (!string.IsNullOrWhiteSpace(SearchBox.Text)) _searchCollapsedApps.Add(row.Key); }
+            else { _searchCollapsedApps.Remove(row.Key); _expandedApps.Add(row.Key); }
+        }
+        if (_appRenderQueued) return;
+        _appRenderQueued = DispatcherQueue.TryEnqueue(() => { _appRenderQueued = false; if (!_closed) RenderApps(); });
+    }
     private void UpdateDetail(bool force = false)
     {
         if (_closed || AppsPage.Visibility != Visibility.Visible) return;
@@ -430,7 +429,7 @@ public sealed partial class MainWindow : Window
     {
         if (_working) return;
         if (!_configurationHealthy) { ShowNotice(L.T("需要先恢复配置"), L.T("请在白名单页恢复默认规则，再进行修改。"), InfoBarSeverity.Warning); return; }
-        try { _store.Save(next); _rules = next; _lastDetailSignature = ""; UpdateRules(); RenderApps(); Log(log); }
+        try { _store.Save(next); _rules = next; NotifyProfilesRulesChanged(); _lastDetailSignature = ""; UpdateRules(); RenderApps(); Log(log); }
         catch (Exception ex) { ShowNotice(L.T("保存失败"), ex.Message, InfoBarSeverity.Error); RenderApps(); }
     }
     private void ToggleApp(ApplicationGroup app, bool enabled)
@@ -441,9 +440,14 @@ public sealed partial class MainWindow : Window
     }
     private void WhitelistChecked(object sender, RoutedEventArgs e)
     {
-        if (_rendering || !_ready || _working || sender is not CheckBox box || box.Tag is not string key) return;
-        var app = _snapshot.Applications.FirstOrDefault(a => a.Key == key);
-        if (app is not null && (box.IsChecked == true) != DirectlyWhitelisted(app)) ToggleApp(app, box.IsChecked == true);
+        var clicked = (sender as FrameworkElement)?.DataContext as AppRow;
+        try
+        {
+            if (_rendering || !_ready || _working || sender is not CheckBox box || box.Tag is not string key) return;
+            var app = _snapshot.Applications.FirstOrDefault(a => a.Key == key);
+            if (app is not null && (box.IsChecked == true) != DirectlyWhitelisted(app)) ToggleApp(app, box.IsChecked == true);
+        }
+        finally { clicked?.NotifyWhitelistState(); }
     }
     private void KeepSelected(object sender, RoutedEventArgs e) { if (SelectedApp is { } app) ToggleApp(app, !DirectlyWhitelisted(app)); }
     private void RuleToggled(object sender, RoutedEventArgs e)
@@ -508,9 +512,9 @@ public sealed partial class MainWindow : Window
             _rules = reset.Snapshot.ActiveRules;
             ProfilesHost.Content = null;
             EnsureProfilesView();
-            _configurationHealthy = true;
-            Notice.IsOpen = false;
-            UpdateRules(); RenderApps(); Log(L.T("已恢复默认白名单，原配置已备份。"));
+            _configurationHealthy = _scopeReadable;
+            if (_scopeReadable) Notice.IsOpen = false;
+            RefreshWhitelistActionGuards(); UpdateRules(); RenderApps(); Log(L.T("已恢复默认白名单，原配置已备份。"));
         }
         catch (Exception ex) { ShowNotice(L.T("恢复失败"), ex.Message, InfoBarSeverity.Error); }
     }
@@ -605,7 +609,7 @@ public sealed partial class MainWindow : Window
         var appCount = frozen.Select(p => p.ApplicationKey).Distinct().Count();
         var panel = new StackPanel { Spacing = 14, Width = 510 };
         panel.Children.Add(new TextBlock { Text = L.F($"将关闭 {appCount} 个程序中的 {frozen.Length} 个进程。请先保存文件。确认清单被冻结，新启动的进程不会追加。"), TextWrapping = TextWrapping.Wrap });
-        panel.Children.Add(new TextBox { Text = string.Join("\n", frozen.Select(p => $"{p.ApplicationName} | {p.Name} | PID {p.Id}")), IsReadOnly = true, AcceptsReturn = true, MaxHeight = 260, TextWrapping = TextWrapping.Wrap, FontSize = 12 });
+        panel.Children.Add(new TextBox { IsReadOnly = true, AcceptsReturn = true, MaxHeight = 260, TextWrapping = TextWrapping.Wrap, FontSize = 12, Text = string.Join("\n", frozen.Select(p => $"{p.ApplicationName} | {p.Name} | PID {p.Id}")) });
         var force = new CheckBox { Content = L.T("等待 5 秒后强制结束仍未退出的进程"), IsChecked = false };
         panel.Children.Add(force);
         panel.Children.Add(new TextBlock { Text = L.T("强制结束可能丢失未保存的内容。未勾选时，只发送正常关闭请求，后台无窗口进程可能继续运行。"), TextWrapping = TextWrapping.Wrap, FontSize = 12 });
@@ -626,7 +630,7 @@ public sealed partial class MainWindow : Window
         try
         {
             var latest = await Task.Run(_collector.Capture);
-            var rules = _rules.ToArray();
+            var rules = RunningRules.ToArray();
             ProtectionDecision Recheck(ProcessRecord target)
             {
                 var current = latest.Processes.FirstOrDefault(p => p.Id == target.Id && p.StartTimeUtcTicks == target.StartTimeUtcTicks);
@@ -644,7 +648,7 @@ public sealed partial class MainWindow : Window
                 var pending = report.SteamPendingForce.ToArray();
                 var warning = new StackPanel { Spacing = 14, MaxWidth = 520 };
                 warning.Children.Add(new TextBlock { Text = L.T("Steam 尚未完成退出。它可能在等待游戏、下载或同步。Process Keeper 无法确认文件已保存；建议保留运行并在 Steam 内处理提示。"), TextWrapping = TextWrapping.Wrap });
-                warning.Children.Add(new TextBox { Text = string.Join("\n", pending.Select(p => $"{p.Name} | PID {p.Id}")), IsReadOnly = true, AcceptsReturn = true, MaxHeight = 180 });
+                warning.Children.Add(new TextBox { IsReadOnly = true, AcceptsReturn = true, MaxHeight = 180, Text = string.Join("\n", pending.Select(p => $"{p.Name} | PID {p.Id}")) });
                 var acknowledge = new CheckBox { Content = new TextBlock { Text = L.T("我了解强制结束可能丢失尚未保存或同步的数据"), TextWrapping = TextWrapping.Wrap, MaxWidth = 460 }, IsChecked = false };
                 warning.Children.Add(acknowledge);
                 var confirm = NewDialog(L.T("Steam 仍在运行"), warning, L.T("强制结束清单内进程"));
@@ -689,7 +693,7 @@ public sealed partial class MainWindow : Window
         var plan = MyDockService.TryGetPlan();
         if (plan is null) return null;
         var descriptor = new ProcessRecord { Name = "MyDock.exe", Path = plan.ExecutablePath, ApplicationKey = "known:mydock" };
-        return ProtectionPolicy.IsDirectlyWhitelisted(descriptor, _rules) ? null : plan;
+        return ProtectionPolicy.IsDirectlyWhitelisted(descriptor, RunningRules) ? null : plan;
     }
 
     private ContentDialog NewDialog(string title, object content, string primary) => new()
@@ -732,9 +736,11 @@ public sealed partial class MainWindow : Window
         AppearancePage.Visibility = page == "appearance" ? Visibility.Visible : Visibility.Collapsed;
         InstalledPage.Visibility = page == "installed" ? Visibility.Visible : Visibility.Collapsed;
         AutorunsPage.Visibility = page == "autoruns" ? Visibility.Visible : Visibility.Collapsed;
+        UninstallPage.Visibility = page == "uninstall" ? Visibility.Visible : Visibility.Collapsed;
+        MiscPage.Visibility = page == "misc" ? Visibility.Visible : Visibility.Collapsed;
         _autorunsView?.SetActive(page == "autoruns");
-        PageTitle.Text = page == "autoruns" ? L.T("自启动") : page == "rules" ? L.T("白名单") : page == "history" ? L.T("操作记录") : page == "appearance" ? L.T("设置") : page == "installed" ? L.T("已安装程序") : L.T("运行中的程序");
-        PageSubtitle.Text = page == "autoruns" ? L.T("查看登录、任务和服务等后台启动入口。") : page == "rules" ? L.T("把需要的程序留下，规则由你决定。") : page == "history" ? L.T("每次更改和关闭，即时记录。") : page == "appearance" ? L.T("外观、备份迁移与应用诊断。") : page == "installed" ? L.T("软件未运行，也可以提前加入白名单。") : L.T("看清每个程序，让需要的留下。");
+        PageTitle.Text = page == "misc" ? L.T("杂项") : page == "uninstall" ? L.T("应用卸载") : page == "autoruns" ? L.T("自启动") : page == "rules" ? L.T("白名单") : page == "history" ? L.T("操作记录") : page == "appearance" ? L.T("设置") : page == "installed" ? L.T("已安装应用") : L.T("运行中的程序");
+        PageSubtitle.Text = page == "misc" ? L.T("按需优化内存、下载文件与查看实时性能。") : page == "uninstall" ? L.T("查看常规与隐藏卸载项，确认后移除不需要的软件。") : page == "autoruns" ? L.T("查看登录、任务和服务等后台启动入口。") : page == "rules" ? L.T("把需要的程序留下，规则由你决定。") : page == "history" ? L.T("每次更改和关闭，即时记录。") : page == "appearance" ? L.T("外观、备份迁移与应用诊断。") : page == "installed" ? L.T("软件未运行，也可以提前加入白名单。") : L.T("看清每个程序，让需要的留下。");
         if (page == "apps") RenderApps();
         if (page == "rules") UpdateRules();
         if (page == "history") QueueHistoryScroll();
@@ -743,7 +749,8 @@ public sealed partial class MainWindow : Window
     }
     private void AppSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_rendering || AppsList.SelectedItem is not AppRow row) return;
+        if (NativeSelectionTree.For(AppsList)?.IsApplying == true) return;
+        RefreshSelectionButtons(); if (_rendering || (e.AddedItems.LastOrDefault() ?? AppsList.SelectedItems.LastOrDefault()) is not AppRow row) return;
         _selectedKey = row.Key; _selectedRowKey = row.RowKey;
         _selectedProcessId = row.ProcessId;
         UpdateDetail(true);

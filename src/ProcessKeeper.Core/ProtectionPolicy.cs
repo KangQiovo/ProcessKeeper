@@ -55,6 +55,7 @@ public sealed class ProtectionPolicy(int sessionId, string userSid, int selfId)
         ArgumentNullException.ThrowIfNull(rules);
 
         if (process.Id == selfId || process.IsSelf) return Keep(L.T("当前管理程序自身"));
+        if (process.CriticalStatusUnknown) return Keep(L.T("无法核实关键进程标志，已保守保护此进程。"));
         if (process.Id <= 4 || !allowSensitiveDesktop && (process.IsSystem || CriticalNames.Contains(process.Name)))
             return Keep(string.IsNullOrWhiteSpace(process.SystemReason) ? L.T("系统或必要桌面组件") : process.SystemReason);
         if (process.SessionId == 0) return Keep(L.T("系统服务会话（Session 0）"));

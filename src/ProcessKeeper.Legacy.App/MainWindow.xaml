@@ -1,5 +1,5 @@
-<Window x:Class="ProcessKeeper.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:Wpf.Ui.Controls;assembly=Wpf.Ui" Title="Process Keeper" Width="1280" Height="820" MinWidth="900" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource PageBrush}" Foreground="{DynamicResource InkBrush}">
- <Window.Resources>
+<Window x:Class="ProcessKeeper.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:ProcessKeeper.App" xmlns:ui="clr-namespace:Wpf.Ui.Controls;assembly=Wpf.Ui" Title="Process Keeper" Width="1280" Height="820" MinWidth="900" MinHeight="600" WindowStartupLocation="CenterScreen" Background="{DynamicResource PageBrush}" Foreground="{DynamicResource InkBrush}">
+ <Window.Resources><local:RoleKindVisibilityConverter x:Key="RoleKindVisibility"/>
   <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
   <SolidColorBrush x:Key="PageBrush" Color="#F4F5F7"/><SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF"/><SolidColorBrush x:Key="InkBrush" Color="#17191C"/><SolidColorBrush x:Key="MutedBrush" Color="#505763"/>
   <Style TargetType="Button"><Setter Property="Padding" Value="12,7"/><Setter Property="Margin" Value="0,0,8,0"/><Setter Property="MinHeight" Value="34"/><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="ButtonBackground" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBackground" Property="Opacity" Value="0.78"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
@@ -10,15 +10,27 @@
   <DataTemplate x:Key="RowTemplate">
    <Grid Margin="4,6" Background="Transparent">
     <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="36"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <TextBlock Text="{Binding Chevron}" VerticalAlignment="Top" FontSize="20"/>
+    <Button Content="{Binding Chevron}" Click="RowChevronClicked" Background="Transparent" BorderThickness="0" Padding="0" MinWidth="0" MinHeight="22" Width="22" Height="22" Margin="0" VerticalAlignment="Top"/>
     <Image Grid.Column="1" Source="{Binding Icon}" Width="28" Height="28" VerticalAlignment="Top" Margin="0,2,8,0" Loaded="RowIconLoaded"/>
     <StackPanel Grid.Column="2" Margin="{Binding Indent}">
-     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
-     <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,8,0" TextTrimming="CharacterEllipsis"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
+      <Grid Grid.Column="1" Visibility="{Binding RoleVisibility}" ToolTip="{Binding RoleTooltip}" Margin="8,0,0,0" VerticalAlignment="Center">
+       <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter=Main}" Background="{DynamicResource RoleSuccessBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" Foreground="{DynamicResource InkBrush}" FontSize="11"/></Border>
+       <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter=PossibleMain}" Background="{DynamicResource RoleCautionBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" Foreground="{DynamicResource InkBrush}" FontSize="11"/></Border>
+       <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter='Uninstaller|PossibleUninstaller'}" Background="{DynamicResource RoleCriticalBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" Foreground="{DynamicResource InkBrush}" FontSize="11"/></Border>
+       <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter='Helper|Diagnostic|Unknown'}" Background="{DynamicResource PanelBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" Foreground="{DynamicResource InkBrush}" FontSize="11"/></Border>
+      </Grid>
+     </Grid>
+     <TextBlock x:Name="RowSummary" Text="{Binding Summary}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,8,0" TextTrimming="CharacterEllipsis"/>
      <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Margin="0,4,8,0" Visibility="{Binding Expanded,Converter={StaticResource BoolVisibility}}"/>
     </StackPanel>
-    <Button Grid.Column="3" Content="{Binding ActionLabel}" IsEnabled="{Binding CanAct}" Visibility="{Binding HasAction,Converter={StaticResource BoolVisibility}}" Click="RowAction" Margin="10,0,0,0" VerticalAlignment="Top"/>
+    <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10,0,0,0">
+     <Button Content="{Binding ActionLabel}" IsEnabled="{Binding CanAct}" Visibility="{Binding ActionButtonVisibility}" Click="RowAction" Margin="0,0,10,0"/>
+     <CheckBox Content="{Binding ActionCheckboxLabel}" IsChecked="{Binding IsActionChecked,Mode=OneWay}" IsEnabled="{Binding CanToggleAction}" Visibility="{Binding ToggleActionVisibility}" Click="RowAction" MinWidth="0" MinHeight="0" Padding="0" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,0,0" Foreground="{DynamicResource InkBrush}" ToolTip="{Binding ActionLabel}"/>
+     <CheckBox IsChecked="{Binding SelectionState,Mode=OneWay}" IsThreeState="True" Click="RowSelectionClicked" Visibility="{Binding SelectionVisibility}" Width="20" Height="20" MinWidth="0" MinHeight="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,0,0" ToolTip="{Binding Name}"/>
+    </StackPanel>
    </Grid>
+   <DataTemplate.Triggers><DataTrigger Binding="{Binding IsSelected,RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True"><Setter TargetName="RowSummary" Property="Foreground" Value="{Binding Foreground,RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/></DataTrigger></DataTemplate.Triggers>
   </DataTemplate>
  </Window.Resources>
  <Grid x:Name="Root" Background="{DynamicResource PageBrush}">
@@ -36,7 +48,7 @@
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Border x:Name="CompatibilityNotice" Background="#FFFDE7E9" Padding="12" Margin="0,0,0,14" CornerRadius="6"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="CompatibilityText" Foreground="#FFA4262C" TextWrapping="Wrap" VerticalAlignment="Center"/><Button Grid.Column="1" Content="×" Foreground="#FFA4262C" Background="Transparent" BorderThickness="0" Margin="8,0,0,0" Click="DismissCompatibility"/></Grid></Border>
     <StackPanel Grid.Row="1"><TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold"/><TextBlock x:Name="SubtitleText" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,16" TextWrapping="Wrap"/></StackPanel>
-    <Grid x:Name="Toolbar" Grid.Row="2" Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="Search" TextChanged="SearchChanged"/><CheckBox x:Name="Live" Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" Checked="LiveChanged" Unchecked="LiveChanged"/></Grid>
+    <Grid x:Name="Toolbar" Grid.Row="2" Margin="0,0,0,10"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="Search" TextChanged="SearchChanged"/><CheckBox x:Name="Live" Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" Checked="LiveChanged" Unchecked="LiveChanged"/><Expander x:Name="WhitelistScopeExpander" Grid.Row="1" Grid.ColumnSpan="2" Visibility="Collapsed" Margin="0,10,0,0" HorizontalContentAlignment="Stretch"><ContentControl x:Name="WhitelistScopeHost" HorizontalContentAlignment="Stretch"/></Expander></Grid>
     <WrapPanel x:Name="PresentationOptions" Grid.Row="3" Margin="0,0,0,8">
      <CheckBox x:Name="GroupPlatforms" Checked="PresentationChanged" Unchecked="PresentationChanged" Margin="0,0,18,4"/>
      <CheckBox x:Name="HideMicrosoft" Checked="PresentationChanged" Unchecked="PresentationChanged" Margin="0,0,0,4"/>
@@ -45,11 +57,13 @@
      <ComboBox x:Name="Category" SelectionChanged="FilterChanged" MinWidth="124" Margin="0,0,8,6"/><ComboBox x:Name="Sort" SelectionChanged="FilterChanged" MinWidth="130" Margin="0,0,8,6"/><ComboBox x:Name="Drive" SelectionChanged="FilterChanged" MinWidth="100" Margin="0,0,8,6"/>
      <CheckBox x:Name="ShowSystem" VerticalAlignment="Center" Checked="SystemChanged" Unchecked="SystemChanged" Margin="0,0,12,6"/>
      <ui:ToggleSwitch x:Name="AutorunMode" Visibility="Collapsed" VerticalAlignment="Center" Checked="AutorunModeChanged" Unchecked="AutorunModeChanged" Margin="0,0,12,6"/>
-     <Button x:Name="RefreshButton" Click="RefreshClick"/><Button x:Name="AddButton" Click="AddClick"/><Button x:Name="CloseButton" Click="CloseClick"/><Button x:Name="ImportButton" Click="ImportRulesClick"/><Button x:Name="ExportButton" Click="ExportRulesClick"/>
+     <Button x:Name="SelectAllButton" Click="ToggleAllSelectionClicked"/><Button x:Name="RefreshButton" Click="RefreshClick"/><Button x:Name="AddButton" Click="AddClick"/><Button x:Name="CloseButton" Click="CloseClick"/><Button x:Name="ImportButton" Click="ImportRulesClick"/><Button x:Name="ExportButton" Click="ExportRulesClick"/>
     </WrapPanel>
-    <ListBox x:Name="List" Grid.Row="5" ItemTemplate="{StaticResource RowTemplate}" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" PreviewMouseLeftButtonUp="RowClicked" ContextMenuOpening="RowContextMenu"/>
+    <ListBox x:Name="List" Grid.Row="5" SelectionMode="Multiple" SelectionChanged="LegacySelectionChanged" ItemTemplate="{StaticResource RowTemplate}" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" PreviewMouseLeftButtonUp="RowClicked" ContextMenuOpening="RowContextMenu"/>
     <Grid x:Name="HistoryPage" Grid.Row="5" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><CheckBox x:Name="HistoryAuto" Checked="HistoryAutoChanged" Unchecked="HistoryAutoChanged" Margin="0,0,0,10"/><ScrollViewer x:Name="HistoryScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><TextBlock x:Name="HistoryText" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"/></ScrollViewer></Grid>
     <ScrollViewer x:Name="SettingsScroll" Grid.Row="5" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"><StackPanel x:Name="SettingsContent" HorizontalAlignment="Stretch"/></ScrollViewer>
+    <ContentControl x:Name="MiscHost" Grid.Row="5" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+    <ContentControl x:Name="UninstallHost" Grid.Row="5" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <TextBlock x:Name="Status" Grid.Row="6" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"/>
    </Grid>
   </Grid>

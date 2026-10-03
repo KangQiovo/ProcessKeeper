@@ -11,7 +11,7 @@ Process Keeper 原始碼採 MIT 授權，不會因此重新授權相依元件、
 | [Microsoft WinUI Gallery](https://github.com/microsoft/WinUI-Gallery) | NavigationView、ListView、ContentDialog、InfoBar 及 Fluent 互動參考 | [MIT 原文](licenses/WinUI-Gallery-LICENSE.txt) |
 | [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) / Microsoft.WindowsAppSDK 2.5.1 | 現代 Windows 執行階段與 UI 平台 | [套件條款](licenses/Microsoft.WindowsAppSDK.2.5.1-LICENSE.txt)、[聲明](licenses/Microsoft.WindowsAppSDK.2.5.1-NOTICE.txt) |
 | Microsoft.WindowsAppSDK.WinUI 2.3.9 | WinUI 執行相依元件 | [條款](licenses/Microsoft.WindowsAppSDK.WinUI.2.3.9-LICENSE.txt)、[聲明](licenses/Microsoft.WindowsAppSDK.WinUI.2.3.9-NOTICE.txt) |
-| [.NET](https://github.com/dotnet/runtime) 8.0.31 | 現代自足載荷 | [授權](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-LICENSE.txt)、[聲明](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-THIRD-PARTY-NOTICES.txt) |
+| [.NET](https://github.com/dotnet/runtime) 8.0.31 | x64 與 ARM64 現代自足載荷；兩種架構官方套件的授權及聲明檔案經逐位元組比對相同 | [授權](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-LICENSE.txt)、[聲明](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-NOTICES.txt) |
 | [WPF UI](https://github.com/lepoco/wpfui) / Abstractions 4.3.0 | 相容控制項與主題 | [MIT](licenses/WPF-UI.4.3.0-LICENSE.md)、[聲明](licenses/WPF-UI.4.3.0-ThirdPartyNotices.txt)、[Abstractions](licenses/WPF-UI.Abstractions.4.3.0-LICENSE.md) |
 
 本專案是獨立應用程式，不是 WinUI Gallery 官方發行版，也不代表 Microsoft 背書。Gallery 的 MIT 不表示所有 Windows App SDK 二進位皆為 MIT。特定建置以專案檔及實際還原的相依圖為準。
@@ -31,9 +31,13 @@ WPF UI 聲明包含 VirtualizingWrapPanel、Fluent UI System Icons、WPF、WinUI
 - GitHub 與 Bilibili 路徑來自 [Simple Icons](https://github.com/simple-icons/simple-icons)，保留 [CC0 1.0](licenses/Simple-Icons-LICENSE.md)。
 - 酷安路徑來自 [Lawnicons](https://github.com/LawnchairLauncher/lawnicons)，採 [Apache-2.0](licenses/Lawnicons-LICENSE.txt)。
 - 上述路徑以 XAML 呈現，用於作者個人頁面連結；商標屬原權利人，不代表背書。
-- 其他程式名稱、圖示、版本與公司資料來自使用者本機檔案及 Windows。匿名示範截圖不會重新散布使用者本機軟體資產。
+- 其他程式名稱、圖示、版本與公司資料來自使用者本機檔案及 Windows。截圖使用匿名示範資料；Auradio 名稱及圖示經作者許可作為示範彩蛋，未包含 Auradio 私有原始碼，相關權利仍歸其權利人所有。
 - Process Keeper 自身圖示由 AI 產生，與從本機程式讀取的原圖示分開。
 
 ## 保留授權
 
 重新散布相依元件時應保留適用聲明。本次原始碼公開不包含執行 DLL、可執行套件或簽章憑證。未來二進位發行需保留實際所帶版本的授權，公開原始碼不能取代此要求。
+
+## 行為參考
+
+[PCL](https://github.com/Meloong-Git/PCL) 與 [PCL Community](https://github.com/PCL-Community/PCL-CE) 用於研究記憶體及下載機制。功能獨立實作，未包含其原始碼、程式或私有模組；本專案 MIT 不改變它們的授權。詳見[雜項說明](docs/UTILITIES.zh-TW.md)。

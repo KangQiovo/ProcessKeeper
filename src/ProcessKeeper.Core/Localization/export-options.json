@@ -1,9 +1,30 @@
 [
-  { "source": "导出内容", "en": "Export content" },
-  { "source": "全部设置与白名单", "en": "All settings and whitelist" },
-  { "source": "仅白名单", "en": "Whitelist only" },
-  { "source": "导出", "en": "Export" },
-  { "source": "仅包含白名单规则，不包含语言、外观或其他设置。", "en": "Includes whitelist rules only, without language, appearance or other settings." },
-  { "source": "包含白名单、外观与列表设置。", "en": "Includes whitelist, appearance and list settings." },
-  { "source": "分享模式保留 {0} 条通用规则；完整备份包含 {1} 条规则。", "en": "Sharing includes {0} portable rules; a full backup includes {1} rules." }
+  {
+    "source": "导出内容",
+    "en": "Export content"
+  },
+  {
+    "source": "全部设置与白名单",
+    "en": "All settings and whitelist"
+  },
+  {
+    "source": "仅白名单",
+    "en": "Whitelist only"
+  },
+  {
+    "source": "导出",
+    "en": "Export"
+  },
+  {
+    "source": "仅包含白名单规则，不包含语言、外观或其他设置。",
+    "en": "Includes whitelist rules only, without language, appearance or other settings."
+  },
+  {
+    "source": "包含白名单、外观与列表设置。",
+    "en": "Includes whitelist, appearance and list settings."
+  },
+  {
+    "source": "分享模式保留 {0} 条通用规则；完整备份包含 {1} 条规则。",
+    "en": "Sharing includes {0} portable rules; a full backup includes {1} rules."
+  }
 ]

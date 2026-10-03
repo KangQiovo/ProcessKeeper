@@ -44,7 +44,7 @@ public static class BuildInfo
         var instant = DateTimeOffset.ParseExact(BuildDateUtc, "yyyy-MM-dd'T'HH:mm:ss'Z'",
             CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
         var shown = timeZone is null ? instant.ToOffset(TimeSpan.FromHours(8)) : TimeZoneInfo.ConvertTime(instant, timeZone);
-        return shown.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        return TimeDisplay.Format(shown);
     }
 }
 "@

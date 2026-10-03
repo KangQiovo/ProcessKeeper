@@ -137,7 +137,7 @@ Check(classified[115].ApplicationKey != "known:steam", "steamapps executable is 
 Check(classified[102].ParentIdentityVerified, "identity retains valid startup relationship");
 Check((P(100) with { Windows = [new WindowRecord(1,"x",true,false,true,false)] }).Category == RunCategory.Background, "cloaked windows are background");
 Check((P(100) with { Windows = [new WindowRecord(1,"x",true,true,false,false)] }).Category == RunCategory.Minimized, "minimized window classification");
-Check((P(100) with { SessionId = -1, Services = [new ServiceRecord("Example", "Example service", 100)] }).Category == RunCategory.System, "known service remains service category when session is unreadable");
+Check((P(100) with { SessionId = -1, Services = [new ServiceRecord("Example", "Example service", 100)] }).Category == RunCategory.Background, "service metadata alone does not imply Windows display ownership");
 var absentWindow = new WindowRecord(0, "fixture", true, false, false, false);
 var fixtureWindow = absentWindow with { Handle = 1 };
 Check(!WindowActions.Activate(P(100), absentWindow).Success, "activate rejects absent window before native operations");

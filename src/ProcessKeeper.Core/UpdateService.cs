@@ -22,7 +22,7 @@ public sealed partial class UpdateService : IDisposable
     {
         handler ??= new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.None, UseCookies = false };
         _http = new HttpClient(handler, true) { Timeout = Timeout.InfiniteTimeSpan };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.5.0");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.6.0");
         _createDownloadFile = createDownloadFile ?? UpdateTrustedFiles.Create;
     }
     public void Dispose() { _disposed = true; _http.Dispose(); }

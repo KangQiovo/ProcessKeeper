@@ -1,41 +1,158 @@
 [
-  { "source": "高级启动入口仅供查看，不能在此更改。", "en": "Advanced startup entries are read-only here." },
-  { "source": "本机高级入口", "en": "Machine advanced entry" },
-  { "source": "当前用户高级入口", "en": "Current-user advanced entry" },
-  { "source": "已读取注册配置；条件是否满足及实际启用状态未验证。", "en": "Registered configuration found; conditions and effective enabled state have not been verified." },
-  { "source": "高级注册表入口读取不完整：{0}（{1}）。", "en": "Advanced registry inventory is incomplete: {0} ({1})." },
-  { "source": "高级来源 {0} 达到 {1} 项读取上限。", "en": "Advanced source {0} reached its {1}-entry limit." },
-  { "source": "某个高级注册表视图不可读，已保留其他来源。", "en": "An advanced registry view could not be read; other sources are retained." },
-  { "source": "WMI 永久订阅", "en": "Permanent WMI subscriptions" },
-  { "source": "打包应用启动声明", "en": "Packaged app startup declarations" },
-  { "source": "高级启动来源达到数量或时间边界，结果可能不完整。", "en": "Advanced startup inventory reached its size or time limit; results may be incomplete." },
-  { "source": "{0} 的上次系统读取尚未结束，本次未重复请求。", "en": "The previous system read for {0} is still pending; no duplicate request was started." },
-  { "source": "{0} 读取超时，系统调用可能仍在完成，当前保留其他来源。", "en": "Reading {0} timed out. The system call may still be completing; other sources are retained." },
-  { "source": "{0} 读取失败（{1}），已保留其他来源。", "en": "Could not read {0} ({1}); other sources are retained." },
-  { "source": "本机 WMI 订阅", "en": "Local WMI subscription" },
-  { "source": "WMI 条件事件", "en": "Conditional WMI event" },
-  { "source": "只读取订阅绑定；未验证条件或执行结果。脚本正文未读取。", "en": "Subscription binding only; conditions and execution are not verified. Script bodies are not read." },
-  { "source": "WMI 来源达到读取上限，部分对象未显示。", "en": "WMI inventory reached its limit; some objects are omitted." },
-  { "source": "WMI 某类对象不可读（{0}），关联信息可能不完整。", "en": "A WMI object class could not be read ({0}); associations may be incomplete." },
-  { "source": "WMI 命名空间 {0} 不可读（{1}）。", "en": "WMI namespace {0} could not be read ({1})." },
-  { "source": "WMI 仅读取 root\\subscription 与 root\\default；其他命名空间未扫描。", "en": "WMI inventory covers root\\subscription and root\\default only; other namespaces are not scanned." },
-  { "source": "打包启动来源达到读取上限，部分声明未显示。", "en": "Packaged startup inventory reached its limit; some declarations are omitted." },
-  { "source": "某个包清单过大，启动声明未读取。", "en": "A package manifest is too large; its startup declarations were not read." },
-  { "source": "某个包已达到 100 项启动声明读取边界。", "en": "A package reached the limit of 100 startup declarations." },
-  { "source": "某个打包启动声明不可读（{0}），已保留其他包。", "en": "A packaged startup declaration could not be read ({0}); other packages are retained." },
-  { "source": "当前用户的包声明", "en": "Current-user package declaration" },
-  { "source": "包登录启动声明", "en": "Packaged logon startup declaration" },
-  { "source": "第三方包的当前启用状态由 Windows 管理，请使用系统启动应用设置。", "en": "Windows manages the current enabled state of other packages. Use Windows Startup Apps settings." },
-  { "source": "清单声明 Enabled={0}；这不代表当前启用状态。", "en": "Manifest declares Enabled={0}; this does not indicate the current enabled state." },
-  { "source": "未声明", "en": "not declared" },
-  { "source": "无法确认自启动备份的系统目录或账户。", "en": "The system backup directory or current account could not be verified." },
-  { "source": "自启动备份路径包含链接，已停止读取或写入。", "en": "The startup backup path contains a link; reading or writing has stopped." },
-  { "source": "自启动备份目录不属于当前账户的受限系统目录。", "en": "The startup backup directory is outside the current account's protected system location." },
-  { "source": "自启动备份所有者或权限不可信；原目录权限未被修改。", "en": "The startup backup owner or permissions are untrusted; existing directory permissions were not changed." },
-  { "source": "自启动备份必须仅允许管理员和 SYSTEM 访问，未更改现有权限。", "en": "Startup backups must grant exclusive access to Administrators and SYSTEM; existing permissions were not changed." },
-  { "source": "自启动备份上级目录可被非管理员替换，已停止操作。", "en": "A startup backup ancestor can be replaced without administrator privileges; the operation stopped." },
-  { "source": "启动文件的原始权限或属性无法完整恢复。", "en": "The startup file's original permissions or attributes could not be fully restored." },
-  { "source": "启动文件的所有者不支持安全恢复，只能查看。", "en": "The startup file's owner cannot be restored safely; this entry is read-only." },
-  { "source": "启动文件含有无法完整恢复的特殊属性，只能查看。", "en": "The startup file has special attributes that cannot be fully restored; this entry is read-only." },
-  { "source": "启动文件路径包含链接或已被替换。", "en": "The startup file path contains a link or has been replaced." }
+  {
+    "source": "高级启动入口仅供查看，不能在此更改。",
+    "en": "Advanced startup entries are read-only here."
+  },
+  {
+    "source": "本机高级入口",
+    "en": "Machine advanced entry"
+  },
+  {
+    "source": "当前用户高级入口",
+    "en": "Current-user advanced entry"
+  },
+  {
+    "source": "已读取注册配置；条件是否满足及实际启用状态未验证。",
+    "en": "Registered configuration found; conditions and effective enabled state have not been verified."
+  },
+  {
+    "source": "高级注册表入口读取不完整：{0}（{1}）。",
+    "en": "Advanced registry inventory is incomplete: {0} ({1})."
+  },
+  {
+    "source": "高级来源 {0} 达到 {1} 项读取上限。",
+    "en": "Advanced source {0} reached its {1}-entry limit."
+  },
+  {
+    "source": "某个高级注册表视图不可读，已保留其他来源。",
+    "en": "An advanced registry view could not be read; other sources are retained."
+  },
+  {
+    "source": "WMI 永久订阅",
+    "en": "Permanent WMI subscriptions"
+  },
+  {
+    "source": "打包应用启动声明",
+    "en": "Packaged app startup declarations"
+  },
+  {
+    "source": "高级启动来源达到数量或时间边界，结果可能不完整。",
+    "en": "Advanced startup inventory reached its size or time limit; results may be incomplete."
+  },
+  {
+    "source": "{0} 的上次系统读取尚未结束，本次未重复请求。",
+    "en": "The previous system read for {0} is still pending; no duplicate request was started."
+  },
+  {
+    "source": "{0} 读取超时，系统调用可能仍在完成，当前保留其他来源。",
+    "en": "Reading {0} timed out. The system call may still be completing; other sources are retained."
+  },
+  {
+    "source": "{0} 读取失败（{1}），已保留其他来源。",
+    "en": "Could not read {0} ({1}); other sources are retained."
+  },
+  {
+    "source": "本机 WMI 订阅",
+    "en": "Local WMI subscription"
+  },
+  {
+    "source": "WMI 条件事件",
+    "en": "Conditional WMI event"
+  },
+  {
+    "source": "只读取订阅绑定；未验证条件或执行结果。脚本正文未读取。",
+    "en": "Subscription binding only; conditions and execution are not verified. Script bodies are not read."
+  },
+  {
+    "source": "WMI 来源达到读取上限，部分对象未显示。",
+    "en": "WMI inventory reached its limit; some objects are omitted."
+  },
+  {
+    "source": "WMI 某类对象不可读（{0}），关联信息可能不完整。",
+    "en": "A WMI object class could not be read ({0}); associations may be incomplete."
+  },
+  {
+    "source": "WMI 命名空间 {0} 不可读（{1}）。",
+    "en": "WMI namespace {0} could not be read ({1})."
+  },
+  {
+    "source": "WMI 仅读取 root\\subscription 与 root\\default；其他命名空间未扫描。",
+    "en": "WMI inventory covers root\\subscription and root\\default only; other namespaces are not scanned."
+  },
+  {
+    "source": "打包启动来源达到读取上限，部分声明未显示。",
+    "en": "Packaged startup inventory reached its limit; some declarations are omitted."
+  },
+  {
+    "source": "某个包清单过大，启动声明未读取。",
+    "en": "A package manifest is too large; its startup declarations were not read."
+  },
+  {
+    "source": "某个包已达到 100 项启动声明读取边界。",
+    "en": "A package reached the limit of 100 startup declarations."
+  },
+  {
+    "source": "某个打包启动声明不可读（{0}），已保留其他包。",
+    "en": "A packaged startup declaration could not be read ({0}); other packages are retained."
+  },
+  {
+    "source": "当前用户的包声明",
+    "en": "Current-user package declaration"
+  },
+  {
+    "source": "包登录启动声明",
+    "en": "Packaged logon startup declaration"
+  },
+  {
+    "source": "第三方包的当前启用状态由 Windows 管理，请使用系统启动应用设置。",
+    "en": "Windows manages the current enabled state of other packages. Use Windows Startup Apps settings."
+  },
+  {
+    "source": "清单声明 Enabled={0}；这不代表当前启用状态。",
+    "en": "Manifest declares Enabled={0}; this does not indicate the current enabled state."
+  },
+  {
+    "source": "未声明",
+    "en": "not declared"
+  },
+  {
+    "source": "无法确认自启动备份的系统目录或账户。",
+    "en": "The system backup directory or current account could not be verified."
+  },
+  {
+    "source": "自启动备份路径包含链接，已停止读取或写入。",
+    "en": "The startup backup path contains a link; reading or writing has stopped."
+  },
+  {
+    "source": "自启动备份目录不属于当前账户的受限系统目录。",
+    "en": "The startup backup directory is outside the current account's protected system location."
+  },
+  {
+    "source": "自启动备份所有者或权限不可信；原目录权限未被修改。",
+    "en": "The startup backup owner or permissions are untrusted; existing directory permissions were not changed."
+  },
+  {
+    "source": "自启动备份必须仅允许管理员和 SYSTEM 访问，未更改现有权限。",
+    "en": "Startup backups must grant exclusive access to Administrators and SYSTEM; existing permissions were not changed."
+  },
+  {
+    "source": "自启动备份上级目录可被非管理员替换，已停止操作。",
+    "en": "A startup backup ancestor can be replaced without administrator privileges; the operation stopped."
+  },
+  {
+    "source": "启动文件的原始权限或属性无法完整恢复。",
+    "en": "The startup file's original permissions or attributes could not be fully restored."
+  },
+  {
+    "source": "启动文件的所有者不支持安全恢复，只能查看。",
+    "en": "The startup file's owner cannot be restored safely; this entry is read-only."
+  },
+  {
+    "source": "启动文件含有无法完整恢复的特殊属性，只能查看。",
+    "en": "The startup file has special attributes that cannot be fully restored; this entry is read-only."
+  },
+  {
+    "source": "启动文件路径包含链接或已被替换。",
+    "en": "The startup file path contains a link or has been replaced."
+  }
 ]

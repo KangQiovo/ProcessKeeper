@@ -1,3 +1,4 @@
-[
-  {"source":"虚拟机提供程序仍在响应前一次读取，请稍后重试。","en":"The virtual machine provider is still handling its previous query. Try again later."}
-]
+[ {
+  "source": "虚拟机提供程序仍在响应前一次读取，请稍后重试。",
+  "en": "The virtual machine provider is still handling its previous query. Try again later."
+} ]

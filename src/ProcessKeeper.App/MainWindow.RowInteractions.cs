@@ -12,6 +12,9 @@ public sealed partial class MainWindow
 {
     private readonly Dictionary<DependencyObject, (ListView List, object Row)> _realizedContainers = [];
     private readonly Dictionary<object, IconLease> _visibleIcons = [];
+    private const int MaximumRetainedRowIcons = 128;
+    private readonly LinkedList<object> _retainedIconOrder = new();
+    private readonly Dictionary<object, (string Path, LinkedListNode<object> Node)> _retainedIcons = [];
     private bool _iconRefreshQueued;
 
     private sealed class IconLease(string path)
@@ -22,6 +25,7 @@ public sealed partial class MainWindow
 
     private void InitializeRowInteractions()
     {
+        InitializeSelectionTrees();
         foreach (var list in new[] { AppsList, InstalledList, RulesList })
         {
             // Keep native virtualization. Only realized containers request icons.
@@ -68,10 +72,14 @@ public sealed partial class MainWindow
             _iconRefreshQueued = false;
             if (_closed) return;
             var visible = _realizedContainers.Values.Where(value => IsActiveList(value.List)).Select(value => value.Row).ToHashSet();
+            foreach (var old in _retainedIcons.Keys.Where(row => !RowRemainsInActiveList(row)).ToArray())
+            { RemoveRetainedIcon(old); SetRowIcon(old, null); }
             foreach (var old in _visibleIcons.Keys.Where(row => !visible.Contains(row)).ToArray())
             {
+                var path = _visibleIcons[old].Path;
                 _visibleIcons.Remove(old);
-                SetRowIcon(old, null);
+                if (RowRemainsInActiveList(old)) RetainRowIcon(old, path);
+                else SetRowIcon(old, null);
             }
             foreach (var row in visible)
             {
@@ -81,13 +89,32 @@ public sealed partial class MainWindow
                 {
                     lease = new IconLease(path);
                     _visibleIcons[row] = lease;
-                    SetRowIcon(row, null);
+                    if (_retainedIcons.TryGetValue(row, out var retained) && retained.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                    { RemoveRetainedIcon(row); lease.Requested = row switch { AppRow app => app.Icon is not null, InstalledRow installed => installed.Icon is not null, RuleRow rule => rule.Icon is not null, _ => false }; }
+                    else { RemoveRetainedIcon(row); SetRowIcon(row, null); }
                 }
                 if (lease.Requested) continue;
                 lease.Requested = true;
                 _ = LoadVisibleIconAsync(row, lease);
             }
         });
+    }
+
+    private bool RowRemainsInActiveList(object row) => row switch
+    {
+        AppRow app => AppsPage.Visibility == Visibility.Visible && _appRows.Contains(app),
+        InstalledRow installed => InstalledPage.Visibility == Visibility.Visible && _installedRows.Contains(installed),
+        RuleRow rule => RulesPage.Visibility == Visibility.Visible && _ruleRows.Contains(rule),
+        _ => false
+    };
+    private void RemoveRetainedIcon(object row)
+    { if (_retainedIcons.Remove(row, out var retained)) _retainedIconOrder.Remove(retained.Node); }
+    private void RetainRowIcon(object row, string path)
+    {
+        RemoveRetainedIcon(row);
+        _retainedIcons[row] = (path, _retainedIconOrder.AddLast(row));
+        while (_retainedIcons.Count > MaximumRetainedRowIcons && _retainedIconOrder.First is { } first)
+        { var old = first.Value; RemoveRetainedIcon(old); SetRowIcon(old, null); }
     }
 
     private async Task LoadVisibleIconAsync(object row, IconLease lease)
@@ -134,7 +161,7 @@ public sealed partial class MainWindow
             var close = new MenuFlyoutItem
             {
                 Text = L.T("强制关闭敏感进程…"), Icon = new FontIcon { Glyph = "\uE7BA" },
-                IsEnabled = !_working && !_windowOperationRunning && !_dialogOpen && _configurationHealthy && !_policy.EvaluateSensitiveClose(process, _snapshot, _rules).Protected
+                IsEnabled = !_working && !_windowOperationRunning && !_dialogOpen && _configurationHealthy && !_policy.EvaluateSensitiveClose(process, _snapshot, RunningRules).Protected
             };
             close.Click += async (_, _) => await CloseSensitiveProcessAsync(process);
             menu.Items.Add(close);
@@ -175,12 +202,20 @@ public sealed partial class MainWindow
             AppRow app => _snapshot.Applications.Where(a => a.Key == app.Key).SelectMany(a => a.Processes)
                 .OrderByDescending(p => p.HasVisibleWindow).Select(p => p.Path),
             InstalledRow installed when installed.ExecutablePath.Length > 0 => [installed.ExecutablePath],
-            InstalledRow installed => AllInstalledApplications().Where(a => a.Id == installed.ApplicationId)
-                .SelectMany(a => a.Executables.Select(e => e.Path).Append(a.InstallLocation)),
-            RuleRow rule => new[] { rule.IconPath }.Concat(_rules.Where(r => r.Id == rule.Id && r.Kind is ProcessKeeper.Core.RuleKind.ExecutablePath or ProcessKeeper.Core.RuleKind.Directory).Select(r => r.Value)),
+            InstalledRow installed => InstalledParentLocation(installed),
+            RuleRow rule => new[] { rule.LocationPath }.Concat(_rules.Where(r => r.Id == rule.Id && r.Kind is ProcessKeeper.Core.RuleKind.ExecutablePath or ProcessKeeper.Core.RuleKind.Directory).Select(r => r.Value)),
             _ => []
         };
         return paths.FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && Path.IsPathFullyQualified(path) && (File.Exists(path) || Directory.Exists(path)));
+    }
+
+    private IEnumerable<string> InstalledParentLocation(InstalledRow row)
+    {
+        var application = AllInstalledApplications().FirstOrDefault(a => a.Id == row.ApplicationId);
+        if (application is null) return Array.Empty<string>();
+        var identity = new InstalledExecutableIdentity(_uninstallView?.InventoryEntries).ResolveMain(application);
+        return identity.Status == InstalledMainIdentityStatus.Resolved
+            ? new[] { identity.ExecutablePath, application.InstallLocation } : new[] { application.InstallLocation };
     }
 
     private void OpenRowLocation(string path)

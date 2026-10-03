@@ -19,9 +19,9 @@ public sealed partial class MainWindow
         RenderRules();
     }
 
-    private void RuleItemClicked(object sender, ItemClickEventArgs args)
+    private void RuleChevronClicked(object sender, RoutedEventArgs args)
     {
-        if (_working || args.ClickedItem is not RuleRow { IsProcess: false } row) return;
+        if (_working || (sender as FrameworkElement)?.DataContext is not RuleRow { IsProcess: false } row) return;
         if (row.IsExpanded)
         {
             _expandedRules.Remove(row.Id);
@@ -38,6 +38,8 @@ public sealed partial class MainWindow
         })) _ruleRenderQueued = false;
     }
 
+    private void RuleItemClicked(object sender, ItemClickEventArgs args) => RefreshSelectionButtons();
+
     private async void EditRuleFromMenu(object sender, RoutedEventArgs args)
     {
         if (sender is MenuFlyoutItem { Tag: string id })
@@ -52,6 +54,7 @@ public sealed partial class MainWindow
 
     private void RenderRules()
     {
+        NativeSelectionTree.For(RulesList)?.Invalidate(RulesPage.Visibility == Visibility.Visible);
         _ruleRevision++;
         if (!_ready || _closed || _ruleRendering || RulesPage.Visibility != Visibility.Visible) return;
         _ = RenderRulesAsync();
@@ -82,6 +85,7 @@ public sealed partial class MainWindow
         var collapsedSearch = _searchCollapsedRules.ToHashSet(StringComparer.Ordinal);
         var query = RulesSearch.Text?.Trim() ?? "";
         var installed = AllInstalledApplications().ToArray();
+        var display = _displayCatalog;
         var searchIndex = _ruleSearchIndex ??= new RuleSearchIndex(installed);
         var rows = await Task.Run(() =>
         {
@@ -119,10 +123,12 @@ public sealed partial class MainWindow
                 .Select(match => match.Process.Path).FirstOrDefault(path => path.Length > 0) ?? "";
             if (iconPath.Length == 0)
                 iconPath = RuleIconPath(rule, components, byApplication, byName);
+            var locationPath = iconPath;
+            iconPath = display.ResolveGameIconPath(iconPath);
             next.Add(new RuleRow
             {
                 Id = rule.Id, RowKey = "rule:" + rule.Id, Name = WhitelistStore.GetDisplayName(rule), Enabled = rule.Enabled,
-                IsExpanded = _expandedRules.Contains(rule.Id) || searchExpanded, IconPath = iconPath,
+                IsExpanded = _expandedRules.Contains(rule.Id) || searchExpanded, IconPath = iconPath, LocationPath = locationPath,
                 Detail = $"{KindLabel(rule.Kind)} | {rule.Value}", MatchText = status,
                 Tooltip = $"{WhitelistStore.GetDisplayName(rule)}\n{scope}{inheritance}\n{KindLabel(rule.Kind)}：{rule.Value}\n{status}\n" +
                     (rule.Enabled ? L.T("匹配表示规则关联。系统保护和其他规则的实际判定见展开后的进程。") : L.T("此规则已停用，展开仅预览关联，不会由此规则保留进程。"))
@@ -139,7 +145,7 @@ public sealed partial class MainWindow
                 next.Add(new RuleRow
                 {
                     Id = rule.Id, RowKey = $"rule:{rule.Id}|pid:{process.Id}:{process.StartTimeUtcTicks}",
-                    ProcessId = process.Id, ProcessStartTicks = process.StartTimeUtcTicks, IconPath = process.Path,
+                    ProcessId = process.Id, ProcessStartTicks = process.StartTimeUtcTicks, IconPath = process.Path, LocationPath = process.Path,
                     Name = $"{process.Name} | PID {process.Id}", Enabled = rule.Enabled,
                     Detail = L.F($"所属软件：{process.ApplicationName}") + $" | {CategoryLabel(process.Category)} | {Memory(process.MemoryBytes)} | {relation}",
                     MatchText = protection,
@@ -180,13 +186,11 @@ public sealed partial class MainWindow
                 var candidate = rows[index];
                 if (!existing.TryGetValue(candidate.RowKey, out var row))
                 {
+                    candidate.Notify();
                     _ruleRows.Insert(index, candidate);
                     continue;
                 }
-                if (!ReferenceEquals(_ruleRows[index], row)) _ruleRows.Move(_ruleRows.IndexOf(row), index);
-                var changed = row.Name != candidate.Name || row.Detail != candidate.Detail || row.MatchText != candidate.MatchText ||
-                    row.RecoveryText != candidate.RecoveryText || row.RecoveryTooltip != candidate.RecoveryTooltip ||
-                    row.Tooltip != candidate.Tooltip || row.Enabled != candidate.Enabled || row.IsExpanded != candidate.IsExpanded;
+                if (!ReferenceEquals(_ruleRows[index], row)) NativeListSelection.Move(RulesList, _ruleRows, _ruleRows.IndexOf(row), index, item => item.RowKey);
                 row.Name = candidate.Name;
                 row.Detail = candidate.Detail;
                 row.MatchText = candidate.MatchText;
@@ -195,19 +199,20 @@ public sealed partial class MainWindow
                 row.Tooltip = candidate.Tooltip;
                 row.Enabled = candidate.Enabled;
                 row.IsExpanded = candidate.IsExpanded;
+                row.LocationPath = candidate.LocationPath;
                 if (!string.Equals(row.IconPath, candidate.IconPath, StringComparison.OrdinalIgnoreCase))
                 {
                     row.IconPath = candidate.IconPath;
                     row.IconRequested = false;
                     row.Icon = null;
-                    changed = true;
+                    row.NotifyIcon();
                 }
-                if (changed) row.Notify();
+                row.Notify();
             }
             _expandedRules.IntersectWith(_rules.Select(rule => rule.Id));
             RulesEmpty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
-        finally { _rendering = wasRendering; QueueVisibleIcons(); }
+        finally { _rendering = wasRendering; QueueVisibleIcons(); RefreshSelectionButtons(); }
     }
 
     private static string RuleIconPath(WhitelistRule rule, IReadOnlyList<InstalledExecutable> components,

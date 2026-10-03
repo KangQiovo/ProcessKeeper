@@ -1,5 +1,8 @@
 [
-  { "source": " | 已取消稳定检查，请刷新确认。", "en": " | Stability check cancelled. Refresh to confirm the current state." },
+  {
+    "source": " | 已取消稳定检查，请刷新确认。",
+    "en": " | Stability check cancelled. Refresh to confirm the current state."
+  },
   {
     "source": " | 无法核实关闭后的进程状态：{0}",
     "en": " | Could not verify process state after closing: {0}"

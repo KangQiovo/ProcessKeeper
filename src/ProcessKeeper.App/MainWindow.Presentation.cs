@@ -41,10 +41,11 @@ public sealed partial class MainWindow
         _groupGamePlatforms = group; _hideMicrosoftApps = hide;
         RunningPresentationOptions.Apply(group, hide); InstalledPresentationOptions.Apply(group, hide);
         _autorunsView?.ApplyPresentation(_displayCatalog, group, hide);
+        _uninstallView?.ApplyPresentation(_displayCatalog, group, hide);
     }
     private async void RequestPresentationCapture()
     {
-        if (_closed || (!_groupGamePlatforms && !_hideMicrosoftApps)) return;
+        if (_closed || (!_groupGamePlatforms && !_hideMicrosoftApps && !(_uninstallView?.InventoryEntries.Count > 0))) return;
         _displayDirty = true;
         if (_displayCapturing) return;
         _displayCapturing = true;
@@ -55,11 +56,15 @@ public sealed partial class MainWindow
                 _displayDirty = false;
                 var snapshot = _snapshot; var installed = AllInstalledApplications().ToArray();
                 var autoruns = _autorunsView?.InventoryEntries ?? Array.Empty<AutorunEntry>();
+                var uninstall = _uninstallView?.InventoryEntries ?? Array.Empty<UninstallEntry>();
                 var token = _displayLifetime.Token;
-                var result = await Task.Run(() => CaptureDisplay is { } capture ? capture(snapshot, installed, autoruns, token) : _displayService.Capture(snapshot, installed, autoruns, token), token);
+                var verifyMicrosoft = _hideMicrosoftApps || uninstall.Count > 0;
+                var result = await Task.Run(() => CaptureDisplay is { } capture ? capture(snapshot, installed, autoruns, token) : _displayService.Capture(snapshot, installed, autoruns, uninstall, verifyMicrosoft, token), token);
                 if (_closed || token.IsCancellationRequested) return;
+                if (_displayCatalog.HasSamePresentationAs(result)) continue;
                 _displayCatalog = result;
                 _autorunsView?.ApplyPresentation(result, _groupGamePlatforms, _hideMicrosoftApps);
+                _uninstallView?.ApplyPresentation(result, _groupGamePlatforms, _hideMicrosoftApps);
                 RenderApps(); RenderInstalled();
             }
         }

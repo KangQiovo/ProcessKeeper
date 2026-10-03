@@ -26,16 +26,17 @@ int wmain(int argc, wchar_t** argv) {
         if (argc == 4 && wcscmp(argv[1], L"--fixture-child") == 0) { Sleep(static_cast<DWORD>((std::min)(5000UL, std::stoul(argv[2])))); return std::stoi(argv[3]); }
         if (argc == 4 && wcscmp(argv[1], L"--validate-update") == 0) { ValidateUpdateBundleFixture(argv[2], argv[3]); WriteDiagnostic(L"Inert package resources and product version verified; no image code executed.\n"); return 0; }
         if (argc == 6 && wcscmp(argv[1], L"--extract-verify") == 0) {
-            const bool modern = wcscmp(argv[5], L"modern") == 0;
-            if (!modern && wcscmp(argv[5], L"legacy") != 0) throw Failure(L"Unknown fixture variant.");
+            const auto route = wcscmp(argv[5], L"modern") == 0 ? Route::ModernX64 :
+                wcscmp(argv[5], L"legacy") == 0 ? Route::Legacy : wcscmp(argv[5], L"arm64") == 0 ? Route::ModernArm64 : Route::Unsupported;
+            if (route == Route::Unsupported) throw Failure(L"Unknown fixture variant.");
             std::ifstream cabinet(argv[2], std::ios::binary), manifestInput(argv[3], std::ios::binary);
             std::vector<BYTE> archive((std::istreambuf_iterator<char>(cabinet)), std::istreambuf_iterator<char>());
             std::string manifestText((std::istreambuf_iterator<char>(manifestInput)), std::istreambuf_iterator<char>());
             auto manifest = ParseManifest(manifestText); const auto root = FullPath(argv[4]);
             check(CreateDirectoryW(root.c_str(), nullptr) != FALSE, L"package verification creates a new isolated workspace directory");
-            ExtractCabinetFixture(archive, manifest, root, modern);
-            size_t verified = 0; const std::wstring prefix = modern ? L"modern/" : L"legacy/";
-            for (const auto& pair : manifest.files) if (pair.first.rfind(prefix, 0) == 0) {
+            ExtractCabinetFixture(archive, manifest, root, route);
+            size_t verified = 0;
+            for (const auto& pair : manifest.files) if (IsPayloadFile(pair.first, route)) {
                 auto path = root + L"\\" + pair.first; std::replace(path.begin(), path.end(), L'/', L'\\');
                 Handle file(CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
                 LARGE_INTEGER length{};
@@ -43,7 +44,7 @@ int wmain(int argc, wchar_t** argv) {
                     throw Failure(L"A real packaged file failed exact length/SHA-256 verification.");
                 ++verified;
             }
-            WriteDiagnostic(L"Actual package verified: " + std::to_wstring(verified) + L" " + (modern ? L"modern" : L"legacy") + L" files | no payload process launched.\n");
+            WriteDiagnostic(L"Actual package verified: " + std::to_wstring(verified) + L" " + PayloadDirectory(route) + L" files | no payload process launched.\n");
             return 0;
         }
         Host host{ 6, 1, 7601, 1, IMAGE_FILE_MACHINE_I386, 394806 };
@@ -70,7 +71,15 @@ int wmain(int argc, wchar_t** argv) {
         host.machine = IMAGE_FILE_MACHINE_I386;
         check(ChooseRoute(host) == Route::Legacy, L"Win10 x86 never attempts to launch an x64 image");
         host.machine = IMAGE_FILE_MACHINE_ARM64;
-        check(ChooseRoute(host) == Route::Unsupported, L"unverified ARM64 is rejected rather than guessed");
+        check(ChooseRoute(host) == Route::ModernArm64, L"Win10 2004 ARM64 selects its native modern payload through the x86 outer launcher");
+        check(ChooseRoute(host, true) == Route::Unsupported && !CanOfferLegacy(Route::ModernArm64, false, false), L"ARM64 cannot fall back to an unverified legacy route");
+        host.framework = 0; host.build = 22621;
+        check(ChooseRoute(host) == Route::ModernArm64, L"Win11 ARM64 modern route is independent of x86 Framework installation");
+        host.build = 18363;
+        check(ChooseRoute(host) == Route::Unsupported, L"older ARM64 Windows is rejected before loading .NET");
+        host.build = 22621; host.machine = IMAGE_FILE_MACHINE_ARMNT;
+        check(ChooseRoute(host) == Route::Unsupported, L"ARM32 cannot be mislabeled ARM64 compatible");
+        check(IsModernRoute(Route::ModernX64) && IsModernRoute(Route::ModernArm64) && !IsModernRoute(Route::Legacy), L"modern runtime help covers both native architectures");
         host = {};
         check(ChooseRoute(host) == Route::Unsupported, L"failed OS discovery cannot launch a payload");
         const auto actual = DetectHost();
@@ -93,7 +102,7 @@ int wmain(int argc, wchar_t** argv) {
             ExtractCabinetFixture(archive, manifest, root, true);
             check(GetFileAttributesW((root + L"\\modern\\ProcessKeeper.exe").c_str()) != INVALID_FILE_ATTRIBUTES &&
                 GetFileAttributesW((root + L"\\legacy").c_str()) == INVALID_FILE_ATTRIBUTES, L"real CAB extracts only the selected variant");
-            for (const auto& pair : manifest.files) if (pair.first.rfind(L"modern/", 0) == 0) {
+            for (const auto& pair : manifest.files) if (IsPayloadFile(pair.first, Route::ModernX64)) {
                 auto path = root + L"\\" + pair.first; std::replace(path.begin(), path.end(), L'/', L'\\');
                 Handle file(CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
                 check(file.valid() && Hex(HashFile(file.get())) == pair.second.hash, L"real CAB extracted file matches exact original SHA-256");

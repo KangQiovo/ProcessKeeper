@@ -49,6 +49,7 @@ Resource ReadResource(int identifier) {
 struct Output { Handle handle; const PayloadFile* expected = nullptr; ULONGLONG written = 0; std::wstring path; };
 struct CabinetContext {
     Resource archive; const Manifest* manifest = nullptr; std::wstring root, selected;
+    Route route = Route::Unsupported;
     std::map<INT_PTR, LONG> inputs; INT_PTR nextInput = 0x40000000;
     std::map<INT_PTR, Output> outputs;
     std::set<std::wstring, OrdinalIgnoreCase> seen;
@@ -132,7 +133,7 @@ INT_PTR DIAMONDAPI Notify(FDINOTIFICATIONTYPE kind, PFDINOTIFICATION notificatio
             auto found = current->manifest->files.find(name);
             if (found == current->manifest->files.end() || !current->seen.insert(name).second || notification->cb < 0 ||
                 static_cast<ULONGLONG>(notification->cb) != found->second.length) throw Failure(L"The cabinet does not match its embedded manifest.");
-            if (name.rfind(current->selected + L"/", 0) != 0) return 0;
+            if (!IsPayloadFile(name, current->route)) return 0;
             OutputParents(current->root, name);
             auto path = ToFilePath(current->root, name); auto file = OutputFile(path, true);
             auto key = reinterpret_cast<INT_PTR>(file.get());
@@ -152,13 +153,16 @@ INT_PTR DIAMONDAPI Notify(FDINOTIFICATIONTYPE kind, PFDINOTIFICATION notificatio
     } catch (const Failure& error) { current->failure = error.message; return -1; }
     catch (...) { if (current) current->failure = L"The application cabinet is invalid."; return -1; }
 }
-void Extract(Resource archive, const Manifest& manifest, const std::wstring& root, const std::wstring& selected, const std::atomic_bool* canceled = nullptr
+void Extract(Resource archive, const Manifest& manifest, const std::wstring& root, Route route, const std::atomic_bool* canceled = nullptr
 #ifdef PK_FIXTURE_BUILD
     , bool fixture = false
 #endif
 ) {
+    const auto selected = PayloadDirectory(route);
+    if (!manifest.files.count(selected + L"/ProcessKeeper.exe")) throw Failure(L"The package does not contain the selected processor architecture.");
     if (archive.length > LONG_MAX) throw Failure(L"The embedded cabinet is too large.");
     CabinetContext context; context.archive = archive; context.manifest = &manifest; context.root = root; context.selected = selected;
+    context.route = route;
     context.canceled = canceled;
 #ifdef PK_FIXTURE_BUILD
     context.fixture = fixture;
@@ -178,7 +182,7 @@ void Extract(Resource archive, const Manifest& manifest, const std::wstring& roo
     if (!success || !context.failure.empty()) throw Failure(context.failure.empty() ? L"The embedded cabinet could not be extracted. FDI " + std::to_wstring(error.erfOper) + L" | " + std::to_wstring(error.erfType) : context.failure);
     if (!context.outputs.empty() || context.seen.size() != manifest.files.size()) throw Failure(L"The embedded cabinet is incomplete.");
 }
-void EnumerateVerified(const Manifest& manifest, const std::wstring& root, const std::wstring& relative, std::set<std::wstring, OrdinalIgnoreCase>& seen, std::vector<Handle>& files, const std::atomic_bool* canceled = nullptr) {
+void EnumerateVerified(const Manifest& manifest, const std::wstring& root, const std::wstring& relative, std::set<std::wstring, OrdinalIgnoreCase>& seen, std::vector<Handle>& files, Route route, const std::atomic_bool* canceled = nullptr) {
     CheckCancellation(canceled);
     const auto directoryPath = ToFilePath(root, relative);
     Handle directory(CreateFileW(directoryPath.c_str(), GENERIC_READ | READ_CONTROL, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
@@ -196,11 +200,11 @@ void EnumerateVerified(const Manifest& manifest, const std::wstring& root, const
             if (item.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
                 if (std::count(name.begin(), name.end(), L'/') > 32) throw Failure(L"The application cache is too deeply nested.");
                 const auto prefix = name + L"/";
-                if (std::none_of(manifest.files.begin(), manifest.files.end(), [&](const auto& pair) { return pair.first.rfind(prefix, 0) == 0; })) throw Failure(L"The cache contains an unexpected directory.");
-                EnumerateVerified(manifest, root, name, seen, files, canceled);
+                if (std::none_of(manifest.files.begin(), manifest.files.end(), [&](const auto& pair) { return IsPayloadFile(pair.first, route) && pair.first.rfind(prefix, 0) == 0; })) throw Failure(L"The cache contains an unexpected directory.");
+                EnumerateVerified(manifest, root, name, seen, files, route, canceled);
             } else {
                 auto expected = manifest.files.find(name);
-                if (expected == manifest.files.end() || !seen.insert(name).second) throw Failure(L"The cache contains an unexpected file.");
+                if (expected == manifest.files.end() || !IsPayloadFile(name, route) || !seen.insert(name).second) throw Failure(L"The cache contains an unexpected file.");
                 auto file = OpenProtectedFile(ToFilePath(root, name)); LARGE_INTEGER length{};
                 if (!GetFileSizeEx(file.get(), &length) || static_cast<ULONGLONG>(length.QuadPart) != expected->second.length || Hex(HashFile(file.get())) != expected->second.hash)
                     throw Failure(L"The application cache failed integrity verification.");
@@ -213,6 +217,21 @@ void EnumerateVerified(const Manifest& manifest, const std::wstring& root, const
 }
 }
 
+std::wstring PayloadDirectory(Route route) {
+    if (route == Route::ModernX64) return L"modern";
+    if (route == Route::ModernArm64) return L"modern/arm64";
+    if (route == Route::Legacy) return L"legacy";
+    throw Failure(L"No application payload matches this platform.");
+}
+bool IsPayloadFile(const std::wstring& path, Route route) {
+    auto starts = [&](const std::wstring& prefix) {
+        return path.size() >= prefix.size() && CompareStringOrdinal(path.data(), static_cast<int>(prefix.size()), prefix.data(), static_cast<int>(prefix.size()), TRUE) == CSTR_EQUAL;
+    };
+    if (route == Route::ModernX64) return starts(L"modern/") && !starts(L"modern/arm64/");
+    if (route == Route::ModernArm64) return starts(L"modern/arm64/");
+    if (route == Route::Legacy) return starts(L"legacy/");
+    return false;
+}
 void ValidateRelativePath(const std::wstring& path) {
     if (path.empty() || path.size() > 1024) throw Failure(L"Invalid embedded file path.");
     for (auto value : path) if (value < 32 || value > 126 || value == L'\\' || value == L':' || value == L'"' || value == L'<' || value == L'>' || value == L'|' || value == L'*' || value == L'?')
@@ -241,21 +260,24 @@ Manifest ParseManifest(const std::string& text) {
         if (total > 4ull * 1024 * 1024 * 1024 || !result.files.emplace(file.path, file).second) throw Failure(L"Oversized or duplicate embedded application file.");
     }
     if (!result.files.count(L"modern/ProcessKeeper.exe") || !result.files.count(L"legacy/ProcessKeeper.exe")) throw Failure(L"An embedded application entry point is missing.");
+    if (std::any_of(result.files.begin(), result.files.end(), [](const auto& pair) { return IsPayloadFile(pair.first, Route::ModernArm64); }) &&
+        !result.files.count(L"modern/arm64/ProcessKeeper.exe")) throw Failure(L"The ARM64 application entry point is missing.");
     for (const auto& pair : result.files) {
         for (auto slash = pair.first.find(L'/'); slash != std::wstring::npos; slash = pair.first.find(L'/', slash + 1))
             if (result.files.count(pair.first.substr(0, slash))) throw Failure(L"Embedded file/directory conflict.");
     }
     return result;
 }
-PreparedPayload PreparePayload(bool modern, const std::atomic_bool* canceled) {
+PreparedPayload PreparePayload(Route route, const std::atomic_bool* canceled) {
     CheckCancellation(canceled);
     const auto manifestResource = ReadResource(101), archive = ReadResource(102);
     if (manifestResource.length > 16 * 1024 * 1024) throw Failure(L"The embedded manifest is too large.");
     const auto manifest = ParseManifest(std::string(reinterpret_cast<const char*>(manifestResource.bytes), manifestResource.length));
     if (Hex(HashBytes(archive.bytes, archive.length)) != manifest.archiveHash) throw Failure(L"The embedded cabinet failed SHA-256 verification.");
-    const std::wstring selected = modern ? L"modern" : L"legacy";
+    const auto selected = PayloadDirectory(route);
+    if (!manifest.files.count(selected + L"/ProcessKeeper.exe")) throw Failure(L"The package does not contain the selected processor architecture.");
     const auto cache = ProtectedCacheRoot();
-    const auto root = cache + L"\\" + manifest.identity + L"-" + selected;
+    const auto root = cache + L"\\" + manifest.identity + L"-" + (route == Route::ModernArm64 ? L"arm64" : selected);
     EnsureProtectedDirectory(root);
     auto parents = LockParents(root + L"\\lock", true);
     const auto mutexName = L"Local\\ProcessKeeper.Universal." + UserSid() + L"." + manifest.identity;
@@ -272,29 +294,34 @@ PreparedPayload PreparePayload(bool modern, const std::atomic_bool* canceled) {
             EnsureProtectedDirectory(staging);
             {
                 auto stagingParents = LockParents(staging + L"\\lock", true);
-                Extract(archive, manifest, staging, selected, canceled);
+                Extract(archive, manifest, staging, route, canceled);
                 std::set<std::wstring, OrdinalIgnoreCase> staged; std::vector<Handle> stagedFiles;
-                EnumerateVerified(manifest, staging, selected, staged, stagedFiles, canceled);
-                size_t expected = 0; for (const auto& pair : manifest.files) if (pair.first.rfind(selected + L"/", 0) == 0) ++expected;
+                EnumerateVerified(manifest, staging, selected, staged, stagedFiles, route, canceled);
+                size_t expected = 0; for (const auto& pair : manifest.files) if (IsPayloadFile(pair.first, route)) ++expected;
                 if (staged.size() != expected) throw Failure(L"The staged application is incomplete.");
                 stagedFiles.clear(); CheckCancellation(canceled);
+                CreateParents(root, selected);
                 if (!MoveFileExW(ToFilePath(staging, selected).c_str(), ToFilePath(root, selected).c_str(), MOVEFILE_WRITE_THROUGH)) Fail(L"Cannot commit the verified application cache.");
             }
+            if (route == Route::ModernArm64) RemoveDirectoryW(ToFilePath(staging, L"modern").c_str());
             RemoveDirectoryW(staging.c_str()); // Empty owned staging only. Failed/incomplete trees are never reused or executed.
         }
         PreparedPayload result; result.directory = ToFilePath(root, selected); result.parents = std::move(parents);
         std::set<std::wstring, OrdinalIgnoreCase> seen;
-        EnumerateVerified(manifest, root, selected, seen, result.files, canceled);
+        EnumerateVerified(manifest, root, selected, seen, result.files, route, canceled);
         size_t expected = 0;
-        for (const auto& pair : manifest.files) if (pair.first.rfind(selected + L"/", 0) == 0) ++expected;
+        for (const auto& pair : manifest.files) if (IsPayloadFile(pair.first, route)) ++expected;
         if (seen.size() != expected) throw Failure(L"The application cache is incomplete. A clean copy of this version is required.");
         ReleaseMutex(mutex.get()); return result;
     } catch (...) { ReleaseMutex(mutex.get()); throw; }
 }
 #ifdef PK_FIXTURE_BUILD
-void ExtractCabinetFixture(const std::vector<BYTE>& archive, const Manifest& manifest, const std::wstring& root, bool modern) {
+void ExtractCabinetFixture(const std::vector<BYTE>& archive, const Manifest& manifest, const std::wstring& root, Route route) {
     if (archive.size() > MAXDWORD || Hex(HashBytes(archive.data(), archive.size())) != manifest.archiveHash) throw Failure(L"Fixture cabinet hash mismatch.");
-    Extract({archive.data(), static_cast<DWORD>(archive.size())}, manifest, FullPath(root), modern ? L"modern" : L"legacy", nullptr, true);
+    Extract({archive.data(), static_cast<DWORD>(archive.size())}, manifest, FullPath(root), route, nullptr, true);
+}
+void ExtractCabinetFixture(const std::vector<BYTE>& archive, const Manifest& manifest, const std::wstring& root, bool modern) {
+    ExtractCabinetFixture(archive, manifest, root, modern ? Route::ModernX64 : Route::Legacy);
 }
 #endif
 }

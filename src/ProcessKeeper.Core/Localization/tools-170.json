@@ -1,0 +1,430 @@
+[
+  {
+    "source": "文件较小，使用单连接",
+    "en": "Small file; using one connection"
+  },
+  {
+    "source": "连接 {0} | 分段 {1}",
+    "en": "Connections {0} | Segments {1}"
+  },
+  {
+    "source": "服务器不支持分段，使用单连接",
+    "en": "The server does not support ranges; using one connection"
+  },
+  {
+    "source": "服务器拒绝分段，已切换单连接",
+    "en": "The server rejected ranges; switched to one connection"
+  },
+  {
+    "source": "文件大小未知，使用单连接",
+    "en": "Unknown file size; using one connection"
+  },
+  {
+    "source": "已选择单连接",
+    "en": "One connection selected"
+  },
+  {
+    "source": "最大并发连接数必须在 1 到 32 之间。",
+    "en": "Maximum connections must be between 1 and 32."
+  },
+  {
+    "source": "GitHub 镜像仅适用于不带查询参数的公开发布文件与原始文件；其他直链请选择原始直链。",
+    "en": "GitHub mirrors support public release/raw links without a query; choose Original direct link for other URLs."
+  },
+  {
+    "source": "最大并发连接",
+    "en": "Maximum connections"
+  },
+  {
+    "source": "GitHub 镜像（可选）",
+    "en": "GitHub mirrors (optional)"
+  },
+  {
+    "source": "原始直链",
+    "en": "Original direct link"
+  },
+  {
+    "source": "文件直链高速下载 | 自动拆分任务与失败重试，速度取决于服务器和网络。",
+    "en": "High-speed direct-link downloads | Automatic splitting and retries; speed depends on the server and network."
+  },
+  {
+    "source": "选择",
+    "en": "Select"
+  },
+  {
+    "source": "正在校验文件…",
+    "en": "Verifying the file…"
+  },
+  {
+    "source": "单击选择 | 箭头展开组件 | 推断标签可能有误，请谨慎甄别",
+    "en": "Click to select | Use arrows to expand | Inferred labels may be incorrect; check them carefully"
+  },
+  {
+    "source": "杂项",
+    "en": "Utilities"
+  },
+  {
+    "source": "内存优化",
+    "en": "Memory optimization"
+  },
+  {
+    "source": "下载器",
+    "en": "Downloader"
+  },
+  {
+    "source": "按需优化内存、下载文件与查看实时性能。",
+    "en": "Optimize memory, download files and view live performance."
+  },
+  {
+    "source": "下载地址",
+    "en": "Download URL"
+  },
+  {
+    "source": "保存目录",
+    "en": "Save folder"
+  },
+  {
+    "source": "文件名",
+    "en": "File name"
+  },
+  {
+    "source": "SHA256（可选）",
+    "en": "SHA256 (optional)"
+  },
+  {
+    "source": "下载源",
+    "en": "Download source"
+  },
+  {
+    "source": "并发连接",
+    "en": "Connections"
+  },
+  {
+    "source": "开始下载",
+    "en": "Start download"
+  },
+  {
+    "source": "选择目录",
+    "en": "Choose folder"
+  },
+  {
+    "source": "打开保存目录",
+    "en": "Open save folder"
+  },
+  {
+    "source": "直接下载",
+    "en": "Direct download"
+  },
+  {
+    "source": "自动选择 GitHub 加速源",
+    "en": "Auto-select a GitHub acceleration source"
+  },
+  {
+    "source": "支持文件直链与 GitHub 发布文件；无法绕过网站登录或访问限制。",
+    "en": "Supports direct file links and GitHub release files. Website authentication and access restrictions still apply."
+  },
+  {
+    "source": "下载选项",
+    "en": "Download options"
+  },
+  {
+    "source": "使用第三方下载源？",
+    "en": "Use a third-party download source?"
+  },
+  {
+    "source": "下载链接将发送到所选加速服务。第三方服务可能记录链接或修改文件，仅适用于公开链接，请勿填写私有链接。带查询参数的链接不参与加速。建议填写可信来源提供的 SHA256。是否继续？",
+    "en": "The download URL will be sent to the acceleration service. Third parties may log URLs or alter files. Use public links only; do not enter private links. Links with query parameters are excluded from acceleration. Enter a SHA256 from a trusted source when available. Continue?"
+  },
+  {
+    "source": "下载已完成",
+    "en": "Download complete"
+  },
+  {
+    "source": "下载已取消",
+    "en": "Download cancelled"
+  },
+  {
+    "source": "下载已暂停，可继续。",
+    "en": "Download paused. You can resume it."
+  },
+  {
+    "source": "继续下载",
+    "en": "Resume download"
+  },
+  {
+    "source": "下载失败",
+    "en": "Download failed"
+  },
+  {
+    "source": "取消下载并退出？",
+    "en": "Cancel the download and exit?"
+  },
+  {
+    "source": "未完成的下载将取消，临时分段会清理。已完成文件不会删除。",
+    "en": "The unfinished download will be cancelled and temporary parts removed. Completed files will be kept."
+  },
+  {
+    "source": "正在检测下载源…",
+    "en": "Checking download sources…"
+  },
+  {
+    "source": "请选择完整的下载目录。",
+    "en": "Choose an absolute save folder."
+  },
+  {
+    "source": "文件名无效，不能使用保留名称或路径字符。",
+    "en": "Invalid file name. Reserved names and path characters are not allowed."
+  },
+  {
+    "source": "并发连接数必须在 1 到 8 之间。",
+    "en": "Connections must be between 1 and 8."
+  },
+  {
+    "source": "User-Agent 无效。",
+    "en": "Invalid User-Agent."
+  },
+  {
+    "source": "SHA256 必须为 64 位十六进制字符串。",
+    "en": "SHA256 must contain 64 hexadecimal characters."
+  },
+  {
+    "source": "仅支持不含用户密码或片段的 HTTP 与 HTTPS 文件链接。",
+    "en": "Only HTTP and HTTPS file URLs without credentials or fragments are supported."
+  },
+  {
+    "source": "下载源无效。",
+    "en": "Invalid download source."
+  },
+  {
+    "source": "加速仅支持不带查询参数的公开 GitHub 发布文件与原始文件链接。",
+    "en": "Acceleration supports public GitHub release and raw-file URLs without query parameters."
+  },
+  {
+    "source": "使用第三方下载源需要先确认。",
+    "en": "Confirm before using a third-party download source."
+  },
+  {
+    "source": "目标文件已存在，请更换文件名。",
+    "en": "The destination exists. Choose a different file name."
+  },
+  {
+    "source": "没有可连接的下载源。",
+    "en": "No reachable download source."
+  },
+  {
+    "source": "所有下载源均失败。",
+    "en": "All download sources failed."
+  },
+  {
+    "source": "SHA256 校验失败，文件未保存到目标位置。",
+    "en": "SHA256 verification failed. The file was not published to the destination."
+  },
+  {
+    "source": "下载文件长度与服务器不符。",
+    "en": "The download length does not match the server."
+  },
+  {
+    "source": "加速源返回了网页，未返回目标文件。",
+    "en": "The acceleration source returned a web page instead of the file."
+  },
+  {
+    "source": "服务器返回的分段信息无效。",
+    "en": "The server returned invalid range metadata."
+  },
+  {
+    "source": "服务器返回的分段数据无效。",
+    "en": "The server returned invalid range data."
+  },
+  {
+    "source": "服务器提前结束了传输，可继续重试。",
+    "en": "The server ended the transfer early. You can retry."
+  },
+  {
+    "source": "服务器返回了超出预期的数据。",
+    "en": "The server returned more data than expected."
+  },
+  {
+    "source": "远程文件已变化，请重新开始下载。",
+    "en": "The remote file changed. Restart the download."
+  },
+  {
+    "source": "优化范围",
+    "en": "Optimization scope"
+  },
+  {
+    "source": "标准优化",
+    "en": "Standard optimization"
+  },
+  {
+    "source": "深度优化",
+    "en": "Deep optimization"
+  },
+  {
+    "source": "一键优化内存",
+    "en": "Optimize memory"
+  },
+  {
+    "source": "取消后续步骤",
+    "en": "Cancel remaining steps"
+  },
+  {
+    "source": "按需执行，可能短暂卡顿。白名单不豁免。",
+    "en": "Run when needed. Brief stalls may occur. Whitelisted apps are included."
+  },
+  {
+    "source": "优化整机内存？",
+    "en": "Optimize system memory?"
+  },
+  {
+    "source": "将处理整机工作集、文件缓存、修改页、待机页、注册表缓存与相同内存页。部分步骤使用未公开的 Windows 接口，旧系统可能不支持。",
+    "en": "Processes system working sets, file cache, modified pages, standby pages, registry cache and identical pages. Some steps use undocumented Windows interfaces that may be unavailable on older systems."
+  },
+  {
+    "source": "将收缩整机工作集、写回修改页并清理待机页。",
+    "en": "Trims system working sets, writes modified pages back and clears standby pages."
+  },
+  {
+    "source": "所有程序都会受影响，包括白名单程序。可能短暂卡顿或增加磁盘读取，内存占用可能随后回升。此操作不关闭程序。是否继续？",
+    "en": "All programs are affected, including whitelisted apps. Brief stalls or extra disk reads may occur, and memory usage may rise again. Programs will not be closed. Continue?"
+  },
+  {
+    "source": "整机工作集",
+    "en": "System working sets"
+  },
+  {
+    "source": "文件缓存",
+    "en": "File cache"
+  },
+  {
+    "source": "修改页写回",
+    "en": "Modified-page writeback"
+  },
+  {
+    "source": "待机页",
+    "en": "Standby pages"
+  },
+  {
+    "source": "低优先级待机页",
+    "en": "Low-priority standby pages"
+  },
+  {
+    "source": "注册表缓存",
+    "en": "Registry cache"
+  },
+  {
+    "source": "相同内存页合并",
+    "en": "Identical-page combining"
+  },
+  {
+    "source": "系统不支持此步骤",
+    "en": "This step is unsupported on this system"
+  },
+  {
+    "source": "步骤失败",
+    "en": "Step failed"
+  },
+  {
+    "source": "操作前可用：{0} GiB / {1} GiB",
+    "en": "Available before: {0} GiB / {1} GiB"
+  },
+  {
+    "source": "操作后可用：{0} GiB / {1} GiB",
+    "en": "Available after: {0} GiB / {1} GiB"
+  },
+  {
+    "source": "可用内存变化：{0}{1} GiB",
+    "en": "Available memory change: {0}{1} GiB"
+  },
+  {
+    "source": "已取消尚未执行的步骤。",
+    "en": "Remaining steps were cancelled."
+  },
+  {
+    "source": "内存变化包含其他程序的活动，不代表释放了相同数量的已提交内存。",
+    "en": "The change includes other programs' activity and is not a measure of freed committed memory."
+  },
+  {
+    "source": "内存优化已停止",
+    "en": "Memory optimization stopped"
+  },
+  {
+    "source": "部分优化步骤未完成",
+    "en": "Some optimization steps did not complete"
+  },
+  {
+    "source": "内存优化已完成",
+    "en": "Memory optimization complete"
+  },
+  {
+    "source": "内存优化失败",
+    "en": "Memory optimization failed"
+  },
+  {
+    "source": "展开或折叠",
+    "en": "Expand or collapse"
+  },
+  {
+    "source": "选择当前列表中显示的应用和子项目，不更改白名单。",
+    "en": "Select visible apps and child items without changing whitelist rules."
+  },
+  {
+    "source": "白名单作用范围",
+    "en": "Whitelist scope"
+  },
+  {
+    "source": "已启用的页面会保留匹配程序；内存优化始终处理所有程序。",
+    "en": "Enabled pages protect matching apps. Memory optimization always includes all programs."
+  },
+  {
+    "source": "保存作用范围",
+    "en": "Save scope"
+  },
+  {
+    "source": "白名单作用范围已保存",
+    "en": "Whitelist scope saved"
+  },
+  {
+    "source": "白名单范围无法读取",
+    "en": "Cannot read whitelist scope"
+  },
+  {
+    "source": "白名单保护已阻止停用",
+    "en": "Whitelist protection blocked disabling this item"
+  },
+  {
+    "source": "内存优化与下载功能的行为参考；独立实现，未包含其源代码。",
+    "en": "Behavior reference for memory optimization and downloads. Independently implemented without its source code."
+  },
+  {
+    "source": "工具页面交互的行为参考；独立实现，未包含其源代码。",
+    "en": "Behavior reference for tool-page interaction. Independently implemented without its source code."
+  },
+  {
+    "source": "无法退出",
+    "en": "Cannot exit"
+  },
+  {
+    "source": "第三方",
+    "en": "Third party"
+  },
+  {
+    "source": "单击选择 | 箭头展开进程 | 勾选保留",
+    "en": "Click to select | Arrow to expand processes | Keep on the right"
+  },
+  {
+    "source": "单击选择 | 箭头展开进程 | 规则自动保存",
+    "en": "Click to select | Arrow to expand processes | Rules save automatically"
+  },
+  {
+    "source": "无法核实关键进程标志，已保守保护此进程。",
+    "en": "The critical-process flag could not be verified. This process is protected."
+  },
+  {
+    "source": "下载已取消，部分临时文件未能清理。",
+    "en": "Download cancelled; some temporary files could not be removed."
+  },
+  {
+    "source": "临时下载文件未能清理",
+    "en": "Download temporary files could not be removed"
+  }
+]

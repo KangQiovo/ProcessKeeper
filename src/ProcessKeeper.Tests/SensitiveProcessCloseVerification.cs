@@ -95,8 +95,8 @@ public static class SensitiveProcessCloseVerification
         check(!Protected(child, [descendantRule], [child, parent with { StartTimeUtcTicks = child.StartTimeUtcTicks + 1 }]),
             "reused parent PID does not invent an ancestor association");
         var identified = ProcessIdentity.Classify(desktop with { IsSystem = false });
-        check(identified.IsSystem && identified.NativeCritical == false && !Protected(identified),
-            "display classification preserves independent verified noncritical native evidence");
+        check(!identified.IsSystem && identified.NativeCritical == false && !Protected(identified),
+            "display classification requires verified ownership while preserving independent noncritical native evidence");
         check(ProcessIdentity.Classify(desktop with { NativeCritical = null }).NativeCritical is null &&
             Protected(ProcessIdentity.Classify(desktop with { NativeCritical = null })), "classification never fabricates native evidence for missing query");
     }

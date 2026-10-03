@@ -98,6 +98,17 @@ var fake = new PublisherProbe(); var now = DateTimeOffset.UtcNow; int scans = 0;
 var service = new ApplicationDisplayService(_ => { scans++; return new([steamGame], [new(GamePlatformCatalog.Steam, clientPath)], []); }, fake, () => now);
 fake.Paths[microsoftPath] = (new(1, 1, 10, 20, 30), true);
 var snap = new ProcessSnapshot(now, [Process(microsoftPath)], [Group(microsoftPath)]);
+var gamesOnlyProbe = new PublisherProbe(); gamesOnlyProbe.Paths[microsoftPath] = (new(1, 1, 10, 20, 30), true);
+int gamesOnlyScans = 0;
+var gamesOnly = new ApplicationDisplayService(_ => { gamesOnlyScans++; return new([steamGame], [new(GamePlatformCatalog.Steam, clientPath)], []); }, gamesOnlyProbe, () => now);
+var gamesOnlyResult = gamesOnly.Capture(snap, [], [], false);
+Check(gamesOnlyProbe.IdentityReads == 0 && gamesOnlyProbe.Verifications == 0 && gamesOnlyScans == 1, "platform grouping alone never inspects publisher files");
+Check(gamesOnlyResult.Games.Count == 1 && !gamesOnlyResult.IsMicrosoft(Group(microsoftPath)), "platform-only capture preserves games without claiming publisher verification");
+Check(gamesOnlyResult.HasSamePresentationAs(gamesOnly.Capture(snap, [], [], false)), "unchanged presentation can skip redundant UI refresh");
+Check(!gamesOnlyResult.HasSamePresentationAs(ApplicationDisplayCatalog.Empty), "changed platform presentation invalidates the UI");
+var withPublisher = gamesOnly.Capture(snap, [], [], true);
+Check(withPublisher.IsMicrosoft(Group(microsoftPath)) && !withPublisher.HasSamePresentationAs(gamesOnlyResult), "enabling Microsoft filter verifies identity and invalidates presentation");
+Check(!gamesOnly.Capture(snap, [], [], false).IsMicrosoft(Group(microsoftPath)), "disabling verification does not expose cached evidence as freshly verified");
 Check(service.Capture(snap, [], []).IsMicrosoft(Group(microsoftPath)), "background service accepts verified publisher");
 Check(fake.Verifications == 1 && scans == 1, "first capture performs single publisher and platform read");
 Check(service.Capture(snap, [], []).IsMicrosoft(Group(microsoftPath)) && fake.Verifications == 1 && scans == 1, "repeated capture uses identity-bound cache");
@@ -156,13 +167,18 @@ try
 }
 finally { Directory.Delete(fixture, true); }
 foreach (var language in new[] { "en", "zh-Hans", "zh-Hant" }) { L.Language = language; Check(L.T("部分发布者仍未核实，相关应用暂时保留显示。").Length > 0, "publisher uncertainty localized " + language); }
+ProcessKeeper.App.BulkSelectionVerification.Verify(Check, IntPtr.Size == 4);
+ProcessKeeper.App.BulkSelectionVerification.VerifyRevisionAndCulture(Check);
+UninstallDisplayVerification.Verify(Check);
+GameIconVerification.Run(Check);
 Console.WriteLine($"PASS: {count} display assertions | CLR bitness {IntPtr.Size * 8}");
 
 sealed class PublisherProbe : IMicrosoftPublisherProbe
 {
     public Dictionary<string, (PublisherFileIdentity Identity, bool Microsoft)> Paths { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Action? DuringVerification; public int Verifications, Finished;
-    public PublisherFileIdentity? ReadIdentity(string path) => Paths.TryGetValue(path, out var value) ? value.Identity : null;
+    public int IdentityReads;
+    public PublisherFileIdentity? ReadIdentity(string path) { Interlocked.Increment(ref IdentityReads); return Paths.TryGetValue(path, out var value) ? value.Identity : null; }
     public bool IsMicrosoft(string path, CancellationToken token)
     { Interlocked.Increment(ref Verifications); try { DuringVerification?.Invoke(); return Paths.TryGetValue(path, out var value) && value.Microsoft; } finally { Interlocked.Increment(ref Finished); } }
 }

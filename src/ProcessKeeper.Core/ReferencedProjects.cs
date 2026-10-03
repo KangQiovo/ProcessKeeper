@@ -25,6 +25,8 @@ public static class ReferencedProjects
         new ReferencedProject("Brotli", L.T("随 .NET 运行时提供的压缩支持。"), "https://github.com/google/brotli"),
         new ReferencedProject("zlib", L.T("随 .NET 运行时提供的压缩与归档支持。"), "https://github.com/madler/zlib"),
         new ReferencedProject("Simple Icons", L.T("GitHub 与 B 站平台图标。"), "https://github.com/simple-icons/simple-icons"),
-        new ReferencedProject("Lawnicons", L.T("酷安平台图标。"), "https://github.com/LawnchairLauncher/lawnicons")
+        new ReferencedProject("Lawnicons", L.T("酷安平台图标。"), "https://github.com/LawnchairLauncher/lawnicons"),
+        new ReferencedProject("Plain Craft Launcher", L.T("内存优化与下载功能的行为参考；独立实现，未包含其源代码。"), "https://github.com/Meloong-Git/PCL"),
+        new ReferencedProject("PCL Community", L.T("工具页面交互的行为参考；独立实现，未包含其源代码。"), "https://github.com/PCL-Community/PCL-CE")
     };
 }

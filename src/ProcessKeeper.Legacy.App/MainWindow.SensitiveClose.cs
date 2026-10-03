@@ -15,7 +15,7 @@ public partial class MainWindow
         _busy = true;
         try
         {
-            var initial = _backend.Policy.EvaluateSensitiveClose(target, _snapshot, _rules);
+            var initial = _backend.Policy.EvaluateSensitiveClose(target, _snapshot, RunningRules);
             if (initial.Protected) { Notice(L.T("敏感进程仍受保护") + " | " + initial.Reason); return; }
             if (!await Confirm(L.T("确认关闭敏感进程"), L.T(RiskConfirmationMode.IsEnabled ? "此操作仅针对下列进程。无视风险模式已跳过二次确认。" : "此操作仅针对下列进程。继续后还需确认风险。") + "\n\n" + target.Name + " | PID " + target.Id + "\n" + target.Path)) return;
             if (_closed || _life.IsCancellationRequested || (!RiskConfirmationMode.IsEnabled && !await ShowSensitiveRiskDialogAsync(target, _life.Token))) return;
@@ -23,7 +23,7 @@ public partial class MainWindow
 
             var latest = await Task.Run(_backend.Capture, _life.Token);
             if (_closed || _life.IsCancellationRequested || !_rulesReadable) return;
-            var decision = _backend.Policy.EvaluateSensitiveClose(target, latest, _rules);
+            var decision = _backend.Policy.EvaluateSensitiveClose(target, latest, RunningRules);
             if (decision.Protected) { Notice(L.T("敏感进程仍受保护") + " | " + decision.Reason); Log(decision.Reason); return; }
             ProtectionDecision Recheck(ProcessRecord candidate)
             {
@@ -31,7 +31,7 @@ public partial class MainWindow
                     candidate.SessionId != target.SessionId || candidate.OwnerSid != target.OwnerSid ||
                     !SamePath(candidate.Path, target.Path) || !string.Equals(candidate.Name, target.Name, StringComparison.OrdinalIgnoreCase))
                     return new ProtectionDecision(true, L.T("敏感进程仍受保护"));
-                return _backend.Policy.EvaluateSensitiveClose(target, _backend.Capture(), _rules);
+                return _backend.Policy.EvaluateSensitiveClose(target, _backend.Capture(), RunningRules);
             }
             Log(L.F($"用户确认敏感进程关闭 | {target.Name} | PID {target.Id}"));
             var progress = new Progress<string>(Log);

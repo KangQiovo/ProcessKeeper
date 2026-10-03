@@ -1,0 +1,5 @@
+[ {
+  "id": 1,
+  "source": "范围为当前选中的卸载项目。新增项目不会加入本次操作。",
+  "en": "This plan contains only the currently selected uninstall entries. New entries will not join this operation."
+}, { "id": 2, "source": "使用箭头展开或收起进程。", "en": "Use the arrow to expand or collapse the processes." } ]

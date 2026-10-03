@@ -11,6 +11,7 @@ public sealed class ProcessCollector
 {
     private readonly object _captureLock = new();
     private readonly Dictionary<string, Metadata> _metadata = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SystemComponentClassifier _systemComponents = new();
     private readonly int _selfId = Environment.ProcessId;
 
     public ProcessSnapshot Capture()
@@ -163,12 +164,15 @@ public sealed class ProcessCollector
         if (windowWarning.Length > 0) warnings.Add(windowWarning);
         if (serviceWarning.Length > 0) warnings.Add(serviceWarning);
         Metadata metadata = GetMetadata(path);
+        bool windowsComponent = _systemComponents.IsWindowsComponent(name, path);
         return new ProcessRecord
         {
             Id = id, ParentId = parentId, Name = name, SessionId = session, StartTimeUtcTicks = start,
             Path = path, OwnerSid = owner, PackageFamilyName = package, MemoryBytes = memory,
             ProductName = metadata.Product, Company = metadata.Company, Description = metadata.Description,
-            IsSelf = id == _selfId, IsSystem = critical, NativeCritical = nativeCritical, SystemReason = critical ? L.T("Windows 标记为关键进程") : "",
+            IsSelf = id == _selfId, IsSystem = critical || windowsComponent, NativeCritical = nativeCritical,
+            CriticalStatusUnknown = nativeCritical is null,
+            SystemReason = critical ? L.T("Windows 标记为关键进程") : windowsComponent ? L.T("Windows 核心、桌面、安全或驱动基础组件") : "",
             Windows = windows.TryGetValue(id, out var processWindows) ? processWindows.ToArray() : [],
             Services = services.TryGetValue(id, out var processServices) ? processServices.ToArray() : [],
             CollectionWarning = string.Join("；", warnings)

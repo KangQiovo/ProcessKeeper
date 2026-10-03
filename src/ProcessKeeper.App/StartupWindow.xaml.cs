@@ -24,7 +24,6 @@ public sealed partial class StartupWindow : Window
     private RuntimeEnvironmentReport? _environmentReport;
     private string? _environmentError;
     private bool _welcomeReady, _transitioning, _environmentBlocking;
-    private Storyboard? _welcomeTransition;
     internal Func<RuntimeEnvironmentReport> ProbeEnvironment { get; set; } = RuntimeEnvironmentProbe.Capture;
 
     internal event Action? IntroductionCompleted;
@@ -64,7 +63,8 @@ public sealed partial class StartupWindow : Window
         StartupRoot.SizeChanged += (_, _) => ApplyStartupLayout();
         IntroductionScroll.SizeChanged += (_, _) => ApplyStartupLayout();
         EnvironmentScreen.SizeChanged += (_, _) => ApplyStartupLayout();
-        Closed += (_, _) => { _closed = true; _lifetime.Cancel(); _welcomeTransition?.Stop(); };
+        InitializeMotion();
+        Closed += (_, _) => { _closed = true; _lifetime.Cancel(); };
         StartupRoot.Loaded += async (_, _) => { if (_administrator) await CheckEnvironmentAsync(); };
         StartupRoot.ActualThemeChanged += (_, _) => StartupRoot.DispatcherQueue.TryEnqueue(() => { if (!_closed) TextFlyoutTheme.Refresh(StartupRoot); });
         RenderStep();
@@ -144,7 +144,7 @@ public sealed partial class StartupWindow : Window
                 StepTitle.Text = L.T("把需要的应用留下");
                 StepDescription.Text = L.T("正在运行或已经安装的应用，都可以加入白名单。");
                 SetFeatures(
-                    ("\uE710", L.T("随时添加或调整"), L.T("从运行中程序、已安装程序或白名单页，选择需要保留的应用。")),
+                    ("\uE710", L.T("随时添加或调整"), L.T("从运行中程序、已安装应用或白名单页，选择需要保留的应用。")),
                     ("\uE8B7", L.T("规则可带到另一台电脑"), L.T("导入后只匹配本机实际存在的应用；仍需核对匹配结果。")),
                     ("\uE74E", L.T("设置也能备份"), L.T("在设置中导入或导出规则与设置，分享前可检查文件内容。")));
                 break;
@@ -246,16 +246,15 @@ public sealed partial class StartupWindow : Window
         FeatureIcon3.Glyph = third.Glyph; FeatureTitle3.Text = third.Title; FeatureBody3.Text = third.Body;
     }
 
-    private void GoBack(object sender, RoutedEventArgs args)
+    private async void GoBack(object sender, RoutedEventArgs args)
     {
-        if (_busy || !_administrator || _closed) return;
-        _progress.Back();
-        RenderStep();
+        if (_busy || _transitioning || !_administrator || _closed || _closing || !_progress.CanGoBack) return;
+        await ChangeStepAsync(false);
     }
 
     private async void GoNext(object sender, RoutedEventArgs args)
     {
-        if (_busy || _closed || _administrator && (!_welcomeReady || _transitioning)) return;
+        if (_busy || _closed || _closing || _administrator && (!_welcomeReady || _transitioning)) return;
         if (!_administrator)
         {
             if (!_canElevate) return;
@@ -279,7 +278,7 @@ public sealed partial class StartupWindow : Window
             return;
         }
 
-        if (!_progress.IsLastPage) { _progress.Next(); RenderStep(); return; }
+        if (!_progress.IsLastPage) { await ChangeStepAsync(true); return; }
         if (_review || _saveFailed) { IntroductionCompleted?.Invoke(); return; }
         SetBusy(true);
         try
@@ -301,8 +300,8 @@ public sealed partial class StartupWindow : Window
     {
         _busy = busy;
         NextButton.IsEnabled = !busy && (_administrator ? _welcomeReady && !_transitioning : _canElevate);
-        BackButton.IsEnabled = !busy;
-        foreach (var choice in LanguageChoices) choice.IsEnabled = !busy;
+        BackButton.IsEnabled = !busy && !_transitioning;
+        foreach (var choice in LanguageChoices) choice.IsEnabled = !busy && !_transitioning;
         StartupBusy.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         StartupBusy.IsActive = busy;
     }
@@ -322,7 +321,7 @@ public sealed partial class StartupWindow : Window
 
     private async Task CheckEnvironmentAsync()
     {
-        if (_checkingEnvironment || _transitioning || _closed) return;
+        if (_checkingEnvironment || _transitioning || _closed || _closing) return;
         _checkingEnvironment = true;
         EnvironmentRefresh.IsEnabled = false;
         _environmentError = null;
@@ -350,7 +349,7 @@ public sealed partial class StartupWindow : Window
             else if (!_environmentReport.PhysicalMemory.HasValue)
                 _environmentError = L.T("物理内存：无法读取");
         }
-        catch (OperationCanceledException) when (_closed) { }
+        catch (OperationCanceledException) when (_closed || _closing) { }
         catch (Exception ex)
         {
             _environmentBlocking = ex is DllNotFoundException or BadImageFormatException or TypeLoadException;
@@ -363,7 +362,7 @@ public sealed partial class StartupWindow : Window
         finally
         {
             _checkingEnvironment = false;
-            if (!_closed)
+            if (!_closed && !_closing)
             {
                 EnvironmentProgress.Visibility = Visibility.Collapsed;
                 EnvironmentRefresh.IsEnabled = true;
@@ -373,13 +372,13 @@ public sealed partial class StartupWindow : Window
                 RenderEnvironment();
             }
         }
-        if (_closed || _environmentError is not null || _environmentReport is null) return;
+        if (_closed || _closing || _environmentError is not null || _environmentReport is null) return;
         try
         {
             if (started.ElapsedMilliseconds < 300) await Task.Delay(300 - (int)started.ElapsedMilliseconds, _lifetime.Token);
             await RevealWelcomeAsync();
         }
-        catch (OperationCanceledException) when (_closed) { }
+        catch (OperationCanceledException) when (_closed || _closing) { }
     }
 
     private void RenderEnvironment()
@@ -407,40 +406,25 @@ public sealed partial class StartupWindow : Window
 
     private async Task RevealWelcomeAsync()
     {
-        if (_closed || _welcomeReady || _transitioning) return;
+        if (_closed || _closing || _welcomeReady || _transitioning) return;
         _transitioning = true;
         EnvironmentScreen.IsHitTestVisible = false;
         IntroductionScroll.Visibility = Visibility.Visible;
-        IntroductionScroll.Opacity = 0;
+        IntroductionScroll.Opacity = 1;
         try
         {
-            if (new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
-            {
-                var transition = new Storyboard();
-                _welcomeTransition = transition;
-                foreach (var (target, from, to) in new[] { ((DependencyObject)EnvironmentScreen, 1d, 0d), ((DependencyObject)IntroductionScroll, 0d, 1d) })
-                {
-                    var fade = new DoubleAnimation { From = from, To = to, Duration = new Duration(TimeSpan.FromMilliseconds(240)),
-                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
-                    Storyboard.SetTarget(fade, target); Storyboard.SetTargetProperty(fade, "Opacity"); transition.Children.Add(fade);
-                }
-                var finished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                transition.Completed += (_, _) => finished.TrySetResult(true);
-                using var registration = _lifetime.Token.Register(() => finished.TrySetCanceled(_lifetime.Token));
-                transition.Begin();
-                await finished.Task.WaitAsync(TimeSpan.FromSeconds(2), _lifetime.Token);
-                transition.Stop();
-            }
-            if (!_closed) _welcomeReady = true;
+            var enabled = MotionEnabled();
+            await Task.WhenAll(
+                NativeMotion.AnimateAsync(EnvironmentScreen, 1, 0, 0, -8, enabled, _lifetime.Token),
+                NativeMotion.AnimateAsync(IntroductionScroll, 0, 1, 16, 0, enabled, _lifetime.Token));
+            if (!_closed && !_closing) _welcomeReady = true;
         }
-        catch (OperationCanceledException) when (_closed) { }
-        catch (Exception) { if (!_closed) _welcomeReady = true; }
+        catch (OperationCanceledException) when (_closed || _closing) { }
+        catch (Exception) { if (!_closed && !_closing) _welcomeReady = true; }
         finally
         {
-            _welcomeTransition?.Stop();
             _transitioning = false;
-            _welcomeTransition = null;
-            if (!_closed)
+            if (!_closed && !_closing)
             {
                 IntroductionScroll.Opacity = EnvironmentScreen.Opacity = 1;
                 EnvironmentScreen.IsHitTestVisible = true;

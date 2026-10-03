@@ -61,6 +61,7 @@ public sealed partial class MainWindow
         PreparedUpdate? prepared = null; var handedOff = false;
         try
         {
+            await FlushPerformanceAsync();
             prepared = await Task.Run(() => UpdateInstaller.Prepare(context, download, token), token);
             token.ThrowIfCancellationRequested();
             var result = await Task.Run(() => UpdateInstaller.Start(prepared));

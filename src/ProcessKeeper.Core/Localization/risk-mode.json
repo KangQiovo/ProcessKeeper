@@ -1,15 +1,54 @@
 [
-  { "source": "无视风险", "en": "Ignore risks" },
-  { "source": "无视风险模式", "en": "Ignore risks mode" },
-  { "source": "启用无视风险模式", "en": "Enable ignore risks mode" },
-  { "source": "启用无视风险（{0} 秒）", "en": "Ignore risks ({0}s)" },
-  { "source": "恢复风险确认", "en": "Restore risk confirmations" },
-  { "source": "仅本次运行生效；重新启动后恢复风险确认。", "en": "Applies to this session only. Restarting restores risk confirmations." },
-  { "source": "将跳过敏感关闭的 5 秒倒计时和强制关闭二次确认。首次操作确认与系统核心保护仍保留。", "en": "Skips the 5-second sensitive-close countdown and second force-close confirmations. Initial action confirmation and critical system protection remain enabled." },
-  { "source": "关闭部分程序可能导致桌面失效、未保存数据丢失，甚至系统崩溃。请先保存所有工作。", "en": "Closing some programs may disable the desktop, lose unsaved data, or even crash the system. Save all your work first." },
-  { "source": "二次风险确认已关闭。结束部分程序可能丢失数据、使桌面失效，甚至导致系统崩溃。", "en": "Second risk confirmations are off. Closing some programs may lose data, disable the desktop, or even crash the system." },
-  { "source": "无视风险模式已启用", "en": "Ignore risks mode enabled" },
-  { "source": "无视风险模式已关闭", "en": "Ignore risks mode disabled" },
-  { "source": "此操作仅针对下列进程。无视风险模式已跳过二次确认。", "en": "Only the process below will be affected. Ignore risks mode skips the second confirmation." },
-  { "source": "Steam 会先正常退出，最多等待 30 秒。无视风险模式下，勾选强制结束后将跳过再次确认，可能丢失未保存或未同步的数据。", "en": "Steam first gets up to 30 seconds to exit normally. In ignore risks mode, choosing force close skips the second confirmation and may lose unsaved or unsynced data." }
+  {
+    "source": "无视风险",
+    "en": "Ignore risks"
+  },
+  {
+    "source": "无视风险模式",
+    "en": "Ignore risks mode"
+  },
+  {
+    "source": "启用无视风险模式",
+    "en": "Enable ignore risks mode"
+  },
+  {
+    "source": "启用无视风险（{0} 秒）",
+    "en": "Ignore risks ({0}s)"
+  },
+  {
+    "source": "恢复风险确认",
+    "en": "Restore risk confirmations"
+  },
+  {
+    "source": "仅本次运行生效；重新启动后恢复风险确认。",
+    "en": "Applies to this session only. Restarting restores risk confirmations."
+  },
+  {
+    "source": "将跳过敏感关闭的 5 秒倒计时和强制关闭二次确认。首次操作确认与系统核心保护仍保留。",
+    "en": "Skips the 5-second sensitive-close countdown and second force-close confirmations. Initial action confirmation and critical system protection remain enabled."
+  },
+  {
+    "source": "关闭部分程序可能导致桌面失效、未保存数据丢失，甚至系统崩溃。请先保存所有工作。",
+    "en": "Closing some programs may disable the desktop, lose unsaved data, or even crash the system. Save all your work first."
+  },
+  {
+    "source": "二次风险确认已关闭。结束部分程序可能丢失数据、使桌面失效，甚至导致系统崩溃。",
+    "en": "Second risk confirmations are off. Closing some programs may lose data, disable the desktop, or even crash the system."
+  },
+  {
+    "source": "无视风险模式已启用",
+    "en": "Ignore risks mode enabled"
+  },
+  {
+    "source": "无视风险模式已关闭",
+    "en": "Ignore risks mode disabled"
+  },
+  {
+    "source": "此操作仅针对下列进程。无视风险模式已跳过二次确认。",
+    "en": "Only the process below will be affected. Ignore risks mode skips the second confirmation."
+  },
+  {
+    "source": "Steam 会先正常退出，最多等待 30 秒。无视风险模式下，勾选强制结束后将跳过再次确认，可能丢失未保存或未同步的数据。",
+    "en": "Steam first gets up to 30 seconds to exit normally. In ignore risks mode, choosing force close skips the second confirmation and may lose unsaved or unsynced data."
+  }
 ]

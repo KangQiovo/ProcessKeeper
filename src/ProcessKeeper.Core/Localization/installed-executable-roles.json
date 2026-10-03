@@ -1,0 +1,19 @@
+[
+ {"id":1,"source":"主程序","en":"Main application"},
+ {"id":2,"source":"可能的主程序","en":"Possible main application"},
+ {"id":3,"source":"卸载程序","en":"Uninstaller"},
+ {"id":4,"source":"可能的卸载程序","en":"Possible uninstaller"},
+ {"id":5,"source":"诊断工具","en":"Diagnostic tool"},
+ {"id":6,"source":"辅助组件","en":"Helper component"},
+ {"id":7,"source":"用途未确认","en":"Purpose unknown"},
+ {"id":8,"source":"来自已安装应用的启动入口。","en":"This path is an installed application launch entry."},
+ {"id":9,"source":"与注册的卸载命令路径一致。","en":"This path matches a registered uninstall command."},
+ {"id":10,"source":"卸载登记已匹配到此应用文件。","en":"An uninstall registration is associated with this application file."},
+ {"id":11,"source":"与已知产品入口文件名匹配。","en":"This filename matches a known application entry."},
+ {"id":12,"source":"文件名与应用名称匹配。","en":"The filename matches the application name."},
+ {"id":13,"source":"文件说明与应用名称匹配。","en":"The file description matches the application name."},
+ {"id":14,"source":"文件名显示工具用途。","en":"The filename suggests a utility component."},
+ {"id":15,"source":"现有文件名和登记信息不足以确认用途。","en":"The current filenames and registration information do not establish this file's purpose."},
+ {"id":16,"source":"文件用途标签不代表它当前正在运行，也不保证它能成功启动。","en":"A file-purpose label does not mean this file is running or guarantee it will start successfully."},
+ {"id":17,"source":"可能识别有误，请谨慎甄别。","en":"This identification may be incorrect; check the file carefully."}
+]

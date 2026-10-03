@@ -1,0 +1,206 @@
+[
+  {
+    "source": "桌面",
+    "en": "Desktop"
+  },
+  {
+    "source": "桌面 FPS",
+    "en": "Desktop FPS"
+  },
+  {
+    "source": "电脑：桌面 FPS | CPU | 已用 / 总内存 | 可用内存。",
+    "en": "Computer: desktop FPS | CPU | used / total RAM | available RAM."
+  },
+  {
+    "source": "桌面 FPS 测量 Windows 桌面合成帧率；游戏独立呈现的帧率不在此测量范围内。",
+    "en": "Desktop FPS measures Windows desktop composition. Independently presented game frames are outside this measurement."
+  },
+  {
+    "source": "应用内显示本应用 UI 帧率与内存；桌面浮窗显示桌面 FPS、电脑 CPU 与总内存。",
+    "en": "In-app: this app's UI FPS and memory. Desktop: desktop FPS, computer CPU and physical RAM."
+  },
+  {
+    "source": "每秒后台采样；桌面 FPS 为实测合成帧率。电脑内存显示已用、总量与可用量。",
+    "en": "Samples in the background once a second. Desktop FPS measures composition frames. RAM includes used, total and available."
+  },
+  {
+    "source": "应用内显示本应用 UI 帧率与内存；桌面浮窗显示电脑 CPU 与总内存。",
+    "en": "In-app: this app's UI FPS and memory. Desktop: computer CPU and physical RAM."
+  },
+  {
+    "source": "每秒后台采样；电脑内存显示已用、总量与可用量。UI FPS 仅代表本应用。",
+    "en": "Samples in the background once a second. RAM includes used, total and available. UI FPS applies only to this app."
+  },
+  {
+    "source": "电脑：CPU | 已用 / 总内存 | 可用内存。",
+    "en": "Computer: CPU | used / total RAM | available RAM."
+  },
+  {
+    "source": "本应用：UI FPS | 工作集 / 专用内存 | 电脑总内存。",
+    "en": "This app: UI FPS | working set / private memory | computer's physical RAM total."
+  },
+  {
+    "source": "此电脑有多个处理器组，暂不显示不完整的 CPU 占用。",
+    "en": "This computer has multiple processor groups. Partial CPU usage is not displayed."
+  },
+  {
+    "source": "已用 / 总内存",
+    "en": "Used / total RAM"
+  },
+  {
+    "source": "应用 / 总内存",
+    "en": "App / total RAM"
+  },
+  {
+    "source": "总内存",
+    "en": "Total RAM"
+  },
+  {
+    "source": "可用",
+    "en": "Available"
+  },
+  {
+    "source": "应用",
+    "en": "App"
+  },
+  {
+    "source": "本应用",
+    "en": "This app"
+  },
+  {
+    "source": "内存",
+    "en": "RAM"
+  },
+  {
+    "source": "不保存并退出",
+    "en": "Quit without saving"
+  },
+  {
+    "source": "性能显示的最后调整尚未保存。可以取消后重试，或不保存并退出。",
+    "en": "The last performance display changes have not been saved. Cancel to retry, or quit without saving."
+  },
+  {
+    "source": "显示布局",
+    "en": "Layout"
+  },
+  {
+    "source": "横向卡片",
+    "en": "Horizontal cards"
+  },
+  {
+    "source": "纵向排列",
+    "en": "Vertical rows"
+  },
+  {
+    "source": "单行精简",
+    "en": "Compact line"
+  },
+  {
+    "source": "本应用：FPS | 工作集 / 专用内存。",
+    "en": "This app: FPS | working set / private memory."
+  },
+  {
+    "en": "Performance display",
+    "source": "性能显示"
+  },
+  {
+    "en": "UI rendering callbacks for this app only; not game FPS.",
+    "source": "UI 回调计数，仅代表本应用；不是游戏帧率。"
+  },
+  {
+    "en": "Enable performance display",
+    "source": "启用性能显示"
+  },
+  {
+    "en": "Detailed mode",
+    "source": "详细模式"
+  },
+  {
+    "en": "Acrylic background",
+    "source": "亚克力背景"
+  },
+  {
+    "en": "Horizontal layout",
+    "source": "横向排列"
+  },
+  {
+    "en": "Lock position",
+    "source": "锁定位置"
+  },
+  {
+    "en": "Display location",
+    "source": "显示位置"
+  },
+  {
+    "en": "Inside the app",
+    "source": "应用内"
+  },
+  {
+    "en": "Desktop overlay",
+    "source": "桌面浮窗"
+  },
+  {
+    "en": "Horizontal position",
+    "source": "水平位置"
+  },
+  {
+    "en": "Vertical position",
+    "source": "垂直位置"
+  },
+  {
+    "en": "Width",
+    "source": "宽度"
+  },
+  {
+    "en": "Height",
+    "source": "高度"
+  },
+  {
+    "en": "Position uses DIP inside the app and screen pixels for the overlay. Size uses DIP.",
+    "source": "应用内位置为 DIP，浮窗位置为屏幕像素；尺寸为 DIP。"
+  },
+  {
+    "en": "Drag when unlocked. Return here to unlock a locked display.",
+    "source": "解锁后可拖动浮窗。锁定时可在这里解锁。"
+  },
+  {
+    "en": "Reset position and size",
+    "source": "恢复默认位置"
+  },
+  {
+    "en": "Sampling stops while the display is off.",
+    "source": "关闭显示后停止采样。"
+  },
+  {
+    "en": "This environment uses a solid background.",
+    "source": "此运行环境使用纯色背景。"
+  },
+  {
+    "en": "This process memory updates once a second. FPS is counted while the main window is not minimized.",
+    "source": "每秒更新本进程的内存；帧率统计仅在主窗口未最小化时进行。"
+  },
+  {
+    "en": "This app FPS",
+    "source": "本应用 FPS"
+  },
+  {
+    "en": "Close performance display",
+    "source": "关闭性能显示"
+  },
+  {
+    "en": "Working set",
+    "source": "工作集"
+  },
+  {
+    "en": "Private memory",
+    "source": "专用内存"
+  },
+  {
+    "en": "Private",
+    "source": "专用"
+  },
+  {
+    "en": "Performance display settings are invalid.",
+    "source": "性能显示设置无效。"
+  }
+]

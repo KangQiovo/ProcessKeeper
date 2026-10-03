@@ -24,6 +24,9 @@ public sealed partial class MainWindow
     private readonly DispatcherTimer _installedSearchTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private string? _installedSelectedRow;
     private string _installedScanNote = L.T("尚未扫描");
+    private IReadOnlyList<InstalledApplication>? _mergedInstalledBase, _mergedInstalledResult;
+    private IReadOnlyList<UninstallEntry>? _mergedInstalledRegistrations;
+    private InstalledApplication[] _mergedManualInstalled = [];
 
     private void InitializeInstalledPage()
     {
@@ -49,7 +52,7 @@ public sealed partial class MainWindow
     {
         if (!_installedInitialized || _closed) return;
         if (!_installedLoaded) await ScanInstalledAsync();
-        else RenderInstalled();
+        RenderInstalled();
     }
 
     private async void RescanInstalled(object sender, RoutedEventArgs args) => await ScanInstalledAsync();
@@ -79,7 +82,7 @@ public sealed partial class MainWindow
         {
             if (_closed) return;
             _installedScanNote = L.T("扫描未完成，可重新扫描；已读取的列表保留");
-            ShowNotice(L.T("已安装软件读取失败"), ex.Message, InfoBarSeverity.Warning);
+            ShowNotice(L.T("已安装应用读取失败"), ex.Message, InfoBarSeverity.Warning);
         }
         finally
         {
@@ -91,6 +94,7 @@ public sealed partial class MainWindow
     {
         _installedScanning = busy;
         InstalledProgress.IsActive = busy;
+        InstalledProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         InstalledScanButton.IsEnabled = InstalledAddButton.IsEnabled = !busy;
         InstalledStatus.Text = busy ? L.T("正在读取安装信息和可执行文件…") : _installedScanNote;
         foreach (var row in _installedRows)
@@ -99,14 +103,27 @@ public sealed partial class MainWindow
         }
     }
 
-    private IEnumerable<InstalledApplication> AllInstalledApplications() => _installedApplications
-        .Concat(_manualInstalled.Values)
-        .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
-        .Select(group => group.Last());
+    private IReadOnlyList<InstalledApplication> AllInstalledApplications()
+    {
+        var registrations = _uninstallView?.InventoryEntries ?? Array.Empty<UninstallEntry>();
+        if (_mergedInstalledResult is not null && ReferenceEquals(_mergedInstalledBase, _installedApplications) &&
+            ReferenceEquals(_mergedInstalledRegistrations, registrations) && _mergedManualInstalled.SequenceEqual(_manualInstalled.Values)) return _mergedInstalledResult;
+        _mergedInstalledBase = _installedApplications; _mergedInstalledRegistrations = registrations;
+        _mergedManualInstalled = _manualInstalled.Values.ToArray();
+        var source = _installedApplications.Concat(_mergedManualInstalled).GroupBy(app => app.Id, StringComparer.OrdinalIgnoreCase).Select(group => group.Last()).ToArray();
+        return _mergedInstalledResult = InstalledApplicationCatalog.IncludeVerifiedApplications(source, registrations);
+    }
+
+    private void OnUninstallInventoryChanged()
+    {
+        if (_closed) return;
+        InvalidateRuleSearchIndex(); UpdateInstalledDrives(); RefreshWhitelistActionGuards();
+        RenderInstalled(); RequestPresentationCapture();
+    }
 
     private void RefreshInstalledRunningState()
     {
-        if (_installedInitialized && _installedLoaded && InstalledPage.Visibility == Visibility.Visible) RenderInstalled();
+        if (_installedInitialized && InstalledPage.Visibility == Visibility.Visible) RenderInstalled();
     }
 
     private void InstalledSearchChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -154,6 +171,7 @@ public sealed partial class MainWindow
 
     private async void RenderInstalled()
     {
+        NativeSelectionTree.For(InstalledList)?.Invalidate(InstalledPage.Visibility == Visibility.Visible);
         if (!_installedInitialized || _closed) return;
         _installedRenderDirty = true;
         _installedRenderCancellation?.Cancel();
@@ -170,17 +188,18 @@ public sealed partial class MainWindow
                 var drive = (InstalledDriveFilter.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
                 var showSystem = ShowSystemToggle.IsChecked == true;
                 var snapshot = _snapshot;
-                var rules = _rules;
+                var rules = InstalledRulesForScope;
                 var applications = AllInstalledApplications().ToArray();
                 var expanded = _expandedInstalled.ToHashSet(StringComparer.OrdinalIgnoreCase);
                 var collapsedSearch = _collapsedInstalledSearch.ToHashSet(StringComparer.OrdinalIgnoreCase);
                 var canKeep = _configurationHealthy && !_working && !_installedScanning;
                 var display = _displayCatalog; var groupPlatforms = _groupGamePlatforms; var hideMicrosoft = _hideMicrosoftApps;
                 var collapsedPlatforms = _collapsedInstalledPlatforms.ToHashSet(StringComparer.Ordinal);
+                var uninstallEntries = _uninstallView?.InventoryEntries.ToArray() ?? Array.Empty<UninstallEntry>();
                 try
                 {
                     var result = await Task.Run(() => BuildInstalledRows(applications, snapshot, rules, expanded, collapsedSearch,
-                        query, drive, showSystem, canKeep, cancellation.Token, display, groupPlatforms, hideMicrosoft, collapsedPlatforms), cancellation.Token);
+                        query, drive, showSystem, canKeep, cancellation.Token, display, groupPlatforms, hideMicrosoft, collapsedPlatforms, uninstallEntries), cancellation.Token);
                     cancellation.Token.ThrowIfCancellationRequested();
                     if (_closed || InstalledPage.Visibility != Visibility.Visible) continue;
                     await ApplyInstalledRowsAsync(result.Rows, result.ApplicationCount, snapshot, cancellation.Token);
@@ -188,7 +207,7 @@ public sealed partial class MainWindow
                 catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
                 catch (Exception ex)
                 {
-                    if (!_closed) ShowNotice(L.T("已安装软件读取失败"), ex.Message, InfoBarSeverity.Warning);
+                    if (!_closed) ShowNotice(L.T("已安装应用读取失败"), ex.Message, InfoBarSeverity.Warning);
                 }
                 finally { if (ReferenceEquals(_installedRenderCancellation, cancellation)) _installedRenderCancellation = null; }
             }
@@ -199,7 +218,8 @@ public sealed partial class MainWindow
     private (List<InstalledRow> Rows, int ApplicationCount) BuildInstalledRows(InstalledApplication[] source,
         ProcessSnapshot snapshot, IReadOnlyList<WhitelistRule> rules, HashSet<string> expanded, HashSet<string> collapsedSearch,
         string query, string drive, bool showSystem, bool canKeep, CancellationToken cancellationToken,
-        ApplicationDisplayCatalog? display = null, bool groupPlatforms = false, bool hideMicrosoft = false, HashSet<string>? collapsedPlatforms = null)
+        ApplicationDisplayCatalog? display = null, bool groupPlatforms = false, bool hideMicrosoft = false, HashSet<string>? collapsedPlatforms = null,
+        IReadOnlyList<UninstallEntry>? uninstallEntries = null)
     {
         var hasSnapshot = snapshot.CapturedAt != DateTimeOffset.MinValue;
         var search = new InstalledApplicationSearch(snapshot.Processes, showSystem);
@@ -213,6 +233,7 @@ public sealed partial class MainWindow
             (search.Matches(a, query, drive) || search.Matches(a, "", drive) && MatchesPlatformQuery(query, display.FindGame(a), display.FindGamePlatform(a))); })
             .OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
         var next = new List<InstalledRow>();
+        var executableIdentity = new InstalledExecutableIdentity(uninstallEntries);
         bool IsComponentKept(InstalledExecutable executable) => ProtectionPolicy.IsDirectlyWhitelisted(
             new ProcessRecord { Name = Path.GetFileName(executable.Path), Path = executable.Path, ApplicationKey = executable.ApplicationKey }, rules);
         foreach (var app in applications)
@@ -234,13 +255,13 @@ public sealed partial class MainWindow
                 Summary = L.F($"{(app.Publisher.Length > 0 ? app.Publisher : L.T("发布者未提供"))} | {app.Executables.Count} 个可执行组件 | {running.Length} 个关联进程"),
                 Status = app.Executables.Count == 0 ? L.T("未读取到可执行组件；按已识别的程序身份保留") : !hasSnapshot ? L.T("尚无进程快照 | 可以提前加入白名单") : hidden > 0 ? L.F($"{hidden} 个系统 / 服务进程已隐藏") : running.Length == 0 ? L.T("当前快照未匹配到运行进程 | 可以提前加入白名单") : L.T("运行状态来自进程快照"),
                 Details = L.F($"程序：{app.Name}\n发布者声明：{app.Publisher}\n安装位置：{app.InstallLocation}\n识别依据：{app.IdentityEvidence}\n程序身份：{app.ApplicationKey}\n\n这里只列出扫描范围内可读取的可执行文件，不保证覆盖全部组件。运行进程仅按完整文件路径精确关联，不会将相同程序身份的 PID 重复分配给不同文件。"),
-                IconPath = app.Executables.FirstOrDefault()?.Path ?? "", IsKept = kept,
+                IconPath = display.ResolveIconPath(app, executableIdentity), IsKept = kept,
                 CanKeep = !kept && canKeep && (app.Executables.Count > 0 || app.ApplicationKey.Length > 0)
             };
             next.Add(parent);
             if (!parent.IsExpanded) continue;
             if (app.Executables.Count == 0) continue;
-            foreach (var executable in app.Executables.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
+            foreach (var executable in executableIdentity.OrderExecutables(app))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!explicitExpansion && !appMatch && !search.MatchesComponent(executable, query)) continue;
@@ -250,13 +271,15 @@ public sealed partial class MainWindow
                 if (!explicitExpansion && !appMatch && !InstalledApplicationSearch.MatchesExecutable(executable, query))
                     visibleProcesses = visibleProcesses.Where(p => InstalledApplicationSearch.MatchesProcess(p, query)).ToArray();
                 var componentKept = IsComponentKept(executable);
+                var role = executableIdentity.Classify(app, executable);
                 next.Add(new InstalledRow
                 {
-                    RowKey = $"exe:{app.Id}:{executable.Path}", ApplicationId = app.Id, ExecutablePath = executable.Path, Kind = InstalledRowKind.Executable,
+                    RowKey = InstalledExecutableRowKey(app.Id, executable.Path), ApplicationId = app.Id, ExecutablePath = executable.Path, Kind = InstalledRowKind.Executable,
                     Name = executable.Name, Summary = executable.Description.Length > 0 ? executable.Description : L.T("可执行文件"),
                     Status = !hasSnapshot ? L.T("尚无进程快照（扫描时文件存在，未试运行）") : processes.Length > 0 ? L.F($"正在运行 | {processes.Length} 个进程") + (hiddenProcesses > 0 ? L.F($"（{hiddenProcesses} 个系统 / 服务已隐藏）") : "") : L.T("未运行（当前快照未匹配，文件未试运行）"),
                     Details = L.F($"可执行文件：{executable.Name}\n说明：{executable.Description}\n完整路径：{executable.Path}\n程序身份：{executable.ApplicationKey}\n\n发现文件不代表它正在运行。下方 PID 仅在当前快照中存在相同完整路径时显示。单独保留组件会添加完整路径规则。"),
-                    IconPath = executable.Path, IsKept = componentKept, CanKeep = !componentKept && canKeep
+                    IconPath = executable.Path, IsKept = componentKept, CanKeep = !componentKept && canKeep,
+                    RoleText = InstalledExecutableLabels.Text(role), RoleKind = InstalledExecutableLabels.Kind(role), RoleTooltip = InstalledExecutableLabels.Tooltip(role)
                 });
                 foreach (var process in visibleProcesses)
                 {
@@ -303,9 +326,10 @@ public sealed partial class MainWindow
                 if (row is null) { row = incoming; _installedRows.Insert(i, row); }
                 else
                 {
-                    if (!ReferenceEquals(_installedRows[i], row)) _installedRows.Move(_installedRows.IndexOf(row), i);
+                    if (!ReferenceEquals(_installedRows[i], row)) NativeListSelection.Move(InstalledList, _installedRows, _installedRows.IndexOf(row), i, item => item.RowKey);
                     row.Name = incoming.Name; row.Summary = incoming.Summary; row.Status = incoming.Status; row.Details = incoming.Details;
                     row.RecoveryText = incoming.RecoveryText; row.RecoveryTooltip = incoming.RecoveryTooltip;
+                    row.RoleText = incoming.RoleText; row.RoleKind = incoming.RoleKind; row.RoleTooltip = incoming.RoleTooltip;
                     row.IsExpanded = incoming.IsExpanded; row.IsKept = incoming.IsKept; row.CanKeep = incoming.CanKeep;
                     row.IsPresentationGroup = incoming.IsPresentationGroup; row.PresentationDepth = incoming.PresentationDepth; row.PresentationPlatformId = incoming.PresentationPlatformId;
                 }
@@ -319,7 +343,7 @@ public sealed partial class MainWindow
                 }
             }
             var selected = _installedRows.FirstOrDefault(r => r.RowKey == _installedSelectedRow);
-            InstalledList.SelectedItem = selected;
+            // Keep the native selected-item set intact while refreshing the focused inspector row.
             _installedSelectedRow = selected?.RowKey;
             InstalledFacts.Text = selected?.Details ?? L.T("选择程序、可执行组件或运行进程，查看来源和路径。");
             if (_installedScrollPending && selected is not null)
@@ -332,12 +356,12 @@ public sealed partial class MainWindow
                 (snapshot.CapturedAt != DateTimeOffset.MinValue ? L.F($"进程更新于 {snapshot.CapturedAt.LocalDateTime:HH:mm:ss}") : L.T("尚未取得进程快照")) +
                 (LiveToggle.IsOn ? L.T(" | 实时更新") : L.T(" | 实时更新已暂停"));
         }
-        finally { _renderingInstalled = false; QueueVisibleIcons(); }
+        finally { _renderingInstalled = false; QueueVisibleIcons(); RefreshSelectionButtons(); }
     }
 
-    private void InstalledItemClicked(object sender, ItemClickEventArgs args)
+    private void InstalledChevronClicked(object sender, RoutedEventArgs args)
     {
-        if (args.ClickedItem is not InstalledRow row || _working || _renderingInstalled) return;
+        if ((sender as FrameworkElement)?.DataContext is not InstalledRow row || _working || _renderingInstalled) return;
         if (row.IsPresentationGroup)
         {
             if (!_collapsedInstalledPlatforms.Add(row.PresentationPlatformId)) _collapsedInstalledPlatforms.Remove(row.PresentationPlatformId);
@@ -366,15 +390,25 @@ public sealed partial class MainWindow
         else InstalledFacts.Text = row.Details;
     }
 
+    private void InstalledItemClicked(object sender, ItemClickEventArgs args)
+    {
+        if (args.ClickedItem is not InstalledRow row || _working) return;
+        _installedSelectedRow = row.RowKey; InstalledFacts.Text = row.Details; RefreshSelectionButtons();
+    }
     private void InstalledSelectionChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (_renderingInstalled || InstalledList.SelectedItem is not InstalledRow row) return;
+        if (NativeSelectionTree.For(InstalledList)?.IsApplying == true) return;
+        RefreshSelectionButtons(); if (_renderingInstalled || (args.AddedItems.LastOrDefault() ?? InstalledList.SelectedItems.LastOrDefault()) is not InstalledRow row) return;
         _installedSelectedRow = row.RowKey;
         InstalledFacts.Text = row.Details;
     }
 
     private void KeepInstalled(object sender, RoutedEventArgs args)
     {
+        var clicked = (sender as FrameworkElement)?.DataContext as InstalledRow;
+        var previousRules = _rules;
+        try
+        {
         if (!_installedInitialized || _renderingInstalled || _working || _installedScanning || !_configurationHealthy || sender is not CheckBox { Tag: string key }) return;
         var row = _installedRows.FirstOrDefault(r => r.RowKey == key);
         var app = row is null ? null : AllInstalledApplications().FirstOrDefault(a => a.Id == row.ApplicationId);
@@ -391,10 +425,17 @@ public sealed partial class MainWindow
                 if (existingIndex >= 0) next[existingIndex] = next[existingIndex] with { Enabled = true };
                 else next.Add(rule with { Id = "installed-" + Guid.NewGuid().ToString("N"), Enabled = true });
             }
-            CommitRules(next, L.T("从已安装软件加入白名单：") + row.Name);
+            CommitRules(next, L.T("从已安装应用加入白名单：") + row.Name);
         }
         catch (Exception ex) { ShowNotice(L.T("未添加白名单"), ex.Message, InfoBarSeverity.Warning); }
         RenderInstalled();
+        }
+        finally
+        {
+            // Restore rejected/no-op clicks immediately. A successful add is rendered asynchronously;
+            // keep its just-checked visual state until that render publishes the updated model.
+            if (clicked is not null && (clicked.IsKept || ReferenceEquals(previousRules, _rules))) clicked.NotifyKeepState();
+        }
     }
 
     private async void AddInstalledExecutable(object sender, RoutedEventArgs args) => await AddManualInstalledAsync(false);

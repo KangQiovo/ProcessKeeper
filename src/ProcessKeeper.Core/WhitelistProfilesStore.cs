@@ -60,6 +60,22 @@ public sealed class WhitelistProfilesStore
         return snapshot with { Profiles = Array.AsReadOnly(items) };
     });
 
+    /// <summary>After caller consent, creates one complete profile and optionally activates it in a single atomic write.</summary>
+    public WhitelistProfilesSnapshot ImportProfile(string name, IReadOnlyList<WhitelistRule> rules, string expectedRevision, bool activate = true)
+    {
+        var copy = FreezeRules(rules); // Invalid input must not even create a directory or lock file.
+        return Change(expectedRevision, snapshot =>
+        {
+            if (snapshot.Profiles.Count >= MaximumProfiles) throw new InvalidDataException(L.T("最多只能保存 5 套白名单配置。"));
+            var profile = new WhitelistProfile(Guid.NewGuid().ToString("N"), name, copy);
+            return snapshot with
+            {
+                ActiveId = activate ? profile.Id : snapshot.ActiveId,
+                Profiles = Array.AsReadOnly(snapshot.Profiles.Concat(new[] { profile }).ToArray())
+            };
+        });
+    }
+
     public WhitelistProfilesSnapshot Rename(string id, string name, string expectedRevision) => Change(expectedRevision, snapshot =>
     {
         _ = Find(snapshot, id);

@@ -1,0 +1,18 @@
+[
+  { "source": "云端白名单请求超时，请稍后重试。", "en": "The cloud whitelist request timed out. Try again later." },
+  { "source": "请选择本次云端列表中的白名单配置。", "en": "Select a whitelist profile from this cloud list." },
+  { "source": "云端白名单文件已变化，请重新加载列表后选择。", "en": "The cloud whitelist file changed. Reload the list and select it again." },
+  { "source": "云端白名单响应格式无效。", "en": "The cloud whitelist response is invalid." },
+  { "source": "云端白名单响应超过大小限制。", "en": "The cloud whitelist response exceeds the size limit." },
+  { "source": "云端白名单文件不能超过 1 MiB。", "en": "A cloud whitelist file must not exceed 1 MiB." },
+  { "source": "云端白名单文件不是有效的 UTF-8。", "en": "The cloud whitelist file is not valid UTF-8." },
+  { "source": "云端白名单配置格式无效。", "en": "The cloud whitelist profile format is invalid." },
+  { "source": "云端白名单仅接受便携应用身份、包族或进程名称规则，不接受本机路径。", "en": "Cloud whitelist profiles accept portable application identities, package families, or process names. Local paths are not supported." },
+  { "source": "云端白名单目录项目过多，已停止读取。", "en": "The cloud whitelist directory has too many entries. Reading stopped." },
+  { "source": "云端白名单配置超过 100 套，已停止读取。", "en": "The cloud whitelist directory has more than 100 profiles. Reading stopped." },
+  { "source": "云端白名单目录含目录、链接或子模块，已停止读取。", "en": "The cloud whitelist directory contains a directory, link, or submodule. Reading stopped." },
+  { "source": "云端白名单请求不能携带身份凭据。", "en": "Cloud whitelist requests must not include credentials." },
+  { "source": "云端白名单重定向目标不受支持。", "en": "The cloud whitelist redirect destination is not supported." },
+  { "source": "GitHub 请求次数已达限制，请稍后重试。", "en": "The GitHub request limit was reached. Try again later." },
+  { "source": "云端白名单读取失败 | HTTP {0}", "en": "Could not read the cloud whitelist | HTTP {0}" }
+]

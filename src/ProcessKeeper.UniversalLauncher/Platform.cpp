@@ -77,6 +77,11 @@ Host DetectHost() {
 }
 
 Route ChooseRoute(const Host& host, bool forceLegacy) {
+    // The x86 outer executable is supported by Windows on Arm emulation. Only the
+    // architecture reported by IsWow64Process2 may select the native Arm64 payload.
+    if (host.machine == IMAGE_FILE_MACHINE_ARM64)
+        return !forceLegacy && (host.major > 10 || host.major == 10 && host.build >= 19041)
+            ? Route::ModernArm64 : Route::Unsupported;
     if (host.machine != IMAGE_FILE_MACHINE_I386 && host.machine != IMAGE_FILE_MACHINE_AMD64) return Route::Unsupported;
     const bool win7 = host.major == 6 && host.minor == 1;
     if (host.major < 6 || host.major == 6 && host.minor < 1 || win7 && host.servicePack < 1) return Route::Unsupported;
@@ -86,6 +91,7 @@ Route ChooseRoute(const Host& host, bool forceLegacy) {
         return Route::ModernX64;
     return host.framework >= 394802 ? Route::Legacy : Route::MissingFramework;
 }
+bool IsModernRoute(Route route) { return route == Route::ModernX64 || route == Route::ModernArm64; }
 bool CanOfferLegacy(Route detected, bool forceLegacy, bool childRunning) { return detected == Route::ModernX64 && !forceLegacy && !childRunning; }
 bool IsApplicationWindowIdentity(const std::wstring& className, const std::wstring& title) {
     return title == L"Process Keeper" && (className == L"WinUIDesktopWin32WindowClass" || className.rfind(L"HwndWrapper[", 0) == 0 && className.back() == L']');

@@ -106,7 +106,7 @@ public sealed class ActivityLogBuffer
         {
             if (previousLegacy && entry.Timestamp is not null) result.AppendLine();
             if (result.Length > 0 && result[^1] != '\n') result.AppendLine();
-            result.Append(entry.Text);
+            result.Append(DisplayText(entry));
             previousLegacy = entry.Timestamp is null;
         }
         return result.ToString();
@@ -127,13 +127,17 @@ public sealed class ActivityLogBuffer
             return byTime != 0 ? byTime : left.Sequence.CompareTo(right.Sequence);
         });
         // Reserve enough space for line separators and the legacy/current format separation.
-        var characters = _entries.Sum(entry => entry.Text.Length + Environment.NewLine.Length) + 128;
+        var characters = _entries.Sum(entry => DisplayText(entry).Length + Environment.NewLine.Length) + 128;
         while (_entries.Count > _maximumEntries || characters > _maximumCharacters)
         {
-            characters -= _entries[0].Text.Length + Environment.NewLine.Length;
+            characters -= DisplayText(_entries[0]).Length + Environment.NewLine.Length;
             _entries.RemoveAt(0);
         }
     }
+
+    private static string DisplayText(Entry entry) => entry.Timestamp is { } timestamp
+        ? TimeDisplay.Format(timestamp, includeMilliseconds: true) + entry.Text.Substring(30)
+        : entry.Text;
 
     private static bool TryReadHeader(string line, out DateTimeOffset? timestamp)
     {

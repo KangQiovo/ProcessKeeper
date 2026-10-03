@@ -20,6 +20,8 @@
     <Compile Include="../ProcessKeeper.Tests/ReleaseBoundaryVerification.cs" Link="Shared/ReleaseBoundaryVerification.cs" />
     <Compile Include="../ProcessKeeper.Tests/WhitelistProfilesVerification.cs" Link="Shared/WhitelistProfilesVerification.cs" />
     <Compile Include="../ProcessKeeper.Tests/HistoricalWhitelistFixture.cs" Link="Shared/HistoricalWhitelistFixture.cs" />
+    <Compile Include="../ProcessKeeper.Activity.Tests/TimeDisplayVerification.cs" Link="Shared/TimeDisplayVerification.cs" />
+    <Compile Include="../ProcessKeeper.Settings.Tests/BuildInfoVerification.cs" Link="Shared/BuildInfoVerification.cs" />
   </ItemGroup>
   <Target Name="GenerateInstalledFixture" BeforeTargets="CoreCompile">
     <Exec Command="&quot;$(PowerShellExe)&quot; -NoProfile -File &quot;$(MSBuildProjectDirectory)\GenerateLegacyFixtures.ps1&quot; -OutputFile &quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath)InstalledSearchVerification.g.cs&quot;" />

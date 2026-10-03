@@ -17,7 +17,7 @@ public sealed partial class MainWindow
             RiskModeButton.Resources[key] = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 164, 38, 44));
         foreach (var key in new[] { "ButtonForeground", "ButtonForegroundPointerOver", "ButtonForegroundPressed" })
             RiskModeButton.Resources[key] = new SolidColorBrush(Microsoft.UI.Colors.White);
-        void Update(object? sender, EventArgs args) => RiskModeButton.Content = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险");
+        void Update(object? sender, EventArgs args) => RiskModeButton.Content = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险模式");
         Update(null, EventArgs.Empty);
         RiskConfirmationMode.Changed += Update;
         Closed += (_, _) => { RiskConfirmationMode.Changed -= Update; _riskModeLifetime.Cancel(); _riskModeLifetime.Dispose(); };

@@ -11,7 +11,7 @@ Process Keeper source is MIT-licensed. This does not relicense its dependencies,
 | [Microsoft WinUI Gallery](https://github.com/microsoft/WinUI-Gallery) | Reference for NavigationView, ListView, ContentDialog, InfoBar and Fluent interaction patterns | [Original MIT license](licenses/WinUI-Gallery-LICENSE.txt) |
 | [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) / Microsoft.WindowsAppSDK 2.5.1 | Modern Windows runtime and UI platform | [Package terms](licenses/Microsoft.WindowsAppSDK.2.5.1-LICENSE.txt), [notices](licenses/Microsoft.WindowsAppSDK.2.5.1-NOTICE.txt) |
 | Microsoft.WindowsAppSDK.WinUI 2.3.9 | WinUI runtime dependency | [Terms](licenses/Microsoft.WindowsAppSDK.WinUI.2.3.9-LICENSE.txt), [notices](licenses/Microsoft.WindowsAppSDK.WinUI.2.3.9-NOTICE.txt) |
-| [.NET runtime](https://github.com/dotnet/runtime) 8.0.31 | Self-contained modern payload | [License](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-LICENSE.txt), [notices](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-THIRD-PARTY-NOTICES.txt) |
+| [.NET runtime](https://github.com/dotnet/runtime) 8.0.31 | Self-contained x64 and ARM64 payloads; both official packages supply identical license and notice bytes | [License](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-LICENSE.txt), [notices](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-NOTICES.txt) |
 | [WPF UI](https://github.com/lepoco/wpfui), WPF-UI / Abstractions 4.3.0 | Compatibility controls and theme | [MIT](licenses/WPF-UI.4.3.0-LICENSE.md), [notices](licenses/WPF-UI.4.3.0-ThirdPartyNotices.txt), [Abstractions](licenses/WPF-UI.Abstractions.4.3.0-LICENSE.md) |
 
 This is an independent application, not an official WinUI Gallery distribution or a Microsoft-endorsed utility. Gallery's MIT license does not imply all Windows App SDK binaries use MIT. Package versions in the project files and restored dependency graph are authoritative for a particular build.
@@ -31,9 +31,13 @@ The modern dependency graph also includes System.Numerics.Tensors and Windows Ap
 - GitHub and Bilibili platform paths come from [Simple Icons](https://github.com/simple-icons/simple-icons), under the retained [CC0 1.0 text](licenses/Simple-Icons-LICENSE.md).
 - The Coolapk path comes from [Lawnicons](https://github.com/LawnchairLauncher/lawnicons), under [Apache-2.0](licenses/Lawnicons-LICENSE.txt).
 - These paths are rendered as XAML icons for the author's profile links. Trademarks remain with their respective owners; use does not imply endorsement.
-- Other program names, icons, versions and companies shown in the application are read from the user's local executables and Windows metadata. Those assets are not redistributed as part of the source screenshots' anonymous sample data.
+- Other program names, icons, versions and companies shown in the application are read from the user's local executables and Windows metadata. Screenshots use anonymous demonstration data. The Auradio name and icon appear with the author's permission as a demonstration cameo; no Auradio private source code is included. Their rights remain with their owner.
 - Process Keeper's application icon was AI-generated. It is separate from the original icons read from local programs.
 
 ## License preservation
 
 Keep applicable notices with any redistributed dependency. This source publication contains no runtime DLLs, executable package or signing certificate. A later binary release must preserve the licenses for the exact dependency versions it ships; source availability alone is not a replacement for that requirement.
+
+## Behavioral references
+
+[PCL](https://github.com/Meloong-Git/PCL) and [PCL Community](https://github.com/PCL-Community/PCL-CE) were researched for memory and download behavior. The functions are independently implemented; no launcher source, binary or private module is included. This project's MIT license does not relicense those projects. See [Utilities](docs/UTILITIES.md).

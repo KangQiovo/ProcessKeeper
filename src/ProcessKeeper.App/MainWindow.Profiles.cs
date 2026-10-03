@@ -6,6 +6,12 @@ namespace ProcessKeeper.App;
 
 public sealed partial class MainWindow
 {
+    private bool _syncEmptyProfileRules = true;
+    private void NotifyProfilesRulesChanged()
+    {
+        RefreshWhitelistActionGuards();
+        if (!_closed && ProfilesHost.Content is WhitelistProfilesView profiles) _ = profiles.NotifyRulesChangedAsync();
+    }
     private void LoadProfilesView(object sender, RoutedEventArgs args) => EnsureProfilesView();
 
     private void EnsureProfilesView()
@@ -27,8 +33,12 @@ public sealed partial class MainWindow
             state =>
             {
                 if (_closed) return;
-                _rules = state.ActiveRules; _lastDetailSignature = ""; InvalidateRuleSearchIndex(); RenderApps(); RefreshInstalledRunningState();
+                _rules = state.ActiveRules; RefreshWhitelistActionGuards(); _lastDetailSignature = ""; InvalidateRuleSearchIndex(); RenderApps(); RefreshInstalledRunningState();
                 Log(L.T("白名单配置已保存") + " | " + state.ActiveProfile.Name);
+            }, _syncEmptyProfileRules, enabled =>
+            {
+                _viewStore.Save(CurrentView with { SyncEmptyProfileRules = enabled });
+                _syncEmptyProfileRules = enabled;
             });
     }
 }

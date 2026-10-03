@@ -1,5 +1,6 @@
 # Generated products and local build tools. Never commit an application package.
 /App/
+/App-arm64/
 /artifacts/
 /work/
 **/bin/
@@ -32,8 +33,13 @@
 /隐藏窗口适配候选.md
 # Personal state / credentials (generic rule examples under rules/ are public).
 whitelist.json*
+whitelist-scope.json*
 appearance.json*
 view.json*
+performance.json*
+recommendation-catalog/
+*.private.xml
+*.private.pem
 onboarding.json*
 settings.json*
 context.txt
@@ -48,5 +54,6 @@ status.txt
 *.pfx
 *.p12
 *.key
+*.private.xml
 # Runtime update preferences; keep the unrelated localization source tracked.
 /update.json*

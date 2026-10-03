@@ -1,60 +1,234 @@
 [
-  { "source": "更新文件链接与固定官方仓库不一致，已拒绝发布信息。", "en": "The release asset URL does not match the fixed official repository. The release metadata was rejected." },
-  { "source": "更新仓库固定为 KangQiovo/ProcessKeeper，不能使用其他仓库。", "en": "The update repository is fixed to KangQiovo/ProcessKeeper. Other repositories are not allowed." },
-  { "source": "发布版本超出 Windows EXE 版本字段范围，不能自动安装。", "en": "The release version exceeds Windows EXE version fields and cannot be installed automatically." },
-  { "source": "更新设置不能超过 8 KiB。", "en": "Update settings must not exceed 8 KiB." },
-  { "source": "更新下载源设置无效。", "en": "The update download source settings are invalid." },
-  { "source": "GitHub 仓库应为 owner/repo 格式。", "en": "Enter a GitHub repository in owner/repo format." },
-  { "source": "更新设置格式无效。", "en": "The update settings format is invalid." },
-  { "source": "更新设置包含重复或未知字段。", "en": "Update settings contain duplicate or unknown fields." },
-  { "source": "更新设置版本不受支持。", "en": "This update settings version is unsupported." },
-  { "source": "当前应用版本不是有效的 SemVer，无法比较更新。", "en": "The current app version is not valid SemVer; updates cannot be compared." },
-  { "source": "尚未设置 GitHub 更新仓库。", "en": "No GitHub update repository has been configured." },
-  { "source": "GitHub 发布信息格式无效。", "en": "GitHub returned invalid release metadata." },
-  { "source": "此仓库尚未发布可用版本。", "en": "This repository has no available releases yet." },
-  { "source": "发布标签不是有效的 SemVer，无法判断是否有更新。", "en": "Release tags are not valid SemVer; an update cannot be determined." },
-  { "source": "发现新版本：{0}", "en": "New version available: {0}" },
-  { "source": "当前未发现更新版本。", "en": "No newer version was found." },
-  { "source": "更新请求超时，请稍后重试。", "en": "The update request timed out. Try again later." },
-  { "source": "无法连接更新服务。", "en": "Could not connect to the update service." },
-  { "source": "正在读取 GitHub 官方发布信息。", "en": "Reading official GitHub release metadata." },
-  { "source": "所有候选下载源均不可用。请查看各源检测结果。", "en": "All candidate download sources are unavailable. Check the source results." },
-  { "source": "更新下载失败。", "en": "The update download failed." },
-  { "source": "所选发布信息与当前仓库不一致，请重新检查更新。", "en": "The selected release does not match the current repository. Check for updates again." },
-  { "source": "更新文件信息已变化，请重新检查更新。", "en": "The update asset metadata changed. Check for updates again." },
-  { "source": "发布信息必须来自 GitHub 官方接口。", "en": "Release metadata must come from the official GitHub API." },
-  { "source": "GitHub 发布信息超过读取上限。", "en": "GitHub release metadata exceeds the read limit." },
-  { "source": "GitHub 请求次数已达限制，请在限制重置后重试。", "en": "GitHub's request limit was reached. Try again after the limit resets." },
-  { "source": "未找到公开仓库或发布版本，请检查仓库设置。", "en": "The public repository or release was not found. Check the repository setting." },
-  { "source": "GitHub 仓库地址发生变化，请使用当前仓库地址。", "en": "The GitHub repository address changed. Use its current address." },
-  { "source": "更新服务返回 HTTP {0}。", "en": "The update service returned HTTP {0}." },
-  { "source": "GitHub 发布链接与所选仓库不一致。", "en": "The GitHub release link does not match the selected repository." },
-  { "source": "GitHub 发布文件身份无效或重复。", "en": "GitHub returned invalid or duplicate release asset identities." },
-  { "source": "发布标签不是有效的 SemVer，不能自动安装。", "en": "The release tag is not valid SemVer; automatic installation is unavailable." },
-  { "source": "更新文件链接与官方发布信息不一致。", "en": "The update asset link does not match the official release metadata." },
-  { "source": "仅支持 ProcessKeeper 通用 EXE 更新文件。", "en": "Only ProcessKeeper universal EXE updates are supported." },
-  { "source": "更新文件大小必须在 1 字节至 512 MiB 之间。", "en": "Update assets must be between 1 byte and 512 MiB." },
-  { "source": "更新文件尚未上传完成。", "en": "The update asset upload is not complete." },
-  { "source": "官方未提供 SHA-256 摘要，不能自动安装。", "en": "No official SHA-256 digest is available; automatic installation is disabled." },
-  { "source": "发布说明过长，已截断；完整内容请查看官方发布页面。", "en": "Release notes were truncated. Read the full notes on the official release page." },
-  { "source": "下载链接或重定向不在允许的 HTTPS 来源范围内。", "en": "The download URL or redirect is outside the allowed HTTPS sources." },
-  { "source": "正在检测下载源：{0}", "en": "Testing download source: {0}" },
-  { "source": "下载源返回的文件片段不完整。", "en": "The download source returned an incomplete file fragment." },
-  { "source": "下载源返回的内容不是 Windows EXE 文件。", "en": "The download source did not return a Windows EXE file." },
-  { "source": "下载源 {0} 延迟 {1} 毫秒。", "en": "Download source {0}: {1} ms latency." },
-  { "source": "下载片段检测成功。", "en": "Download fragment test succeeded." },
-  { "source": "下载源检测超时。", "en": "The download source test timed out." },
-  { "source": "更新下载重定向次数过多或缺少目标地址。", "en": "The update download has too many redirects or no redirect target." },
-  { "source": "更新下载返回了不支持的内容编码。", "en": "The update download returned an unsupported content encoding." },
-  { "source": "下载源返回了网页，而不是更新文件。", "en": "The download source returned a web page instead of an update file." },
-  { "source": "更新下载未返回完整文件。", "en": "The update download did not return a complete file." },
-  { "source": "更新文件大小与官方记录不一致。", "en": "The update file size differs from the official metadata." },
-  { "source": "下载源返回的片段范围与官方文件大小不一致。", "en": "The download fragment range does not match the official file size." },
-  { "source": "正在通过 {0} 下载更新。", "en": "Downloading the update through {0}." },
-  { "source": "正在核对官方 SHA-256 摘要与 EXE 文件格式。", "en": "Verifying the official SHA-256 digest and EXE format." },
-  { "source": "更新文件 SHA-256 与 GitHub 官方摘要不一致，已拒绝此文件。", "en": "The update SHA-256 differs from GitHub's official digest. The file was rejected." },
-  { "source": "更新下载及官方摘要校验完成；安装前仍需验证通用启动器。", "en": "Download and official digest verification completed. The universal launcher must still be verified before installation." },
-  { "source": "更新文件不是受支持的通用 Windows EXE。", "en": "The update file is not a supported universal Windows EXE." },
-  { "source": "下载暂存目录不存在或不是完整路径。", "en": "The download staging directory is missing or is not an absolute path." },
-  { "source": "下载暂存目录不能包含符号链接或联接。", "en": "Download staging must not contain symbolic links or junctions." }
+  {
+    "source": "更新文件链接与固定官方仓库不一致，已拒绝发布信息。",
+    "en": "The release asset URL does not match the fixed official repository. The release metadata was rejected."
+  },
+  {
+    "source": "更新仓库固定为 KangQiovo/ProcessKeeper，不能使用其他仓库。",
+    "en": "The update repository is fixed to KangQiovo/ProcessKeeper. Other repositories are not allowed."
+  },
+  {
+    "source": "发布版本超出 Windows EXE 版本字段范围，不能自动安装。",
+    "en": "The release version exceeds Windows EXE version fields and cannot be installed automatically."
+  },
+  {
+    "source": "更新设置不能超过 8 KiB。",
+    "en": "Update settings must not exceed 8 KiB."
+  },
+  {
+    "source": "更新下载源设置无效。",
+    "en": "The update download source settings are invalid."
+  },
+  {
+    "source": "GitHub 仓库应为 owner/repo 格式。",
+    "en": "Enter a GitHub repository in owner/repo format."
+  },
+  {
+    "source": "更新设置格式无效。",
+    "en": "The update settings format is invalid."
+  },
+  {
+    "source": "更新设置包含重复或未知字段。",
+    "en": "Update settings contain duplicate or unknown fields."
+  },
+  {
+    "source": "更新设置版本不受支持。",
+    "en": "This update settings version is unsupported."
+  },
+  {
+    "source": "当前应用版本不是有效的 SemVer，无法比较更新。",
+    "en": "The current app version is not valid SemVer; updates cannot be compared."
+  },
+  {
+    "source": "尚未设置 GitHub 更新仓库。",
+    "en": "No GitHub update repository has been configured."
+  },
+  {
+    "source": "GitHub 发布信息格式无效。",
+    "en": "GitHub returned invalid release metadata."
+  },
+  {
+    "source": "此仓库尚未发布可用版本。",
+    "en": "This repository has no available releases yet."
+  },
+  {
+    "source": "发布标签不是有效的 SemVer，无法判断是否有更新。",
+    "en": "Release tags are not valid SemVer; an update cannot be determined."
+  },
+  {
+    "source": "发现新版本：{0}",
+    "en": "New version available: {0}"
+  },
+  {
+    "source": "当前未发现更新版本。",
+    "en": "No newer version was found."
+  },
+  {
+    "source": "更新请求超时，请稍后重试。",
+    "en": "The update request timed out. Try again later."
+  },
+  {
+    "source": "无法连接更新服务。",
+    "en": "Could not connect to the update service."
+  },
+  {
+    "source": "正在读取 GitHub 官方发布信息。",
+    "en": "Reading official GitHub release metadata."
+  },
+  {
+    "source": "所有候选下载源均不可用。请查看各源检测结果。",
+    "en": "All candidate download sources are unavailable. Check the source results."
+  },
+  {
+    "source": "更新下载失败。",
+    "en": "The update download failed."
+  },
+  {
+    "source": "所选发布信息与当前仓库不一致，请重新检查更新。",
+    "en": "The selected release does not match the current repository. Check for updates again."
+  },
+  {
+    "source": "更新文件信息已变化，请重新检查更新。",
+    "en": "The update asset metadata changed. Check for updates again."
+  },
+  {
+    "source": "发布信息必须来自 GitHub 官方接口。",
+    "en": "Release metadata must come from the official GitHub API."
+  },
+  {
+    "source": "GitHub 发布信息超过读取上限。",
+    "en": "GitHub release metadata exceeds the read limit."
+  },
+  {
+    "source": "GitHub 请求次数已达限制，请在限制重置后重试。",
+    "en": "GitHub's request limit was reached. Try again after the limit resets."
+  },
+  {
+    "source": "未找到公开仓库或发布版本，请检查仓库设置。",
+    "en": "The public repository or release was not found. Check the repository setting."
+  },
+  {
+    "source": "GitHub 仓库地址发生变化，请使用当前仓库地址。",
+    "en": "The GitHub repository address changed. Use its current address."
+  },
+  {
+    "source": "更新服务返回 HTTP {0}。",
+    "en": "The update service returned HTTP {0}."
+  },
+  {
+    "source": "GitHub 发布链接与所选仓库不一致。",
+    "en": "The GitHub release link does not match the selected repository."
+  },
+  {
+    "source": "GitHub 发布文件身份无效或重复。",
+    "en": "GitHub returned invalid or duplicate release asset identities."
+  },
+  {
+    "source": "发布标签不是有效的 SemVer，不能自动安装。",
+    "en": "The release tag is not valid SemVer; automatic installation is unavailable."
+  },
+  {
+    "source": "更新文件链接与官方发布信息不一致。",
+    "en": "The update asset link does not match the official release metadata."
+  },
+  {
+    "source": "仅支持 ProcessKeeper 通用 EXE 更新文件。",
+    "en": "Only ProcessKeeper universal EXE updates are supported."
+  },
+  {
+    "source": "更新文件大小必须在 1 字节至 512 MiB 之间。",
+    "en": "Update assets must be between 1 byte and 512 MiB."
+  },
+  {
+    "source": "更新文件尚未上传完成。",
+    "en": "The update asset upload is not complete."
+  },
+  {
+    "source": "官方未提供 SHA-256 摘要，不能自动安装。",
+    "en": "No official SHA-256 digest is available; automatic installation is disabled."
+  },
+  {
+    "source": "发布说明过长，已截断；完整内容请查看官方发布页面。",
+    "en": "Release notes were truncated. Read the full notes on the official release page."
+  },
+  {
+    "source": "下载链接或重定向不在允许的 HTTPS 来源范围内。",
+    "en": "The download URL or redirect is outside the allowed HTTPS sources."
+  },
+  {
+    "source": "正在检测下载源：{0}",
+    "en": "Testing download source: {0}"
+  },
+  {
+    "source": "下载源返回的文件片段不完整。",
+    "en": "The download source returned an incomplete file fragment."
+  },
+  {
+    "source": "下载源返回的内容不是 Windows EXE 文件。",
+    "en": "The download source did not return a Windows EXE file."
+  },
+  {
+    "source": "下载源 {0} 延迟 {1} 毫秒。",
+    "en": "Download source {0}: {1} ms latency."
+  },
+  {
+    "source": "下载片段检测成功。",
+    "en": "Download fragment test succeeded."
+  },
+  {
+    "source": "下载源检测超时。",
+    "en": "The download source test timed out."
+  },
+  {
+    "source": "更新下载重定向次数过多或缺少目标地址。",
+    "en": "The update download has too many redirects or no redirect target."
+  },
+  {
+    "source": "更新下载返回了不支持的内容编码。",
+    "en": "The update download returned an unsupported content encoding."
+  },
+  {
+    "source": "下载源返回了网页，而不是更新文件。",
+    "en": "The download source returned a web page instead of an update file."
+  },
+  {
+    "source": "更新下载未返回完整文件。",
+    "en": "The update download did not return a complete file."
+  },
+  {
+    "source": "更新文件大小与官方记录不一致。",
+    "en": "The update file size differs from the official metadata."
+  },
+  {
+    "source": "下载源返回的片段范围与官方文件大小不一致。",
+    "en": "The download fragment range does not match the official file size."
+  },
+  {
+    "source": "正在通过 {0} 下载更新。",
+    "en": "Downloading the update through {0}."
+  },
+  {
+    "source": "正在核对官方 SHA-256 摘要与 EXE 文件格式。",
+    "en": "Verifying the official SHA-256 digest and EXE format."
+  },
+  {
+    "source": "更新文件 SHA-256 与 GitHub 官方摘要不一致，已拒绝此文件。",
+    "en": "The update SHA-256 differs from GitHub's official digest. The file was rejected."
+  },
+  {
+    "source": "更新下载及官方摘要校验完成；安装前仍需验证通用启动器。",
+    "en": "Download and official digest verification completed. The universal launcher must still be verified before installation."
+  },
+  {
+    "source": "更新文件不是受支持的通用 Windows EXE。",
+    "en": "The update file is not a supported universal Windows EXE."
+  },
+  {
+    "source": "下载暂存目录不存在或不是完整路径。",
+    "en": "The download staging directory is missing or is not an absolute path."
+  },
+  {
+    "source": "下载暂存目录不能包含符号链接或联接。",
+    "en": "Download staging must not contain symbolic links or junctions."
+  }
 ]

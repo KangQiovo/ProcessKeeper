@@ -1,0 +1,38 @@
+[
+  {
+    "source": "全选",
+    "en": "Select all"
+  },
+  {
+    "source": "全不选",
+    "en": "Deselect all"
+  },
+  {
+    "source": "批量选择",
+    "en": "Bulk selection"
+  },
+  {
+    "source": "仅更改当前搜索和筛选结果的直接保留规则；包含折叠分组内的软件。",
+    "en": "Change direct keep rules for the current search and filters, including apps in collapsed groups."
+  },
+  {
+    "source": "仅启用或停用当前搜索匹配的规则，不删除规则。",
+    "en": "Enable or disable rules matching the current search without deleting them."
+  },
+  {
+    "source": "当前筛选结果没有需要更改的可编辑规则。",
+    "en": "No editable rules in the current results need changing."
+  },
+  {
+    "source": "白名单已发生变化，请刷新后重试。",
+    "en": "The whitelist has changed. Refresh and try again."
+  },
+  {
+    "source": "已{0}当前筛选结果 | 更改 {1} 条规则",
+    "en": "{0} applied to the current results | {1} rules changed"
+  },
+  {
+    "source": "系统保护和其他匹配规则仍然生效。",
+    "en": "System protection and other matching rules remain in effect."
+  }
+]

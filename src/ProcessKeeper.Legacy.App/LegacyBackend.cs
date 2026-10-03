@@ -8,10 +8,20 @@ namespace ProcessKeeper.App;
 public sealed class LegacyBackend
 {
     public LegacyUpdateBackend Updates { get; set; } = new();
+    public IUninstallBackend? Uninstall { get; set; }
     public Func<ProcessSnapshot> Capture { get; set; } = new ProcessCollector().Capture;
     public Func<CancellationToken, IReadOnlyList<InstalledApplication>> ScanInstalled { get; set; } = new InstalledApplicationCatalog().Scan;
     public Func<CancellationToken, AutorunSnapshot> ScanAutoruns { get; set; } = new AutorunCatalog().Scan;
-    public Func<ProcessSnapshot, IReadOnlyList<InstalledApplication>, IReadOnlyList<AutorunEntry>, CancellationToken, ApplicationDisplayCatalog> CaptureDisplay { get; set; } = new ApplicationDisplayService().Capture;
+    private readonly ApplicationDisplayService _displayService = new();
+    private Func<ProcessSnapshot, IReadOnlyList<InstalledApplication>, IReadOnlyList<AutorunEntry>, CancellationToken, ApplicationDisplayCatalog>? _captureDisplay;
+    public Func<ProcessSnapshot, IReadOnlyList<InstalledApplication>, IReadOnlyList<AutorunEntry>, CancellationToken, ApplicationDisplayCatalog> CaptureDisplay
+    { get => _captureDisplay ?? _displayService.Capture; set => _captureDisplay = value; }
+    internal ApplicationDisplayCatalog CaptureDisplayForView(ProcessSnapshot snapshot, IReadOnlyList<InstalledApplication> installed,
+        IReadOnlyList<AutorunEntry> autoruns, bool verifyMicrosoft, CancellationToken token) =>
+        _captureDisplay is { } capture ? capture(snapshot, installed, autoruns, token) : _displayService.Capture(snapshot, installed, autoruns, verifyMicrosoft, token);
+    internal ApplicationDisplayCatalog CaptureDisplayForView(ProcessSnapshot snapshot, IReadOnlyList<InstalledApplication> installed,
+        IReadOnlyList<AutorunEntry> autoruns, IReadOnlyList<UninstallEntry> uninstall, bool verifyMicrosoft, CancellationToken token) =>
+        _captureDisplay is { } capture ? capture(snapshot, installed, autoruns, token) : _displayService.Capture(snapshot, installed, autoruns, uninstall, verifyMicrosoft, token);
     public Func<AutorunEntry, bool, CancellationToken, AutorunChangeResult> ChangeAutorun { get; set; } = new AutorunManager().ChangeEnabled;
     public Func<string, string, Task<bool>>? Confirm { get; set; }
     public Action<string, string>? ShowInformation { get; set; }

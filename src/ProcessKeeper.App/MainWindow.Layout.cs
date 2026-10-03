@@ -12,6 +12,9 @@ public sealed partial class MainWindow
     private bool? _compactToolbar;
     private bool _inspectorUpdateQueued;
 
+    private void WrapCommandRowsChanged(object sender, SizeChangedEventArgs args)
+    { if (sender is StackPanel panel) NativeCommandLayout.Reflow(panel); }
+
     private void AuthorLinksSizeChanged(object sender, SizeChangedEventArgs args)
     {
         var compact = args.NewSize.Width < 360;
@@ -32,6 +35,16 @@ public sealed partial class MainWindow
         Grid.SetColumnSpan(InstalledSearch, compact ? 2 : 1);
         Grid.SetColumn(InstalledDriveFilter, compact ? 0 : 1);
         Grid.SetRow(InstalledDriveFilter, compact ? 1 : 0);
+    }
+
+    private void InstalledSummarySizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        var compact = args.NewSize.Width < 650;
+        Grid.SetColumnSpan(InstalledSummaryLabels, compact ? 2 : 1);
+        Grid.SetRow(InstalledSummaryActions, compact ? 1 : 0);
+        Grid.SetColumn(InstalledSummaryActions, compact ? 0 : 1);
+        Grid.SetColumnSpan(InstalledSummaryActions, compact ? 2 : 1);
+        InstalledSummaryActions.HorizontalAlignment = HorizontalAlignment.Right;
     }
 
     private void InitializeResponsiveLayout(object sender, RoutedEventArgs args)

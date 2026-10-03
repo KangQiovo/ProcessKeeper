@@ -24,6 +24,65 @@ public sealed class InstalledApplicationCatalog
     private static readonly string[] RegistrySources =
     [ @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"Software\Microsoft\Windows\CurrentVersion\App Paths" ];
 
+    /// <summary>Merges already verified main-file evidence. Does not read the registry/filesystem or launch programs.</summary>
+    public static IReadOnlyList<InstalledApplication> IncludeVerifiedApplications(IReadOnlyList<InstalledApplication> applications,IReadOnlyList<UninstallEntry> registrations)
+    {
+        ArgumentNullException.ThrowIfNull(applications);ArgumentNullException.ThrowIfNull(registrations);
+        if(registrations.Count==0)return applications;
+        if(applications.Count>MaximumApplications||applications.Sum(app=>(long)app.Executables.Count)>MaximumTotalExecutables)return applications;
+        var result=applications.ToList();var byPath=new Dictionary<string,List<int>>(StringComparer.OrdinalIgnoreCase);
+        var byNameRoot=new Dictionary<string,List<int>>(StringComparer.OrdinalIgnoreCase);var indexed=0;
+        var identities=new InstalledExecutableIdentity(registrations);
+        void Index(string key,int index,Dictionary<string,List<int>> target)
+        {if(!target.TryGetValue(key,out var group))target[key]=group=new();if(!group.Contains(index))group.Add(index);}
+        string NameRoot(string name,string location)=>name.Trim()+"|"+location.TrimEnd('\\');
+        for(var index=0;index<Math.Min(result.Count,MaximumApplications);index++)
+        {
+            var app=result[index];Index(NameRoot(app.Name,app.InstallLocation),index,byNameRoot);
+            foreach(var executable in app.Executables.Take(MaximumExecutablesPerDirectory))
+            {if(++indexed>MaximumTotalExecutables)break;Index(executable.Path,index,byPath);}
+            if(indexed>MaximumTotalExecutables)break;
+        }
+        foreach(var registration in registrations.Take(InstalledExecutableIdentity.MaximumRegistrations))
+        {
+            if(registration.ApplicationIdentity is not{IsResolved:true} identity||registration.ApplicationPaths.Count>UninstallApplicationIdentityResolver.MaximumExecutables
+                ||!registration.ApplicationPaths.Any(path=>path.Equals(identity.ExecutablePath,StringComparison.OrdinalIgnoreCase))
+                ||!UninstallPolicy.IsLocalExecutable(identity.ExecutablePath))continue;
+            var path=identity.ExecutablePath;
+            if(registration.Command is{IsMsi:false}&&registration.Command.Executable.Equals(path,StringComparison.OrdinalIgnoreCase)
+                ||registration.QuietCommand is{IsMsi:false}&&registration.QuietCommand.Executable.Equals(path,StringComparison.OrdinalIgnoreCase))continue;
+            var parent=Path.GetDirectoryName(path)!;var declared=NormalizeLocalPath(registration.InstallLocation);
+            var shared=declared is null||declared.Length<=3||new[]{"Windows","System32","SysWOW64","Program Files","Program Files (x86)","Common Files","WindowsApps","Users","AppData","ProgramData","Apps","Programs","Packages","Temp","Local","Roaming"}.Contains(Path.GetFileName(declared.TrimEnd('\\')),StringComparer.OrdinalIgnoreCase);
+            var location=!shared&&path.StartsWith(declared!.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase)?declared!.TrimEnd('\\'):parent;
+            var executable=new InstalledExecutable{Path=path,Name=Path.GetFileName(path),ApplicationKey=ProcessIdentity.Classify(new ProcessRecord{Id=1,Name=Path.GetFileName(path),Path=path}).ApplicationKey};
+            var candidate=new InstalledApplication{Name=registration.Name,Publisher=registration.Publisher,InstallLocation=location,Executables=[executable]};
+            var role=identities.Classify(candidate,executable).Role;
+            if(role is not(InstalledExecutableRole.Main or InstalledExecutableRole.PotentialMain))continue;
+            List<int>? matches=null;
+            if(byPath.TryGetValue(path,out var pathMatches))matches=pathMatches;
+            else if(byNameRoot.TryGetValue(NameRoot(candidate.Name,location),out var appMatches))
+            {if(appMatches.Count!=1||result[appMatches[0]].Publisher.Length>0&&registration.Publisher.Length>0&&!result[appMatches[0]].Publisher.Equals(registration.Publisher,StringComparison.OrdinalIgnoreCase))continue;matches=appMatches;}
+            if(matches is not null)
+            {
+                foreach(var index in matches)
+                {
+                    var existing=result[index];var hasPath=existing.Executables.Any(entry=>entry.Path.Equals(path,StringComparison.OrdinalIgnoreCase));
+                    if(!hasPath&&(existing.Executables.Count>=MaximumExecutablesPerDirectory||indexed>=MaximumTotalExecutables))continue;
+                    var entries=hasPath?existing.Executables:Array.AsReadOnly(existing.Executables.Concat(new[]{executable}).ToArray());
+                    result[index]=existing with{Executables=entries};
+                    if(!hasPath){indexed++;Index(path,index,byPath);}
+                }
+            }
+            else
+            {
+                if(result.Count>=MaximumApplications||indexed>=MaximumTotalExecutables)continue;
+                candidate=candidate with{Id="installed:"+Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes((candidate.Name+"|"+location+"|").ToLowerInvariant()))),IdentityEvidence=registration.Registration};
+                var index=result.Count;result.Add(candidate);indexed++;Index(path,index,byPath);Index(NameRoot(candidate.Name,location),index,byNameRoot);
+            }
+        }
+        return Array.AsReadOnly(result.ToArray());
+    }
+
     public IReadOnlyList<InstalledApplication> Scan(CancellationToken cancellationToken = default)
     {
         var warnings = new List<string>();
@@ -41,7 +100,7 @@ public sealed class InstalledApplicationCatalog
             if (!BudgetAvailable()) break;
             var app = CreateApplication(package.Name, package.Publisher, package.InstallLocation, package.ExecutablePaths,
                 L.F($"当前用户的 Windows 包：{package.FullName}；只读取清单入口，不扫描包子目录。{package.Warning}"),
-                metadata, package.FamilyName, package.FullName, BudgetAvailable, cancellationToken, MaximumTotalExecutables - componentCount);
+                metadata, package.FamilyName, package.FullName, BudgetAvailable, cancellationToken, MaximumTotalExecutables - componentCount, package.ExecutablePaths);
             if (app is not null) componentCount += AddDistinct(result, app);
         }
         foreach (var seed in ReadRegistry(warnings, cancellationToken, BudgetAvailable))
@@ -59,7 +118,7 @@ public sealed class InstalledApplicationCatalog
                 entries.AddRange(scanned);
             }
             var app = CreateApplication(seed.Name, seed.Publisher, seed.Root, entries, seed.Evidence, metadata, budgetAvailable: BudgetAvailable,
-                cancellationToken: cancellationToken, maximumEntries: MaximumTotalExecutables - componentCount);
+                cancellationToken: cancellationToken, maximumEntries: MaximumTotalExecutables - componentCount, entryPaths: seed.EntryPaths);
             if (app is not null) componentCount += AddDistinct(result, app);
         }
 
@@ -75,7 +134,7 @@ public sealed class InstalledApplicationCatalog
                 if (target is null || result.Any(app => app.Executables.Any(entry => entry.Path.Equals(target, StringComparison.OrdinalIgnoreCase)))) continue;
                 var app = CreateApplication(Path.GetFileNameWithoutExtension(shortcut), "", Path.GetDirectoryName(target)!, [target],
                     L.T("开始菜单快捷方式记录的本地 EXE 目标；只读取链接，不解析迁移目标、不读取参数、不启动。"), metadata, budgetAvailable: BudgetAvailable,
-                    cancellationToken: cancellationToken, maximumEntries: MaximumTotalExecutables - componentCount);
+                    cancellationToken: cancellationToken, maximumEntries: MaximumTotalExecutables - componentCount, entryPaths: [target]);
                 if (app is not null) componentCount += AddDistinct(result, app);
             }
         }
@@ -107,7 +166,7 @@ public sealed class InstalledApplicationCatalog
         Warnings = [];
         var entry = NormalizeExistingExecutable(path);
         return entry is null ? null : CreateApplication(Path.GetFileNameWithoutExtension(entry), "", Path.GetDirectoryName(entry)!, [entry],
-            L.T("手动选择的现有 EXE；未执行文件。文件存在不等于可正常运行。"), new(StringComparer.OrdinalIgnoreCase), cancellationToken: cancellationToken);
+            L.T("手动选择的现有 EXE；未执行文件。文件存在不等于可正常运行。"), new(StringComparer.OrdinalIgnoreCase), cancellationToken: cancellationToken, entryPaths: [entry]);
     }
 
     /// <summary>Never broadens one installation into a whole directory or a process-name allow rule.</summary>
@@ -136,7 +195,7 @@ public sealed class InstalledApplicationCatalog
 
     private static InstalledApplication? CreateApplication(string name, string publisher, string root, IEnumerable<string> paths,
         string evidence, Dictionary<string, InstalledExecutable> metadata, string family = "", string identitySuffix = "", Func<bool>? budgetAvailable = null,
-        CancellationToken cancellationToken = default, int maximumEntries = MaximumExecutablesPerDirectory)
+        CancellationToken cancellationToken = default, int maximumEntries = MaximumExecutablesPerDirectory, IReadOnlyList<string>? entryPaths = null)
     {
         var entries = new List<InstalledExecutable>();
         foreach (var candidate in paths.Distinct(StringComparer.OrdinalIgnoreCase).Take(Math.Min(MaximumExecutablesPerDirectory, maximumEntries)))
@@ -175,6 +234,8 @@ public sealed class InstalledApplicationCatalog
             Name = string.IsNullOrWhiteSpace(name) ? Path.GetFileName(location) : name,
             Publisher = publisher, InstallLocation = location, ApplicationKey = packageKey,
             IdentityEvidence = evidence + (family.Length == 0 ? "\n" + ScanLimitDescription : ""),
+            EntryPaths = Array.AsReadOnly((entryPaths ?? Array.Empty<string>()).Where(path => entries.Any(entry => entry.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray()),
             Executables = Array.AsReadOnly(entries.OrderBy(entry => entry.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(entry => entry.Path, StringComparer.OrdinalIgnoreCase).ToArray())
         };
     }
@@ -187,12 +248,13 @@ public sealed class InstalledApplicationCatalog
         applications[index] = current with
         {
             Executables = Array.AsReadOnly(current.Executables.Concat(candidate.Executables).DistinctBy(entry => entry.Path, StringComparer.OrdinalIgnoreCase).ToArray()),
+            EntryPaths = Array.AsReadOnly(current.EntryPaths.Concat(candidate.EntryPaths).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()),
             IdentityEvidence = string.Join("\n", new[] { current.IdentityEvidence, candidate.IdentityEvidence }.Distinct(StringComparer.Ordinal))
         };
         return applications[index].Executables.Count - current.Executables.Count;
     }
 
-    private sealed record RegistrySeed(string Name, string Publisher, string Root, IReadOnlyList<string> Entries, string Evidence);
+    private sealed record RegistrySeed(string Name, string Publisher, string Root, IReadOnlyList<string> Entries, IReadOnlyList<string> EntryPaths, string Evidence);
 
     private static IReadOnlyList<RegistrySeed> ReadRegistry(List<string> warnings, CancellationToken token, Func<bool> budgetAvailable)
     {
@@ -226,7 +288,8 @@ public sealed class InstalledApplicationCatalog
                         if (root is null && path is null) continue;
                         root ??= Path.GetDirectoryName(path!)!;
                         result.Add(new RegistrySeed(name, child.GetValue("Publisher") as string ?? "", root,
-                            path is null ? [] : [path], L.F($"{hive} {view} 的 {(isAppPath ? "App Paths" : L.T("卸载信息"))}注册项；未读取卸载命令。")));
+                            path is null ? [] : [path], isAppPath && path is not null ? [path] : [],
+                            L.F($"{hive} {view} 的 {(isAppPath ? "App Paths" : L.T("卸载信息"))}注册项；未读取卸载命令。")));
                     }
                     catch (Exception ex) when (IsReadFailure(ex)) { warnings.Add(L.T("部分软件注册项无法读取：") + ex.Message); }
                 }

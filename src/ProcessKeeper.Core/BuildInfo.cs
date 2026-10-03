@@ -15,8 +15,8 @@ public static class BuildInfo
     public static bool IsPreviewBuild => true;
     public const string BuildChannelMarker = "ProcessKeeper.Build.Channel:Preview";
 #endif
-    public const string BuildDateUtc = "2026-09-27T10:01:23Z";
-    public const string BuildDateUtc8 = "2026-09-27T18:01:23+08:00";
+    public const string BuildDateUtc = "2026-10-03T01:51:41Z";
+    public const string BuildDateUtc8 = "2026-10-03T09:51:41+08:00";
     public static string DisplayBuildDate
     {
         get
@@ -31,6 +31,6 @@ public static class BuildInfo
         var instant = DateTimeOffset.ParseExact(BuildDateUtc, "yyyy-MM-dd'T'HH:mm:ss'Z'",
             CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
         var shown = timeZone is null ? instant.ToOffset(TimeSpan.FromHours(8)) : TimeZoneInfo.ConvertTime(instant, timeZone);
-        return shown.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        return TimeDisplay.Format(shown);
     }
 }

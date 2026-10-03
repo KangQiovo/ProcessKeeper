@@ -1,7 +1,22 @@
 [
-  {"source":"按游戏平台分组","en":"Group by game platform"},
-  {"source":"隐藏 Microsoft 应用","en":"Hide Microsoft apps"},
-  {"source":"仅整理显示；关闭与白名单操作仍只针对原应用。","en":"Display grouping only. Close and whitelist actions still apply to the individual app."},
-  {"source":"仅隐藏已核实的 Microsoft 应用；未知身份仍显示。","en":"Hide only verified Microsoft apps. Apps with unknown identity stay visible."},
-  {"source":"游戏平台","en":"Game platform"}
+  {
+    "source": "按游戏平台分组",
+    "en": "Group by game platform"
+  },
+  {
+    "source": "隐藏 Microsoft 应用",
+    "en": "Hide Microsoft apps"
+  },
+  {
+    "source": "仅整理显示；关闭与白名单操作仍只针对原应用。",
+    "en": "Display grouping only. Close and whitelist actions still apply to the individual app."
+  },
+  {
+    "source": "仅隐藏已核实的 Microsoft 应用；未知身份仍显示。",
+    "en": "Hide only verified Microsoft apps. Apps with unknown identity stay visible."
+  },
+  {
+    "source": "游戏平台",
+    "en": "Game platform"
+  }
 ]

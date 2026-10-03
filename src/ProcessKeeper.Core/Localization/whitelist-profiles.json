@@ -1,19 +1,70 @@
 [
-  { "source": "白名单配置格式无效。", "en": "The whitelist configuration format is invalid." },
-  { "source": "白名单配置版本无效。", "en": "The whitelist configuration version is invalid." },
-  { "source": "白名单配置含重复、未知或缺失字段。", "en": "The whitelist configuration has duplicate, unknown, or missing fields." },
-  { "source": "正在保存白名单配置，请稍后再关闭程序。", "en": "Whitelist settings are being saved. Wait before closing programs." },
-  { "source": "正在执行关闭或配置操作，请完成后再修改白名单。", "en": "A close or configuration operation is in progress. Wait before changing the whitelist." },
-  { "source": "最多只能保存 5 套白名单配置。", "en": "You can save up to 5 whitelist profiles." },
-  { "source": "不能删除正在使用的配置或最后一套配置。", "en": "You cannot delete the active profile or the last profile." },
-  { "source": "活动配置与当前白名单不一致，请重新读取后再保存。", "en": "The active profile does not match the current whitelist. Reload before saving." },
-  { "source": "全部白名单配置不能超过 5 MiB。", "en": "All whitelist profiles together must not exceed 5 MiB." },
-  { "source": "白名单配置已被修改，请重新读取后再保存。", "en": "The whitelist configuration has changed. Reload before saving." },
-  { "source": "白名单配置无法读取，已保留原文件并停止修改。", "en": "The whitelist configuration could not be read. The original file was preserved and no changes were made." },
-  { "source": "默认配置", "en": "Default profile" },
-  { "source": "白名单配置标识无效或重复。", "en": "A whitelist profile ID is invalid or duplicated." },
-  { "source": "配置名称应为 1 至 80 个字符，且不能重复或包含控制字符。", "en": "Profile names must contain 1 to 80 characters, be unique, and contain no control characters." },
-  { "source": "活动白名单配置不存在。", "en": "The active whitelist profile does not exist." },
-  { "source": "白名单配置不存在，请重新读取。", "en": "The whitelist profile no longer exists. Reload the profiles." },
-  { "source": "全部设置包不能超过 6 MiB。", "en": "The complete settings bundle must not exceed 6 MiB." }
+  {
+    "source": "白名单配置格式无效。",
+    "en": "The whitelist configuration format is invalid."
+  },
+  {
+    "source": "白名单配置版本无效。",
+    "en": "The whitelist configuration version is invalid."
+  },
+  {
+    "source": "白名单配置含重复、未知或缺失字段。",
+    "en": "The whitelist configuration has duplicate, unknown, or missing fields."
+  },
+  {
+    "source": "正在保存白名单配置，请稍后再关闭程序。",
+    "en": "Whitelist settings are being saved. Wait before closing programs."
+  },
+  {
+    "source": "正在执行关闭或配置操作，请完成后再修改白名单。",
+    "en": "A close or configuration operation is in progress. Wait before changing the whitelist."
+  },
+  {
+    "source": "最多只能保存 5 套白名单配置。",
+    "en": "You can save up to 5 whitelist profiles."
+  },
+  {
+    "source": "不能删除正在使用的配置或最后一套配置。",
+    "en": "You cannot delete the active profile or the last profile."
+  },
+  {
+    "source": "活动配置与当前白名单不一致，请重新读取后再保存。",
+    "en": "The active profile does not match the current whitelist. Reload before saving."
+  },
+  {
+    "source": "全部白名单配置不能超过 5 MiB。",
+    "en": "All whitelist profiles together must not exceed 5 MiB."
+  },
+  {
+    "source": "白名单配置已被修改，请重新读取后再保存。",
+    "en": "The whitelist configuration has changed. Reload before saving."
+  },
+  {
+    "source": "白名单配置无法读取，已保留原文件并停止修改。",
+    "en": "The whitelist configuration could not be read. The original file was preserved and no changes were made."
+  },
+  {
+    "source": "默认配置",
+    "en": "Default profile"
+  },
+  {
+    "source": "白名单配置标识无效或重复。",
+    "en": "A whitelist profile ID is invalid or duplicated."
+  },
+  {
+    "source": "配置名称应为 1 至 80 个字符，且不能重复或包含控制字符。",
+    "en": "Profile names must contain 1 to 80 characters, be unique, and contain no control characters."
+  },
+  {
+    "source": "活动白名单配置不存在。",
+    "en": "The active whitelist profile does not exist."
+  },
+  {
+    "source": "白名单配置不存在，请重新读取。",
+    "en": "The whitelist profile no longer exists. Reload the profiles."
+  },
+  {
+    "source": "全部设置包不能超过 6 MiB。",
+    "en": "The complete settings bundle must not exceed 6 MiB."
+  }
 ]

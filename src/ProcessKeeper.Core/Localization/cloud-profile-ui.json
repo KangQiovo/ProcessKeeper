@@ -1,0 +1,22 @@
+[
+  { "source": "云端白名单配置", "en": "Cloud whitelist profiles" },
+  { "source": "从 GitHub 加载", "en": "Load from GitHub" },
+  { "source": "选择云端配置", "en": "Select a cloud profile" },
+  { "source": "云端规则预览", "en": "Cloud rules preview" },
+  { "source": "导入并应用", "en": "Import and apply" },
+  { "source": "仅主动加载；导入计入五套配置。", "en": "Load manually. Imported profiles count toward the five-profile limit." },
+  { "source": "云端配置仅供参考，请核对后导入。", "en": "Review community rules before importing." },
+  { "source": "导入云端配置？", "en": "Import cloud profile?" },
+  { "source": "将创建新配置并切换当前白名单；不会关闭任何程序。", "en": "Create a new profile and switch the active whitelist. No programs will be closed." },
+  { "source": "本地配置已达五套，请先删除未使用的配置。", "en": "Five local profiles already exist. Delete an unused profile first." },
+  { "source": "正在加载云端配置", "en": "Loading cloud profiles" },
+  { "source": "正在读取云端规则", "en": "Reading cloud rules" },
+  { "source": "未找到云端配置。", "en": "No cloud profiles found." },
+  { "source": "先加载并选择云端配置。", "en": "Load and select a cloud profile first." },
+  { "source": "配置来源 | KangQiovo/ProcessKeeper/community/profiles", "en": "Source | KangQiovo/ProcessKeeper/community/profiles" },
+  { "source": "规则预览 | {0} 条规则", "en": "Preview | {0} rules" },
+  { "source": "云端配置名称", "en": "Cloud profile name" },
+  { "source": "预览云端配置", "en": "Preview cloud profile" },
+  { "source": "请先预览云端配置。", "en": "Preview a cloud profile first." },
+  { "source": "{0} 条规则", "en": "{0} rules" }
+]

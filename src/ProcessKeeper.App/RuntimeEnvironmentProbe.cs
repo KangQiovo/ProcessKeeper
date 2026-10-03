@@ -29,7 +29,8 @@ internal static class RuntimeEnvironmentProbe
         return new(RuntimeInformation.OSDescription, RuntimeInformation.OSArchitecture.ToString(), RuntimeInformation.ProcessArchitecture.ToString(),
             RuntimeInformation.FrameworkDescription, Environment.ProcessorCount,
             memoryRead ? memory.TotalPhysical : null, memoryRead ? memory.AvailablePhysical : null, administrator,
-            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041) && RuntimeInformation.ProcessArchitecture == Architecture.X64);
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041) &&
+            ProcessArchitecturePolicy.IsModernProcessArchitecture(RuntimeInformation.ProcessArchitecture.ToString()));
     }
 
     [StructLayout(LayoutKind.Sequential)]

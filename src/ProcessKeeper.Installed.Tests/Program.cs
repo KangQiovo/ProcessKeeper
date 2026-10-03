@@ -16,6 +16,7 @@ string Entry(string relative)
 }
 Report("Fixture root: " + root);
 InstalledSearchVerification.Run(Check, Report);
+InstalledExecutableIdentityVerification.Run(Check);
 var catalog = new InstalledApplicationCatalog();
 var alpha = Entry(@"VersionA\FixtureApp\alpha.exe");
 var beta = Entry(@"VersionA\FixtureApp\helpers\beta.exe");

@@ -7,12 +7,15 @@
 | Environment | Route | Prerequisite |
 | --- | --- | --- |
 | Windows 10 build 19041+ x64 / Windows 11 x64 | Modern WinUI 3, .NET 8 | Included runtime in a universal package |
+| Windows 10 build 19041+ ARM64 / Windows 11 ARM64 | Native ARM64 WinUI 3, .NET 8 | Included runtime; x86 bootstrapper uses Windows emulation |
 | Windows 7 SP1 x86/x64, Windows 8.1 x86/x64, earlier/x86 Windows 10 | x86 WPF / WPF UI, .NET Framework | Framework 4.6.2 or a compatible newer 4.x runtime |
-| Windows 7 without SP1, Windows 8 initial release, XP, Vista, ARM | Requirements page only | No supported management route |
+| Windows 7 without SP1, Windows 8 initial release, XP, Vista, ARM32 | Requirements page only | No supported management route |
 
 The native launcher targets x86 Windows 7 and uses a static C/C++ runtime. It selects a supported route without trying to load .NET 8 on Windows 7. Missing dependencies lead to official download/help pages, not automatic installer execution. If the modern process has exited after a failed launch, a user-selected compatibility fallback is offered; it does not start a second live management instance.
 
-These are implementation targets. **Windows 7, Windows 8.1 and Windows 10 have not been validated on actual machines or VMs for this project.** Existing x86 execution tests ran on a modern Windows host. No minimum RAM, GPU or old-CPU performance claim has been established.
+These are implementation targets. **Windows 7, Windows 8.1, Windows 10 and ARM64 devices have not been validated on actual machines or VMs for this project.** Existing x86 execution tests ran on a modern Windows host. No minimum RAM, GPU or old-CPU performance claim has been established.
+
+On ARM64, the package selects the native ARM64 modern payload; the x86 compatibility fallback is not offered. The x64-specific AVD environment reader is disabled on ARM64. Cross-compilation and native route tests on x64 are not ARM device validation.
 
 ## Feature differences
 
@@ -41,13 +44,15 @@ Some VM and tray adapters also require reliable cross-architecture argument/envi
 - **Startup modification:** protected/system/policy/driver entries, unrecognized approval formats and services without verified original startup type remain read-only. Corrupt backups are rejected; other valid backups can still be inspected.
 - **Application adapters:** Steam saving/cloud synchronization, real AVD restart, VM console attachment and tray activation depend on external software. No successful real-user AVD restart or Steam cloud-completion guarantee is claimed.
 - **Window recovery:** a daemon may have no graphical window. Terminals, transient helpers and internal AVD windows are not evidence of a recovered page. Focus can be denied even when a window becomes visible.
+- **Uninstall:** only readable classic uninstall registrations are covered. Portable and Store apps are not an exhaustive inventory. Quiet mode requires a registered native command. A surviving registration is not reported as successful removal; resistant software may require vendor-specific recovery.
+- **Performance:** the in-app display measures this app's UI callbacks and memory alongside total physical memory. The desktop display measures system CPU, physical memory and observed desktop composition FPS; it does not measure game FPS or monitor refresh rate. Unavailable measurements remain unknown. Acrylic availability and old-GPU performance vary; see [Utilities](UTILITIES.md).
 - **Settings:** rollback handles ordinary failures but cannot make multiple files atomic through power loss. Inspect backups after an interrupted import.
 - **Updates:** no release or no official SHA-256 means no automatic installation. Third-party source availability is not guaranteed. API restrictions, network errors and incompatible assets are reported.
 - **Risk mode:** skipping selected extra prompts can increase data-loss and desktop-disruption risk. Core identity and critical-process checks remain, and the mode is not persisted or exported.
 
 ## Help improve older-system support
 
-Open an [issue](https://github.com/KangQiovo/ProcessKeeper/issues/new/choose) with Windows edition/build, SP level, x86/x64, Framework version, RAM/GPU, DPI, theme, application version/build date and reproducible steps. Redact paths, account information and tokens. Screenshots should include the actual message and the affected controls.
+Open an [issue](https://github.com/KangQiovo/ProcessKeeper/issues/new/choose) with Windows edition/build, SP level, x86/x64/ARM64, Framework version, RAM/GPU, DPI, theme, application version/build date and reproducible steps. Redact paths, account information and tokens. Screenshots should include the actual message and the affected controls.
 
 Useful test cases include cold start, cancelled UAC, missing Framework recovery, high DPI, small displays, large lists and reversible startup changes **using test-owned entries only**. Do not validate by terminating Windows critical processes. A VM snapshot or separate test machine is preferable for environment work.
 

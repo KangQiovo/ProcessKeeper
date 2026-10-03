@@ -5,7 +5,7 @@ using ProcessKeeper.Core;
 
 namespace ProcessKeeper.App;
 
-public sealed record SettingsBundle(IReadOnlyList<WhitelistRule> Rules, AppearancePreferences Appearance, ViewPreferences View, UpdatePreferences? Updates = null, WhitelistProfilesSnapshot? Profiles = null);
+public sealed record SettingsBundle(IReadOnlyList<WhitelistRule> Rules, AppearancePreferences Appearance, ViewPreferences View, UpdatePreferences? Updates = null, WhitelistProfilesSnapshot? Profiles = null, PerformancePreferences? Performance = null, WhitelistScopePreferences? WhitelistScope = null);
 
 public sealed class SettingsCommitException : IOException
 {
@@ -21,7 +21,7 @@ public static class SettingsBundleStore
 {
     public const string Format = "ProcessKeeper.Settings";
     private const int MaximumFileBytes = 6 * 1024 * 1024;
-    private static readonly string[] FileNames = ["whitelist.json", "appearance.json", "view.json", "update.json"];
+    private static readonly string[] FileNames = ["whitelist.json", "appearance.json", "view.json", "update.json", "performance.json", "whitelist-scope.json"];
 
     public static SettingsBundle ReadImport(string path)
     {
@@ -33,6 +33,8 @@ public static class SettingsBundleStore
             var root = document.RootElement;
             var fields = new List<string> { "Format", "Version", "Whitelist", "Appearance", "View" };
             if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("Updates", out _)) fields.Add("Updates");
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("Performance", out _)) fields.Add("Performance");
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("WhitelistScope", out _)) fields.Add("WhitelistScope");
             SettingsJson.RequireObject(root, fields.ToArray());
             if (root.GetProperty("Format").ValueKind != JsonValueKind.String || root.GetProperty("Format").GetString() != Format)
                 throw new InvalidDataException(L.T("文件不是Process Keeper的全部设置包；仅白名单文件请使用白名单导入。"));
@@ -44,7 +46,9 @@ public static class SettingsBundleStore
             var appearance = SettingsJson.ReadAppearance(root.GetProperty("Appearance"));
             var view = SettingsJson.ReadView(root.GetProperty("View"));
             var updates = root.TryGetProperty("Updates", out var updateJson) ? UpdatePreferencesStore.ReadJson(updateJson) : null;
-            return new SettingsBundle(rules, appearance, view, updates, profiles);
+            var performance = root.TryGetProperty("Performance", out var performanceJson) ? PerformancePreferencesStore.ReadJson(performanceJson) : null;
+            var scopes = root.TryGetProperty("WhitelistScope", out var scopeJson) ? WhitelistScopePreferencesStore.Parse(scopeJson) : null;
+            return new SettingsBundle(rules, appearance, view, updates, profiles, performance, scopes);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or ArgumentException)
         {
@@ -166,6 +170,18 @@ public static class SettingsBundleStore
             files["update.json"] = UpdatePreferencesStore.Serialize(bundle.Updates);
             using var updateJson = JsonDocument.Parse(files["update.json"]);
             content["Updates"] = updateJson.RootElement.Clone();
+        }
+        if (bundle.Performance is not null)
+        {
+            files["performance.json"] = PerformancePreferencesStore.SerializeBytes(bundle.Performance);
+            using var performanceJson = JsonDocument.Parse(files["performance.json"]);
+            content["Performance"] = performanceJson.RootElement.Clone();
+        }
+        if (bundle.WhitelistScope is not null)
+        {
+            files["whitelist-scope.json"] = WhitelistScopePreferencesStore.SerializeBytes(bundle.WhitelistScope);
+            using var scopeJson = JsonDocument.Parse(files["whitelist-scope.json"]);
+            content["WhitelistScope"] = scopeJson.RootElement.Clone();
         }
         var data = JsonSerializer.SerializeToUtf8Bytes(content, SettingsJson.Options);
         if (data.Length > MaximumFileBytes) throw new InvalidDataException(L.T("全部设置包不能超过 6 MiB。"));

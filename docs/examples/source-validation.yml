@@ -31,6 +31,8 @@ jobs:
         run: ./scripts/Test-BuildPipeline.ps1
       - name: Test and publish modern Preview locally
         run: ./build.ps1
+      - name: Cross-compile ARM64 Preview with the same build stamp
+        run: ./build.ps1 -Architecture arm64 -SkipBuildStamp -SkipTests
       - name: Test compatibility core
         run: dotnet run --project src/ProcessKeeper.Legacy.Core.Tests/ProcessKeeper.Legacy.Core.Tests.csproj -c Release
       - name: Build compatibility Preview

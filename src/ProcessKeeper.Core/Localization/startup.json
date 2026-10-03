@@ -1,63 +1,246 @@
 [
-  { "source": "需要管理员权限", "en": "Administrator access required" },
-  { "source": "以管理员身份继续", "en": "Continue as admin" },
-  { "source": "Process Keeper需要管理员权限，才能完整查看应用进程并执行你确认的操作。", "en": "Process Keeper needs administrator access to view all app processes and carry out actions you approve." },
-  { "source": "由你确认授权", "en": "You approve access" },
-  { "source": "点击继续后，Windows 将显示用户账户控制提示。", "en": "Select Continue as admin to open the Windows permission prompt." },
-  { "source": "尚未开始管理进程", "en": "No processes are managed yet" },
-  { "source": "当前页面不会采集、关闭或重启其他应用。", "en": "This page does not scan, close or restart other apps." },
-  { "source": "从原始程序安全启动", "en": "Use the original launcher" },
-  { "source": "授权后会重新打开Process Keeper，并进入首次使用引导。", "en": "After approval, Process Keeper will reopen and continue setup." },
-  { "source": "请关闭此窗口，再打开下载的原始单文件「ProcessKeeper.exe」。", "en": "Close this window and open your downloaded portable ProcessKeeper.exe." },
-  { "source": "准备就绪", "en": "Ready to go" },
-  { "source": "初次使用", "en": "Getting started" },
-  { "source": "开始使用", "en": "Get started" },
-  { "source": "继续", "en": "Continue" },
-  { "source": "欢迎使用Process Keeper", "en": "Welcome to Process Keeper" },
-  { "source": "看清正在运行的应用，留下需要的程序，再确认关闭其他程序。", "en": "See what's running, keep the apps you need, and review the rest before closing them." },
-  { "source": "先看应用，再看进程", "en": "From apps to processes" },
-  { "source": "单击应用可展开关联进程，查看前台、隐藏后台和占用情况。", "en": "Expand an app to see its processes, window state and memory use." },
-  { "source": "重要应用加入白名单", "en": "Keep important apps" },
-  { "source": "受保护的应用会保留，关闭前仍可检查本次操作。", "en": "Add apps to the whitelist and review each close operation before confirming." },
-  { "source": "在本机完成", "en": "Everything stays local" },
-  { "source": "运行信息与规则保存在本地；测试版本不代表最终品质。", "en": "Process data and rules stay on this PC. This test build does not represent final quality." },
-  { "source": "运行信息与规则保存在本地。", "en": "Process data and rules stay on this PC." },
-  { "source": "把需要的应用留下", "en": "Keep the apps you need" },
-  { "source": "正在运行或已经安装的应用，都可以加入白名单。", "en": "Add running or installed apps to your whitelist." },
-  { "source": "随时添加或调整", "en": "Update your choices anytime" },
-  { "source": "从运行中程序、已安装程序或白名单页，选择需要保留的应用。", "en": "Choose apps from Running apps, Installed apps or Whitelist." },
-  { "source": "规则可带到另一台电脑", "en": "Move rules between PCs" },
-  { "source": "导入后只匹配本机实际存在的应用；仍需核对匹配结果。", "en": "Imported rules match apps available on this PC. Review the matches before use." },
-  { "source": "设置也能备份", "en": "Back up your preferences" },
-  { "source": "在设置中导入或导出规则与设置，分享前可检查文件内容。", "en": "Import or export rules and preferences in Settings. Review files before sharing." },
-  { "source": "让隐藏的页面出现", "en": "Bring hidden windows back" },
-  { "source": "展开进程后查看能力标签，再选择「打开对应页面」。", "en": "Expand an app, check the process labels, then choose Open app window." },
-  { "source": "先尝试恢复现有窗口", "en": "Restore existing windows first" },
-  { "source": "虚拟机、无界面浏览器和托盘程序会使用对应的适配方式。", "en": "Virtual machines, headless browsers and tray apps use supported recovery methods." },
-  { "source": "需要重启时先询问", "en": "Confirm before restarting" },
-  { "source": "AVD 等操作会说明影响，只有你确认后才会执行。", "en": "Actions such as restarting an AVD explain their impact and wait for your approval." },
-  { "source": "以实际图形页面为准", "en": "Look for a real app window" },
-  { "source": "标签表示可尝试的能力；只有命令行窗口不算页面成功打开。", "en": "Labels show what can be attempted. A command window alone is not a successful recovery." },
-  { "source": "准备好了，开始使用", "en": "You're ready to get started" },
-  { "source": "建议先检查白名单，再进行第一次关闭操作。", "en": "Review your whitelist before closing apps for the first time." },
-  { "source": "三个列表，统一更新", "en": "Three lists, one update setting" },
-  { "source": "三页的实时更新开关共用设置，操作记录始终实时。", "en": "Live updates share one setting across all three lists. Activity history always stays live." },
-  { "source": "给内容多留一点空间", "en": "Make room for your apps" },
-  { "source": "侧边栏左上角的菜单按钮可将导航收起为图标。", "en": "Use the menu button at the top of the sidebar to collapse navigation to icons." },
-  { "source": "按你的习惯调整", "en": "Make it yours" },
-  { "source": "主题与背景材质在设置里调整，操作记录会实时保留。", "en": "Adjust the theme and background material in Settings. Actions are recorded as they happen." },
-  { "source": "已取消管理员授权，可以再次尝试。", "en": "Administrator access was cancelled. You can try again." },
-  { "source": "启动入口已不可用，请重新打开原始单文件「ProcessKeeper.exe」。", "en": "The launcher is no longer available. Reopen your original portable ProcessKeeper.exe." },
-  { "source": "未能以管理员身份启动，请重试或重新打开原始单文件「ProcessKeeper.exe」。", "en": "Could not start as administrator. Try again or reopen your original portable ProcessKeeper.exe." },
-  { "source": "未能完成管理员授权，请重试。", "en": "Could not complete administrator approval. Please try again." },
-  { "source": "仍然开始使用", "en": "Continue anyway" },
-  { "source": "引导记录未保存。本次仍可继续，下次打开可能再次显示介绍。", "en": "Setup progress could not be saved. You can continue, but this introduction may appear again next time." },
-  { "source": "返回", "en": "Back" },
-  { "source": "退出", "en": "Exit" },
-  { "source": "无法读取引导记录，将重新显示介绍。", "en": "Could not read setup progress. The introduction will be shown again." },
-  { "source": "选择你的语言", "en": "Choose your language" },
-  { "source": "选择后立即应用。稍后也可在设置中更改。", "en": "Your choice applies immediately. You can change it later in Settings." },
-  { "source": "自动跟随系统", "en": "Follow system automatically" },
-  { "source": "优先系统显示语言，结合地区与时区判断。", "en": "Uses the Windows display language first, with region and time zone as hints." },
-  { "source": "语言已临时应用，但无法保存；下次启动可能恢复原语言。", "en": "Language changed for this session but could not be saved. The previous language may return next time." }
+  {
+    "source": "需要管理员权限",
+    "en": "Administrator access required"
+  },
+  {
+    "source": "以管理员身份继续",
+    "en": "Continue as admin"
+  },
+  {
+    "source": "Process Keeper需要管理员权限，才能完整查看应用进程并执行你确认的操作。",
+    "en": "Process Keeper needs administrator access to view all app processes and carry out actions you approve."
+  },
+  {
+    "source": "由你确认授权",
+    "en": "You approve access"
+  },
+  {
+    "source": "点击继续后，Windows 将显示用户账户控制提示。",
+    "en": "Select Continue as admin to open the Windows permission prompt."
+  },
+  {
+    "source": "尚未开始管理进程",
+    "en": "No processes are managed yet"
+  },
+  {
+    "source": "当前页面不会采集、关闭或重启其他应用。",
+    "en": "This page does not scan, close or restart other apps."
+  },
+  {
+    "source": "从原始程序安全启动",
+    "en": "Use the original launcher"
+  },
+  {
+    "source": "授权后会重新打开Process Keeper，并进入首次使用引导。",
+    "en": "After approval, Process Keeper will reopen and continue setup."
+  },
+  {
+    "source": "请关闭此窗口，再打开下载的原始单文件「ProcessKeeper.exe」。",
+    "en": "Close this window and open your downloaded portable ProcessKeeper.exe."
+  },
+  {
+    "source": "准备就绪",
+    "en": "Ready to go"
+  },
+  {
+    "source": "初次使用",
+    "en": "Getting started"
+  },
+  {
+    "source": "开始使用",
+    "en": "Get started"
+  },
+  {
+    "source": "继续",
+    "en": "Continue"
+  },
+  {
+    "source": "欢迎使用Process Keeper",
+    "en": "Welcome to Process Keeper"
+  },
+  {
+    "source": "看清正在运行的应用，留下需要的程序，再确认关闭其他程序。",
+    "en": "See what's running, keep the apps you need, and review the rest before closing them."
+  },
+  {
+    "source": "先看应用，再看进程",
+    "en": "From apps to processes"
+  },
+  {
+    "source": "单击应用可展开关联进程，查看前台、隐藏后台和占用情况。",
+    "en": "Expand an app to see its processes, window state and memory use."
+  },
+  {
+    "source": "重要应用加入白名单",
+    "en": "Keep important apps"
+  },
+  {
+    "source": "受保护的应用会保留，关闭前仍可检查本次操作。",
+    "en": "Add apps to the whitelist and review each close operation before confirming."
+  },
+  {
+    "source": "在本机完成",
+    "en": "Everything stays local"
+  },
+  {
+    "source": "运行信息与规则保存在本地；测试版本不代表最终品质。",
+    "en": "Process data and rules stay on this PC. This test build does not represent final quality."
+  },
+  {
+    "source": "运行信息与规则保存在本地。",
+    "en": "Process data and rules stay on this PC."
+  },
+  {
+    "source": "把需要的应用留下",
+    "en": "Keep the apps you need"
+  },
+  {
+    "source": "正在运行或已经安装的应用，都可以加入白名单。",
+    "en": "Add running or installed apps to your whitelist."
+  },
+  {
+    "source": "随时添加或调整",
+    "en": "Update your choices anytime"
+  },
+  {
+    "source": "从运行中程序、已安装应用或白名单页，选择需要保留的应用。",
+    "en": "Choose apps from Running apps, Installed apps or Whitelist."
+  },
+  {
+    "source": "规则可带到另一台电脑",
+    "en": "Move rules between PCs"
+  },
+  {
+    "source": "导入后只匹配本机实际存在的应用；仍需核对匹配结果。",
+    "en": "Imported rules match apps available on this PC. Review the matches before use."
+  },
+  {
+    "source": "设置也能备份",
+    "en": "Back up your preferences"
+  },
+  {
+    "source": "在设置中导入或导出规则与设置，分享前可检查文件内容。",
+    "en": "Import or export rules and preferences in Settings. Review files before sharing."
+  },
+  {
+    "source": "让隐藏的页面出现",
+    "en": "Bring hidden windows back"
+  },
+  {
+    "source": "展开进程后查看能力标签，再选择「打开对应页面」。",
+    "en": "Expand an app, check the process labels, then choose Open app window."
+  },
+  {
+    "source": "先尝试恢复现有窗口",
+    "en": "Restore existing windows first"
+  },
+  {
+    "source": "虚拟机、无界面浏览器和托盘程序会使用对应的适配方式。",
+    "en": "Virtual machines, headless browsers and tray apps use supported recovery methods."
+  },
+  {
+    "source": "需要重启时先询问",
+    "en": "Confirm before restarting"
+  },
+  {
+    "source": "AVD 等操作会说明影响，只有你确认后才会执行。",
+    "en": "Actions such as restarting an AVD explain their impact and wait for your approval."
+  },
+  {
+    "source": "以实际图形页面为准",
+    "en": "Look for a real app window"
+  },
+  {
+    "source": "标签表示可尝试的能力；只有命令行窗口不算页面成功打开。",
+    "en": "Labels show what can be attempted. A command window alone is not a successful recovery."
+  },
+  {
+    "source": "准备好了，开始使用",
+    "en": "You're ready to get started"
+  },
+  {
+    "source": "建议先检查白名单，再进行第一次关闭操作。",
+    "en": "Review your whitelist before closing apps for the first time."
+  },
+  {
+    "source": "三个列表，统一更新",
+    "en": "Three lists, one update setting"
+  },
+  {
+    "source": "三页的实时更新开关共用设置，操作记录始终实时。",
+    "en": "Live updates share one setting across all three lists. Activity history always stays live."
+  },
+  {
+    "source": "给内容多留一点空间",
+    "en": "Make room for your apps"
+  },
+  {
+    "source": "侧边栏左上角的菜单按钮可将导航收起为图标。",
+    "en": "Use the menu button at the top of the sidebar to collapse navigation to icons."
+  },
+  {
+    "source": "按你的习惯调整",
+    "en": "Make it yours"
+  },
+  {
+    "source": "主题与背景材质在设置里调整，操作记录会实时保留。",
+    "en": "Adjust the theme and background material in Settings. Actions are recorded as they happen."
+  },
+  {
+    "source": "已取消管理员授权，可以再次尝试。",
+    "en": "Administrator access was cancelled. You can try again."
+  },
+  {
+    "source": "启动入口已不可用，请重新打开原始单文件「ProcessKeeper.exe」。",
+    "en": "The launcher is no longer available. Reopen your original portable ProcessKeeper.exe."
+  },
+  {
+    "source": "未能以管理员身份启动，请重试或重新打开原始单文件「ProcessKeeper.exe」。",
+    "en": "Could not start as administrator. Try again or reopen your original portable ProcessKeeper.exe."
+  },
+  {
+    "source": "未能完成管理员授权，请重试。",
+    "en": "Could not complete administrator approval. Please try again."
+  },
+  {
+    "source": "仍然开始使用",
+    "en": "Continue anyway"
+  },
+  {
+    "source": "引导记录未保存。本次仍可继续，下次打开可能再次显示介绍。",
+    "en": "Setup progress could not be saved. You can continue, but this introduction may appear again next time."
+  },
+  {
+    "source": "返回",
+    "en": "Back"
+  },
+  {
+    "source": "退出",
+    "en": "Exit"
+  },
+  {
+    "source": "无法读取引导记录，将重新显示介绍。",
+    "en": "Could not read setup progress. The introduction will be shown again."
+  },
+  {
+    "source": "选择你的语言",
+    "en": "Choose your language"
+  },
+  {
+    "source": "选择后立即应用。稍后也可在设置中更改。",
+    "en": "Your choice applies immediately. You can change it later in Settings."
+  },
+  {
+    "source": "自动跟随系统",
+    "en": "Follow system automatically"
+  },
+  {
+    "source": "优先系统显示语言，结合地区与时区判断。",
+    "en": "Uses the Windows display language first, with region and time zone as hints."
+  },
+  {
+    "source": "语言已临时应用，但无法保存；下次启动可能恢复原语言。",
+    "en": "Language changed for this session but could not be saved. The previous language may return next time."
+  }
 ]

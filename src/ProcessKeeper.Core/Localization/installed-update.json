@@ -1,5 +1,14 @@
 [
-  { "source": "所有盘符", "en": "All drives" },
-  { "source": "按盘符筛选", "en": "Filter by drive" },
-  { "source": "扫描达到 {0} 秒、{1} 个程序或 {2} 个文件的上限。可手动添加遗漏的软件；正在执行的系统读取不能立即中断。", "en": "The scan reached its limit of {0} seconds, {1} applications or {2} files. Add missing applications manually; a system read already in progress cannot be interrupted immediately." }
+  {
+    "source": "所有盘符",
+    "en": "All drives"
+  },
+  {
+    "source": "按盘符筛选",
+    "en": "Filter by drive"
+  },
+  {
+    "source": "扫描达到 {0} 秒、{1} 个程序或 {2} 个文件的上限。可手动添加遗漏的软件；正在执行的系统读取不能立即中断。",
+    "en": "The scan reached its limit of {0} seconds, {1} applications or {2} files. Add missing applications manually; a system read already in progress cannot be interrupted immediately."
+  }
 ]

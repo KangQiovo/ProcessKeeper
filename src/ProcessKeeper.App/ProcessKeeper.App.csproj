@@ -3,9 +3,11 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
-    <Platforms>x64</Platforms>
-    <PlatformTarget>x64</PlatformTarget>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Platforms>x64;ARM64</Platforms>
+    <PlatformTarget Condition="'$(Platform)' != 'ARM64'">x64</PlatformTarget>
+    <PlatformTarget Condition="'$(Platform)' == 'ARM64'">ARM64</PlatformTarget>
+    <RuntimeIdentifier Condition="'$(Platform)' != 'ARM64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
@@ -18,7 +20,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\ProcessKeeper.ico</ApplicationIcon>
     <AssemblyName>ProcessKeeper</AssemblyName>
-    <Version>1.5.0</Version>
+    <Version>1.6.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets\ProcessKeeper.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

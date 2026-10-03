@@ -170,7 +170,8 @@ void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersio
         const auto manifestResource = resource(101), archive = resource(102);
         if (manifestResource.second > 16 * 1024 * 1024) throw Failure(L"Invalid update manifest size.");
         const auto manifest = ParseManifest(std::string(static_cast<const char*>(manifestResource.first), manifestResource.second));
-        if (Hex(HashBytes(archive.first, archive.second)) != manifest.archiveHash || !manifest.files.count(L"modern/ProcessKeeper.Updater.exe") || !manifest.files.count(L"legacy/ProcessKeeper.Updater.exe"))
+        if (Hex(HashBytes(archive.first, archive.second)) != manifest.archiveHash || !manifest.files.count(L"modern/ProcessKeeper.Updater.exe") || !manifest.files.count(L"legacy/ProcessKeeper.Updater.exe") ||
+            !manifest.files.count(L"modern/arm64/ProcessKeeper.exe") || !manifest.files.count(L"modern/arm64/ProcessKeeper.Updater.exe"))
             throw Failure(L"The update payload integrity check failed.");
         const auto versionResource = FindResourceW(module, MAKEINTRESOURCEW(1), RT_VERSION);
         const auto raw = versionResource ? LockResource(LoadResource(module, versionResource)) : nullptr;

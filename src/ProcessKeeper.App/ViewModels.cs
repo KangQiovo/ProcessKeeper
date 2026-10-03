@@ -7,6 +7,7 @@ namespace ProcessKeeper.App;
 
 public sealed class AppRow : INotifyPropertyChanged
 {
+    private readonly PresentationChanges _changes = new();
     public string Key { get; set; } = "";
     public string RowKey { get; set; } = "";
     public int? ProcessId { get; set; }
@@ -34,11 +35,25 @@ public sealed class AppRow : INotifyPropertyChanged
     public bool CanWhitelist { get; set; } = true;
     public event PropertyChangedEventHandler? PropertyChanged;
     public void NotifyIcon() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
-    public void Notify() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(""));
+    public void Notify()
+    {
+        _changes.Publish(this, PropertyChanged,
+            (nameof(Key), Key), (nameof(RowKey), RowKey), (nameof(ProcessId), ProcessId), (nameof(IsProcess), IsProcess),
+            (nameof(PresentationPlatformId), PresentationPlatformId), (nameof(IsPresentationGroup), IsPresentationGroup),
+            (nameof(PresentationDepth), PresentationDepth), (nameof(IsExpanded), IsExpanded), (nameof(Chevron), Chevron),
+            (nameof(ChevronVisibility), ChevronVisibility), (nameof(WhitelistVisibility), WhitelistVisibility),
+            (nameof(RowMargin), RowMargin), (nameof(IconSize), IconSize), (nameof(IconPath), IconPath),
+            (nameof(Tooltip), Tooltip), (nameof(RecoveryText), RecoveryText), (nameof(RecoveryTooltip), RecoveryTooltip),
+            (nameof(RecoveryVisibility), RecoveryVisibility), (nameof(Name), Name), (nameof(Summary), Summary),
+            (nameof(ProtectionText), ProtectionText), (nameof(IsWhitelisted), IsWhitelisted), (nameof(CanWhitelist), CanWhitelist));
+    }
+    // A OneWay checkbox can change visually even if a rejected action leaves the model unchanged.
+    public void NotifyWhitelistState() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsWhitelisted)));
 }
 
 public sealed class RuleRow : INotifyPropertyChanged
 {
+    private readonly PresentationChanges _changes = new();
     public string Id { get; set; } = "";
     public string RowKey { get; set; } = "";
     public int? ProcessId { get; set; }
@@ -51,6 +66,7 @@ public sealed class RuleRow : INotifyPropertyChanged
     public Thickness RowMargin => IsProcess ? new Thickness(25, 0, 0, 0) : new Thickness(0);
     public double IconSize => IsProcess ? 22 : 32;
     public string IconPath { get; set; } = "";
+    public string LocationPath { get; set; } = "";
     public bool IconRequested { get; set; }
     public ImageSource? Icon { get; set; }
     public string Name { get; set; } = "";
@@ -63,5 +79,11 @@ public sealed class RuleRow : INotifyPropertyChanged
     public bool Enabled { get; set; }
     public event PropertyChangedEventHandler? PropertyChanged;
     public void NotifyIcon() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
-    public void Notify() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(""));
+    public void Notify() => _changes.Publish(this, PropertyChanged,
+        (nameof(Id), Id), (nameof(RowKey), RowKey), (nameof(ProcessId), ProcessId), (nameof(ProcessStartTicks), ProcessStartTicks),
+        (nameof(IsProcess), IsProcess), (nameof(IsExpanded), IsExpanded), (nameof(Chevron), Chevron),
+        (nameof(ChevronVisibility), ChevronVisibility), (nameof(ActionsVisibility), ActionsVisibility), (nameof(RowMargin), RowMargin),
+        (nameof(IconSize), IconSize), (nameof(IconPath), IconPath), (nameof(LocationPath), LocationPath), (nameof(Name), Name), (nameof(Detail), Detail),
+        (nameof(MatchText), MatchText), (nameof(Tooltip), Tooltip), (nameof(RecoveryText), RecoveryText),
+        (nameof(RecoveryTooltip), RecoveryTooltip), (nameof(RecoveryVisibility), RecoveryVisibility), (nameof(Enabled), Enabled));
 }

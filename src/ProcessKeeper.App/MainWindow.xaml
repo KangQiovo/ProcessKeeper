@@ -4,6 +4,7 @@
  xmlns:local="using:ProcessKeeper.App" Title="Process Keeper">
  <Grid x:Name="Root" Loaded="InitializeResponsiveLayout" SizeChanged="WindowLayoutChanged">
   <Grid.Style><Style TargetType="Grid"><Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}"/></Style></Grid.Style>
+  <Grid.Resources><local:RoleKindVisibilityConverter x:Key="RoleKindVisibility"/><local:HiddenActionVisibilityConverter x:Key="HiddenActionVisibility"/></Grid.Resources>
   <Grid.RowDefinitions><RowDefinition Height="48"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <Grid x:Name="TitleBar" Padding="20,0,150,0" ColumnSpacing="12">
    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -11,13 +12,16 @@
    <TextBlock Grid.Column="1" Text="Process Keeper" FontWeight="SemiBold" VerticalAlignment="Center"/>
   </Grid>
   <NavigationView x:Name="Navigation" Grid.Row="1" PaneDisplayMode="Auto" CompactModeThresholdWidth="0" ExpandedModeThresholdWidth="1100" OpenPaneLength="194" CompactPaneLength="48" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="True" IsSettingsVisible="False" SelectionChanged="NavigationChanged" IsTabStop="False">
+   <NavigationView.Transitions><TransitionCollection><EntranceThemeTransition IsStaggeringEnabled="False"/></TransitionCollection></NavigationView.Transitions>
    <NavigationView.MenuItems>
     <NavigationViewItem Content="{local:Loc Text='运行中的程序'}" Tag="apps" IsSelected="True"><NavigationViewItem.Icon><FontIcon Glyph="&#xE9D9;"/></NavigationViewItem.Icon></NavigationViewItem>
-    <NavigationViewItem Content="{local:Loc Text='已安装软件'}" Tag="installed"><NavigationViewItem.Icon><FontIcon Glyph="&#xE8F1;"/></NavigationViewItem.Icon></NavigationViewItem>
-    <NavigationViewItem Content="{local:Loc Text='白名单'}" Tag="rules"><NavigationViewItem.Icon><FontIcon Glyph="&#xE73E;"/></NavigationViewItem.Icon></NavigationViewItem>
+    <NavigationViewItem Content="{local:Loc Text='已安装应用'}" Tag="installed"><NavigationViewItem.Icon><FontIcon Glyph="&#xE8F1;"/></NavigationViewItem.Icon></NavigationViewItem>
+    <NavigationViewItem Content="{local:Loc Text='应用卸载'}" Tag="uninstall"><NavigationViewItem.Icon><FontIcon Glyph="&#xE74D;"/></NavigationViewItem.Icon></NavigationViewItem>
     <NavigationViewItem Content="{local:Loc Text='自启动'}" Tag="autoruns"><NavigationViewItem.Icon><FontIcon Glyph="&#xE7E8;"/></NavigationViewItem.Icon></NavigationViewItem>
+    <NavigationViewItem Content="{local:Loc Text='白名单'}" Tag="rules"><NavigationViewItem.Icon><FontIcon Glyph="&#xE73E;"/></NavigationViewItem.Icon></NavigationViewItem>
     <NavigationViewItem Content="{local:Loc Text='操作记录'}" Tag="history"><NavigationViewItem.Icon><FontIcon Glyph="&#xE81C;"/></NavigationViewItem.Icon></NavigationViewItem>
     <NavigationViewItem Content="{local:Loc Text='设置'}" Tag="appearance"><NavigationViewItem.Icon><FontIcon Glyph="&#xE713;"/></NavigationViewItem.Icon></NavigationViewItem>
+    <NavigationViewItem Content="{local:Loc Text='杂项'}" Tag="misc"><NavigationViewItem.Icon><FontIcon Glyph="&#xE8CB;"/></NavigationViewItem.Icon></NavigationViewItem>
    </NavigationView.MenuItems>
    <NavigationView.PaneFooter>
     <StackPanel x:Name="NavigationFooter" Margin="14,0,12,16" Spacing="10">
@@ -55,8 +59,8 @@
      </Grid>
       <ToggleSwitch x:Name="LiveToggle" Grid.Column="1" IsOn="True" OnContent="{local:Loc Text='实时更新'}" OffContent="{local:Loc Text='已暂停'}" FontSize="12" Width="138" MinWidth="0" VerticalAlignment="Top" Toggled="LiveRefreshChanged" AutomationProperties.Name="{local:Loc Text='实时更新进程状态'}" ToolTipService.ToolTip="{local:Loc Text='每 2 秒刷新；三个程序页面共用此设置。操作记录始终实时。'}"/>
      </Grid>
-     <local:PresentationOptions x:Name="RunningPresentationOptions" Grid.Row="1"/>
-     <Grid x:Name="SummaryBar" Grid.Row="2" ColumnSpacing="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel x:Name="SummaryLabels" Spacing="5"><TextBlock x:Name="SummaryText" Text="{local:Loc Text='正在读取本机进程…'}" Style="{StaticResource SectionCaption}" TextWrapping="Wrap"/><TextBlock x:Name="RunningListHint" Text="{local:Loc Text='单击展开进程 | 勾选保留'}" Style="{StaticResource SectionCaption}" TextWrapping="Wrap"/></StackPanel><StackPanel x:Name="SummaryActions" Grid.Column="1" Orientation="Horizontal" Spacing="12"><CheckBox x:Name="ShowSystemToggle" Content="{local:Loc Text='显示系统与服务进程'}" IsChecked="False" Click="SystemVisibilityChanged" FontSize="12" VerticalAlignment="Center" ToolTipService.ToolTip="{local:Loc Text='默认隐藏系统与服务进程；显示后仍受系统保护。'}"/><Button x:Name="InspectorToggleButton" Content="{local:Loc Text='查看详情'}" Click="OpenInspector" IsEnabled="False" Visibility="Collapsed" VerticalAlignment="Center" ToolTipService.ToolTip="{local:Loc Text='先选择程序或进程，再查看详情'}"/></StackPanel></Grid>
+     <Grid Grid.Row="1" ColumnSpacing="12" RowSpacing="4" SizeChanged="BulkToolbarSizeChanged"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><local:PresentationOptions x:Name="RunningPresentationOptions"/><StackPanel x:Name="RunningBulkCommands" Grid.Column="1" Orientation="Horizontal" Spacing="8" ToolTipService.ToolTip="{local:Loc Text='选择当前列表中显示的应用和子项目，不更改白名单。'}"><Button x:Name="RunningSelectToggleButton" Content="{local:Loc Text='全选'}" Click="ToggleAllSelectionClicked"/></StackPanel></Grid>
+     <Grid x:Name="SummaryBar" Grid.Row="2" ColumnSpacing="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel x:Name="SummaryLabels" Spacing="5"><TextBlock x:Name="SummaryText" Text="{local:Loc Text='正在读取本机进程…'}" Style="{StaticResource SectionCaption}" TextWrapping="Wrap"/><TextBlock x:Name="RunningListHint" Text="{local:Loc Text='单击选择 | 箭头展开进程 | 勾选保留'}" Style="{StaticResource SectionCaption}" TextWrapping="Wrap"/></StackPanel><StackPanel x:Name="SummaryActions" Grid.Column="1" Orientation="Horizontal" Spacing="12"><CheckBox x:Name="ShowSystemToggle" Content="{local:Loc Text='显示系统与服务进程'}" IsChecked="False" Click="SystemVisibilityChanged" FontSize="12" VerticalAlignment="Center" ToolTipService.ToolTip="{local:Loc Text='默认隐藏系统与服务进程；显示后仍受系统保护。'}"/><Button x:Name="InspectorToggleButton" Content="{local:Loc Text='查看详情'}" Click="OpenInspector" IsEnabled="False" Visibility="Collapsed" VerticalAlignment="Center" ToolTipService.ToolTip="{local:Loc Text='先选择程序或进程，再查看详情'}"/></StackPanel></Grid>
      <SplitView x:Name="InspectorSplit" Grid.Row="3" DisplayMode="Inline" PanePlacement="Right" IsPaneOpen="True" OpenPaneLength="360" CompactPaneLength="0" BorderThickness="0" SizeChanged="ApplicationAreaSizeChanged" IsTabStop="False">
       <SplitView.Style><Style TargetType="SplitView"><Setter Property="PaneBackground" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}"/></Style></SplitView.Style>
       <SplitView.Pane>
@@ -79,14 +83,15 @@
        </Grid>
        </ScrollViewer>
       </SplitView.Pane>
-      <Grid x:Name="ApplicationListArea" Margin="0,0,16,0"><ListView x:Name="AppsList" SelectionMode="Single" SelectionChanged="AppSelectionChanged" IsItemClickEnabled="True" ItemClick="AppItemClicked" Padding="0" HorizontalContentAlignment="Stretch">
+      <Grid x:Name="ApplicationListArea" Margin="0,0,16,0"><ListView x:Name="AppsList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="False" SelectionChanged="AppSelectionChanged" IsItemClickEnabled="True" ItemClick="AppItemClicked" Padding="0" HorizontalContentAlignment="Stretch">
        <ListView.ItemTemplate><DataTemplate x:DataType="local:AppRow">
         <Grid Padding="4,10" ColumnSpacing="10" Margin="{Binding RowMargin}" ToolTipService.ToolTip="{Binding Tooltip}">
          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-         <FontIcon Glyph="{Binding Chevron}" Visibility="{Binding ChevronVisibility}" FontSize="11" Width="15" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+         <Button Click="AppChevronClicked" Visibility="{Binding ChevronVisibility}" Style="{StaticResource SubtleButtonStyle}" Padding="2" MinWidth="0" Width="22" MinHeight="24" Height="24" VerticalAlignment="Top" AutomationProperties.Name="{local:Loc Text='展开或折叠'}"><FontIcon Glyph="{Binding Chevron}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Button>
          <Image Grid.Column="1" Source="{Binding Icon}" Width="{Binding IconSize}" Height="{Binding IconSize}" VerticalAlignment="Top" Stretch="Uniform"/>
          <StackPanel Grid.Column="2" Spacing="4"><Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Grid.Column="1" Text="{Binding RecoveryText}" Visibility="{Binding RecoveryVisibility}" ToolTipService.ToolTip="{Binding RecoveryTooltip}" FontSize="11" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/></Grid><TextBlock Text="{Binding Summary}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ProtectionText}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/></StackPanel>
          <CheckBox Grid.Column="3" Content="{local:Loc Text='保留'}" Visibility="{Binding WhitelistVisibility}" IsChecked="{Binding IsWhitelisted,Mode=OneWay}" IsEnabled="{Binding CanWhitelist}" Tag="{Binding Key}" Click="WhitelistChecked" HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" FontSize="12" ToolTipService.ToolTip="{local:Loc Text='为这个程序添加或移除程序白名单规则'}"/>
+         <CheckBox x:Name="RowSelection" Grid.Column="3" Content="{local:Loc Text='选择'}" Visibility="{Binding WhitelistVisibility,Converter={StaticResource HiddenActionVisibility}}" local:RowSelectionCheckBox.Enabled="True" HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" FontSize="12" AutomationProperties.Name="{local:Loc Text='选择'}"/>
         </Grid>
        </DataTemplate></ListView.ItemTemplate>
       </ListView><TextBlock x:Name="EmptyListText" Text="{local:Loc Text='没有符合筛选条件的程序'}" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Grid>
@@ -101,32 +106,46 @@
       <Grid x:Name="InstalledSearchBar" ColumnSpacing="8" RowSpacing="8" SizeChanged="InstalledSearchBarChanged">
        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="InstalledDriveColumn" Width="Auto"/></Grid.ColumnDefinitions>
-       <AutoSuggestBox x:Name="InstalledSearch" PlaceholderText="{local:Loc Text='搜索软件、进程、PID 或路径'}" QueryIcon="Find" TextChanged="InstalledSearchChanged" AutomationProperties.Name="{local:Loc Text='搜索已安装软件'}"/>
+       <AutoSuggestBox x:Name="InstalledSearch" PlaceholderText="{local:Loc Text='搜索软件、进程、PID 或路径'}" QueryIcon="Find" TextChanged="InstalledSearchChanged" AutomationProperties.Name="{local:Loc Text='搜索已安装应用'}"/>
        <ComboBox x:Name="InstalledDriveFilter" Grid.Column="1" Width="150" HorizontalAlignment="Left" SelectionChanged="InstalledDriveChanged" AutomationProperties.Name="{local:Loc Text='按盘符筛选'}"/>
       </Grid>
-      <CommandBar x:Name="InstalledCommands" Grid.Row="1" Grid.ColumnSpan="2" Background="Transparent" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" ClosedDisplayMode="Compact" HorizontalAlignment="Stretch">
-       <CommandBar.Content><Grid MinHeight="48"><Button x:Name="InstalledScanButton" Click="RescanInstalled" HorizontalAlignment="Left" VerticalAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Glyph="&#xE72C;" FontSize="14"/><TextBlock Text="{local:Loc Text='重新扫描'}"/></StackPanel></Button></Grid></CommandBar.Content>
-       <AppBarButton Label="{local:Loc Text='更新运行状态'}" Icon="Sync" Click="RefreshClicked"/>
-       <AppBarButton x:Name="InstalledAddButton" Label="{local:Loc Text='添加软件'}" Icon="Add"><AppBarButton.Flyout><MenuFlyout><MenuFlyoutItem Text="{local:Loc Text='选择可执行文件…'}" Click="AddInstalledExecutable"/><MenuFlyoutItem Text="{local:Loc Text='选择程序安装目录…'}" Click="AddInstalledDirectory"/></MenuFlyout></AppBarButton.Flyout></AppBarButton>
-       <AppBarButton Label="{local:Loc Text='管理白名单'}" Icon="Edit" Click="ManageInstalledRules"/>
-      </CommandBar>
+      <StackPanel x:Name="InstalledCommands" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" SizeChanged="WrapCommandRowsChanged">
+       <Button x:Name="InstalledScanButton" Click="RescanInstalled" Margin="0,0,8,6"><StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Glyph="&#xE72C;" FontSize="14"/><TextBlock Text="{local:Loc Text='重新扫描'}"/></StackPanel></Button>
+       <Button Content="{local:Loc Text='更新运行状态'}" Click="RefreshClicked" Margin="0,0,8,6"/>
+       <DropDownButton x:Name="InstalledAddButton" Content="{local:Loc Text='添加软件'}" Margin="0,0,8,6"><DropDownButton.Flyout><MenuFlyout><MenuFlyoutItem Text="{local:Loc Text='选择可执行文件…'}" Click="AddInstalledExecutable"/><MenuFlyoutItem Text="{local:Loc Text='选择程序安装目录…'}" Click="AddInstalledDirectory"/></MenuFlyout></DropDownButton.Flyout></DropDownButton>
+       <Button Content="{local:Loc Text='管理白名单'}" Click="ManageInstalledRules" Margin="0,0,8,6"/>
+       <Button x:Name="InstalledSelectToggleButton" Content="{local:Loc Text='全选'}" Click="ToggleAllSelectionClicked" Margin="0,0,0,6"/>
+      </StackPanel>
       <ToggleSwitch x:Name="InstalledLiveToggle" Grid.Column="1" IsOn="{Binding IsOn,ElementName=LiveToggle,Mode=OneWay}" Toggled="PageLiveRefreshChanged" OnContent="{local:Loc Text='实时更新'}" OffContent="{local:Loc Text='已暂停'}" FontSize="12" Width="138" MinWidth="0" VerticalAlignment="Top" AutomationProperties.Name="{local:Loc Text='实时更新进程状态'}" ToolTipService.ToolTip="{local:Loc Text='每 2 秒刷新；三个程序页面共用此设置。操作记录始终实时。'}"/>
      </Grid>
      <local:PresentationOptions x:Name="InstalledPresentationOptions" Grid.Row="1"/>
-     <StackPanel Grid.Row="2" Spacing="5">
-      <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><ProgressRing x:Name="InstalledProgress" Width="16" Height="16" IsActive="False"/><TextBlock x:Name="InstalledStatus" Grid.Column="1" Text="{local:Loc Text='尚未扫描'}" Style="{StaticResource SectionCaption}" TextWrapping="Wrap"/></Grid>
-      <TextBlock x:Name="InstalledListHint" Text="{local:Loc Text='单击展开组件 | 勾选提前保留 | 白名单页调整规则'}" TextWrapping="Wrap" Style="{StaticResource SectionCaption}"/>
-      <CheckBox Content="{local:Loc Text='显示系统与服务进程'}" IsChecked="{Binding IsChecked,ElementName=ShowSystemToggle,Mode=OneWay}" Click="InstalledSystemVisibilityChanged" FontSize="12" ToolTipService.ToolTip="{local:Loc Text='与运行中的程序页共用显示设置。'}"/>
-     </StackPanel>
+     <Grid x:Name="InstalledSummaryBar" Grid.Row="2" ColumnSpacing="14" RowSpacing="6" SizeChanged="InstalledSummarySizeChanged">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel x:Name="InstalledSummaryLabels" Spacing="5">
+       <TextBlock x:Name="InstalledStatus" Text="{local:Loc Text='尚未扫描'}" Style="{StaticResource SectionCaption}" TextWrapping="Wrap"/>
+       <TextBlock x:Name="InstalledListHint" Text="{local:Loc Text='单击选择 | 箭头展开组件 | 推断标签可能有误，请谨慎甄别'}" TextWrapping="Wrap" Style="{StaticResource SectionCaption}"/>
+      </StackPanel>
+      <StackPanel x:Name="InstalledSummaryActions" Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Top">
+       <ProgressRing x:Name="InstalledProgress" Width="16" Height="16" IsActive="False" Visibility="Collapsed"/>
+       <CheckBox Content="{local:Loc Text='显示系统与服务进程'}" IsChecked="{Binding IsChecked,ElementName=ShowSystemToggle,Mode=OneWay}" Click="InstalledSystemVisibilityChanged" FontSize="12" ToolTipService.ToolTip="{local:Loc Text='与运行中的程序页共用显示设置。'}"/>
+      </StackPanel>
+     </Grid>
      <Grid Grid.Row="3">
-      <ListView x:Name="InstalledList" SelectionMode="Single" SelectionChanged="InstalledSelectionChanged" IsItemClickEnabled="True" ItemClick="InstalledItemClicked" HorizontalContentAlignment="Stretch" Padding="0">
+      <ListView x:Name="InstalledList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="False" SelectionChanged="InstalledSelectionChanged" IsItemClickEnabled="True" ItemClick="InstalledItemClicked" HorizontalContentAlignment="Stretch" Padding="0">
        <ListView.ItemTemplate><DataTemplate x:DataType="local:InstalledRow">
         <Grid Padding="4,10" ColumnSpacing="10" Margin="{Binding RowMargin}" ToolTipService.ToolTip="{Binding Details}">
          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-         <FontIcon Glyph="{Binding Chevron}" Visibility="{Binding ChevronVisibility}" FontSize="11" Width="15" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+         <Button Click="InstalledChevronClicked" Visibility="{Binding ChevronVisibility}" Style="{StaticResource SubtleButtonStyle}" Padding="2" MinWidth="0" Width="22" MinHeight="24" Height="24" VerticalAlignment="Top" AutomationProperties.Name="{local:Loc Text='展开或折叠'}"><FontIcon Glyph="{Binding Chevron}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Button>
          <Image Grid.Column="1" Source="{Binding Icon}" Width="{Binding IconSize}" Height="{Binding IconSize}" VerticalAlignment="Top" Stretch="Uniform"/>
-         <StackPanel Grid.Column="2" Spacing="4"><Grid ColumnSpacing="8" HorizontalAlignment="Left"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Grid.Column="1" Text="{Binding RecoveryText}" Visibility="{Binding RecoveryVisibility}" ToolTipService.ToolTip="{Binding RecoveryTooltip}" FontSize="11" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/></Grid><TextBlock Text="{Binding Summary}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock Text="{Binding Status}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+         <StackPanel Grid.Column="2" Spacing="4"><Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+          <Grid Grid.Column="1" Visibility="{Binding RoleVisibility}" ToolTipService.ToolTip="{Binding RoleTooltip}" VerticalAlignment="Center">
+           <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter=Main}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" FontSize="11" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/></Border>
+           <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter=PossibleMain}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" FontSize="11" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/></Border>
+           <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter='Uninstaller|PossibleUninstaller'}" Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" FontSize="11" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/></Border>
+           <Border Visibility="{Binding RoleKind,Converter={StaticResource RoleKindVisibility},ConverterParameter='Helper|Diagnostic|Unknown'}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2"><TextBlock Text="{Binding RoleText}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Border>
+          </Grid><TextBlock Grid.Column="2" Text="{Binding RecoveryText}" Visibility="{Binding RecoveryVisibility}" ToolTipService.ToolTip="{Binding RecoveryTooltip}" FontSize="11" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/></Grid><TextBlock Text="{Binding Summary}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock Text="{Binding Status}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
          <CheckBox Grid.Column="3" HorizontalAlignment="Right" Content="{Binding KeepText}" Tag="{Binding RowKey}" IsChecked="{Binding IsKept,Mode=OneWay}" IsEnabled="{Binding CanKeep}" Visibility="{Binding KeepVisibility}" Click="KeepInstalled" VerticalAlignment="Top" MinWidth="0" FontSize="12" ToolTipService.ToolTip="{local:Loc Text='勾选加入白名单；已保留项目可在白名单页调整，避免误删来自其他规则的保护。'}"/>
+         <CheckBox x:Name="RowSelection" Grid.Column="3" Content="{local:Loc Text='选择'}" Visibility="{Binding KeepVisibility,Converter={StaticResource HiddenActionVisibility}}" local:RowSelectionCheckBox.Enabled="True" HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" FontSize="12" AutomationProperties.Name="{local:Loc Text='选择'}"/>
         </Grid>
        </DataTemplate></ListView.ItemTemplate>
       </ListView>
@@ -140,22 +159,33 @@
      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
      <Grid x:Name="RulesToolbar" ColumnSpacing="16" RowSpacing="6" VerticalAlignment="Top"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <AutoSuggestBox x:Name="RulesSearch" PlaceholderText="{local:Loc Text='搜索软件、进程、PID 或路径'}" QueryIcon="Find" TextChanged="RulesSearchChanged" AutomationProperties.Name="{local:Loc Text='搜索白名单软件与进程'}"/>
-      <CommandBar x:Name="RulesCommands" Grid.Row="1" Grid.ColumnSpan="2" Background="Transparent" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" ClosedDisplayMode="Compact" VerticalAlignment="Top" HorizontalAlignment="Stretch"><CommandBar.Content><Grid MinHeight="48"><Button x:Name="RulesAddButton" Click="AddRule" HorizontalAlignment="Left" VerticalAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Glyph="&#xE710;" FontSize="14"/><TextBlock Text="{local:Loc Text='添加规则'}"/></StackPanel></Button></Grid></CommandBar.Content><AppBarButton Label="{local:Loc Text='导入规则'}" Icon="Import" Click="ImportRules"/><AppBarButton Label="{local:Loc Text='导出规则'}" Icon="Share" Click="ExportRules"/><AppBarButton Label="{local:Loc Text='恢复默认'}" Icon="Refresh" Click="ResetRules"/></CommandBar>
+      <StackPanel x:Name="RulesCommands" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" SizeChanged="WrapCommandRowsChanged">
+       <Button x:Name="RulesAddButton" Content="{local:Loc Text='添加规则'}" Click="AddRule" Margin="0,0,8,6"/><Button Content="{local:Loc Text='导入规则'}" Click="ImportRules" Margin="0,0,8,6"/><Button Content="{local:Loc Text='导出规则'}" Click="ExportRules" Margin="0,0,8,6"/><Button Content="{local:Loc Text='恢复默认'}" Click="ResetRules" Margin="0,0,8,6"/><Button x:Name="RulesSelectToggleButton" Content="{local:Loc Text='全选'}" Click="ToggleAllSelectionClicked" Margin="0,0,0,6"/>
+      </StackPanel>
       <ToggleSwitch x:Name="RulesLiveToggle" Grid.Column="1" IsOn="{Binding IsOn,ElementName=LiveToggle,Mode=OneWay}" OnContent="{local:Loc Text='实时更新'}" OffContent="{local:Loc Text='已暂停'}" FontSize="12" Width="138" MinWidth="0" VerticalAlignment="Top" Toggled="PageLiveRefreshChanged" AutomationProperties.Name="{local:Loc Text='实时更新进程状态'}" ToolTipService.ToolTip="{local:Loc Text='每 2 秒刷新；三个程序页面共用此设置。操作记录始终实时。'}"/></Grid>
-     <TextBlock Grid.Row="1" Text="{local:Loc Text='单击展开关联进程 | 规则自动保存 | 系统保护始终生效'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-     <Grid Grid.Row="2"><ListView x:Name="RulesList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="RuleItemClicked" HorizontalContentAlignment="Stretch">
+     <StackPanel Grid.Row="1" Spacing="8"><TextBlock Text="{local:Loc Text='单击选择 | 箭头展开进程 | 规则自动保存'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><Expander Header="{local:Loc Text='白名单作用范围'}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"><ContentControl x:Name="WhitelistScopeHost" HorizontalContentAlignment="Stretch"/></Expander></StackPanel>
+     <Grid Grid.Row="2"><ListView x:Name="RulesList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="False" SelectionChanged="PageSelectionChanged" IsItemClickEnabled="True" ItemClick="RuleItemClicked" HorizontalContentAlignment="Stretch">
       <ListView.ItemTemplate><DataTemplate x:DataType="local:RuleRow">
        <Grid Padding="4,10" ColumnSpacing="10" Margin="{Binding RowMargin}" ToolTipService.ToolTip="{Binding Tooltip}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <FontIcon Glyph="{Binding Chevron}" Visibility="{Binding ChevronVisibility}" FontSize="11" Width="15" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <Button Click="RuleChevronClicked" Visibility="{Binding ChevronVisibility}" Style="{StaticResource SubtleButtonStyle}" Padding="2" MinWidth="0" Width="22" MinHeight="24" Height="24" VerticalAlignment="Top" AutomationProperties.Name="{local:Loc Text='展开或折叠'}"><FontIcon Glyph="{Binding Chevron}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Button>
         <Image Grid.Column="1" Source="{Binding Icon}" Width="{Binding IconSize}" Height="{Binding IconSize}" Stretch="Uniform" VerticalAlignment="Top"/>
         <StackPanel Grid.Column="2" Spacing="5"><Grid ColumnSpacing="8" HorizontalAlignment="Left"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Grid.Column="1" Text="{Binding RecoveryText}" Visibility="{Binding RecoveryVisibility}" ToolTipService.ToolTip="{Binding RecoveryTooltip}" FontSize="11" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/></Grid><TextBlock Text="{Binding Detail}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding MatchText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/></StackPanel>
         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Visibility="{Binding ActionsVisibility}" VerticalAlignment="Top"><CheckBox IsChecked="{Binding Enabled,Mode=OneWay}" Tag="{Binding Id}" Click="RuleToggled" Content="{local:Loc Text='启用'}" MinWidth="0" FontSize="12"/><DropDownButton Content="{local:Loc Text='更多'}" AutomationProperties.Name="{local:Loc Text='规则操作'}"><DropDownButton.Flyout><MenuFlyout><MenuFlyoutItem Text="{local:Loc Text='编辑规则…'}" Tag="{Binding Id}" Click="EditRuleFromMenu"/><MenuFlyoutItem Text="{local:Loc Text='移除规则'}" Tag="{Binding Id}" Click="RemoveRuleFromMenu"/></MenuFlyout></DropDownButton.Flyout></DropDownButton></StackPanel>
+        <CheckBox x:Name="RowSelection" Grid.Column="3" Content="{local:Loc Text='选择'}" Visibility="{Binding ActionsVisibility,Converter={StaticResource HiddenActionVisibility}}" local:RowSelectionCheckBox.Enabled="True" HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" FontSize="12" AutomationProperties.Name="{local:Loc Text='选择'}"/>
        </Grid>
       </DataTemplate></ListView.ItemTemplate>
      </ListView><TextBlock x:Name="RulesEmpty" Text="{local:Loc Text='没有符合条件的软件或进程'}" Visibility="Collapsed" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Grid><TextBlock Grid.Row="3" x:Name="ConfigLocation" TextWrapping="Wrap" Style="{StaticResource SectionCaption}" IsTextSelectionEnabled="True"/>
     </Grid>
     <Grid x:Name="AutorunsPage" Grid.Row="2" Visibility="Collapsed"/>
+    <Grid x:Name="UninstallPage" Grid.Row="2" Visibility="Collapsed"/>
+    <Grid x:Name="MiscPage" Grid.Row="2" Visibility="Collapsed">
+     <Pivot>
+      <PivotItem Header="{local:Loc Text='内存优化'}"><ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch"><ContentControl x:Name="MemoryHost" HorizontalContentAlignment="Stretch" Padding="0,12,0,20"/></ScrollViewer></PivotItem>
+      <PivotItem Header="{local:Loc Text='下载器'}"><ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch"><ContentControl x:Name="DownloadHost" HorizontalContentAlignment="Stretch" Padding="0,12,0,20"/></ScrollViewer></PivotItem>
+      <PivotItem Header="{local:Loc Text='性能显示'}"><ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch"><ContentControl x:Name="PerformanceHost" HorizontalContentAlignment="Stretch" Padding="0,12,0,20"/></ScrollViewer></PivotItem>
+     </Pivot>
+    </Grid>
     <Grid x:Name="HistoryPage" Grid.Row="2" Visibility="Collapsed" RowSpacing="12">
      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
      <Grid ColumnSpacing="16"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -191,11 +221,11 @@
       </PivotItem>
       <PivotItem Header="{local:Loc Text='备份'}">
        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="28" MaxWidth="680" HorizontalAlignment="Left" Padding="0,12,16,24">
-         <ContentControl x:Name="ProfilesHost" Loaded="LoadProfilesView" HorizontalContentAlignment="Stretch"/>
+        <StackPanel Spacing="28" HorizontalAlignment="Stretch" Padding="0,12,16,24">
          <StackPanel Spacing="12"><TextBlock Text="{local:Loc Text='全部设置'}" FontSize="19" FontWeight="SemiBold"/><StackPanel Orientation="Horizontal" Spacing="10"><Button Content="{local:Loc Text='导出'}" Click="ExportAllSettings"/><Button Content="{local:Loc Text='导入全部设置…'}" Click="ImportAllSettings"/></StackPanel><TextBlock Text="{local:Loc Text='包含白名单、外观与列表设置。导入前可预览，原配置自动备份。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
          <StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='导出方式'}" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="{local:Loc Text='分享设置：省略本机路径规则，对方未安装的软件不会匹配。'}" TextWrapping="Wrap"/><TextBlock Text="{local:Loc Text='完整备份：保留本机规则，跨电脑导入时默认停用。'}" TextWrapping="Wrap"/><TextBlock Text="{local:Loc Text='不包含操作记录、当前进程和缓存。白名单页可单独迁移规则。'}" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
          <Button Content="{local:Loc Text='打开配置与备份目录'}" Click="OpenConfigurationFolder"/>
+         <ContentControl x:Name="ProfilesHost" Loaded="LoadProfilesView" HorizontalContentAlignment="Stretch"/>
         </StackPanel>
        </ScrollViewer>
       </PivotItem>
@@ -206,7 +236,10 @@
          <StackPanel Spacing="10">
           <StackPanel x:Name="UpdatesHost" Margin="0,0,0,18" HorizontalAlignment="Stretch"/>
           <TextBlock Text="{local:Loc Text='作者信息'}" FontSize="19" FontWeight="SemiBold"/>
-          <TextBlock x:Name="AuthorNameText" Text="KangQi" TextWrapping="Wrap"/>
+          <StackPanel Spacing="8" HorizontalAlignment="Left">
+           <local:AuthorAvatarView x:Name="AuthorAvatar"/>
+           <TextBlock x:Name="AuthorNameText" Text="KangQi" TextWrapping="Wrap"/>
+          </StackPanel>
           <Grid x:Name="AuthorLinks" ColumnSpacing="8" RowSpacing="8" SizeChanged="AuthorLinksSizeChanged"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
            <HyperlinkButton x:Name="AuthorGithubButton" NavigateUri="https://github.com/KangQiovo" AutomationProperties.Name="GitHub | KangQi" Background="{ThemeResource ControlFillColorDefaultBrush}" Foreground="{ThemeResource TextFillColorPrimaryBrush}" BorderThickness="0" CornerRadius="6" Padding="12,8">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -228,8 +261,8 @@
                   <StackPanel Spacing="8"><TextBlock Text="{local:Loc Text='引用项目'}" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="{local:Loc Text='项目依赖与图标来源，完整许可见随附的第三方声明。'}" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
           <ItemsControl x:Name="ReferencedProjectsList"><ItemsControl.ItemTemplate><DataTemplate><HyperlinkButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="0,8" Click="OpenReferencedProject" Tag="{Binding}"><StackPanel Spacing="4"><TextBlock Text="{Binding Name}" TextWrapping="Wrap" FontWeight="SemiBold"/><TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel></HyperlinkButton></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
          </StackPanel><StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='运行诊断'}" FontSize="19" FontWeight="SemiBold"/><StackPanel Orientation="Horizontal" Spacing="10"><Button Content="{local:Loc Text='刷新诊断信息'}" Click="RefreshSettingsDiagnostics"/><Button Content="{local:Loc Text='复制诊断信息'}" Click="CopySettingsDiagnostics"/></StackPanel><TextBox x:Name="SettingsDiagnostics" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent" Padding="0" FontSize="12" AutomationProperties.Name="{local:Loc Text='应用运行诊断信息'}"/><TextBlock Text="{local:Loc Text='不包含进程名称、路径或白名单内容。'}" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
-                  <StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='使用引导'}" FontSize="19" FontWeight="SemiBold"/><Button x:Name="ReopenIntroductionButton" Content="{local:Loc Text='重新进入引导（OOBE）'}" Click="ReopenIntroduction"/><TextBlock Text="{local:Loc Text='重新查看环境检测与介绍，不重置规则或设置。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel><StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='本机文件'}" FontSize="19" FontWeight="SemiBold"/><Button Content="{local:Loc Text='打开配置与记录目录'}" Click="OpenConfigurationFolder"/><TextBlock Text="{local:Loc Text='规则、设置、备份和记录与分享的 EXE 分开保存。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
-         <StackPanel Spacing="10"><Button x:Name="RiskModeButton" Content="{local:Loc Text='无视风险'}" Click="ChangeRiskMode"/><TextBlock Text="{local:Loc Text='仅本次运行生效；重新启动后恢复风险确认。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+                  <StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='使用引导'}" FontSize="19" FontWeight="SemiBold"/><Button x:Name="CompatibilityCheckButton" Content="{local:Loc Text='运行环境检测'}" Click="CheckCompatibility"/><Button x:Name="ReopenIntroductionButton" Content="{local:Loc Text='重新进入引导（OOBE）'}" Click="ReopenIntroduction"/><TextBlock Text="{local:Loc Text='重新查看环境检测与介绍，不重置规则或设置。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel><StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='本机文件'}" FontSize="19" FontWeight="SemiBold"/><Button Content="{local:Loc Text='打开配置与记录目录'}" Click="OpenConfigurationFolder"/><TextBlock Text="{local:Loc Text='规则、设置、备份和记录与分享的 EXE 分开保存。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
+         <StackPanel Spacing="10"><Button x:Name="RiskModeButton" Content="{local:Loc Text='无视风险模式'}" Click="ChangeRiskMode"/><TextBlock Text="{local:Loc Text='仅本次运行生效；重新启动后恢复风险确认。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel>
         </StackPanel>
        </ScrollViewer>
       </PivotItem>

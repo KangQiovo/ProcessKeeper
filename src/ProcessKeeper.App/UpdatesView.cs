@@ -31,7 +31,7 @@ internal sealed class UpdatesView : UserControl
     {
         var assembly = typeof(MainWindow).Assembly;
         var information = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)?.InformationalVersion;
-        return UpdateVersion.TryParse(information, out var parsed) ? parsed!.Value : assembly.GetName().Version?.ToString(3) ?? "1.5.0";
+        return UpdateVersion.TryParse(information, out var parsed) ? parsed!.Value : assembly.GetName().Version?.ToString(3) ?? "1.6.0";
     }
     private readonly TextBlock _repository = new() { Text = UpdatePolicy.Repository, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
     private readonly ComboBox _source = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -191,7 +191,7 @@ internal sealed class UpdatesView : UserControl
     {
         var panel = new StackPanel { Spacing = 12, MaxWidth = 520 };
         panel.Children.Add(Text(release.Name + " | " + release.Tag));
-        if (release.PublishedAt is { } published) panel.Children.Add(Text(published.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz"), 12));
+        if (release.PublishedAt is { } published) panel.Children.Add(Text(TimeDisplay.Format(published.ToLocalTime()), 12));
         panel.Children.Add(Text(L.T("更新日志")));
         panel.Children.Add(new TextBox { IsReadOnly = true, AcceptsReturn = true,
             Text = string.IsNullOrWhiteSpace(release.Body) ? L.T("未提供更新日志。") : release.Body,

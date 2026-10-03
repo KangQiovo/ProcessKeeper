@@ -18,5 +18,7 @@ public sealed record InstalledApplication
     public string InstallLocation { get; init; } = "";
     public string IdentityEvidence { get; init; } = "";
     public string ApplicationKey { get; init; } = "";
+    /// <summary>Explicit registered, manifest, shortcut or user-selected entries; never inferred from list order.</summary>
+    public IReadOnlyList<string> EntryPaths { get; init; } = [];
     public IReadOnlyList<InstalledExecutable> Executables { get; init; } = [];
 }

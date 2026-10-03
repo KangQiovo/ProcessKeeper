@@ -10,13 +10,21 @@
 # 在仓库根目录使用 PowerShell 7 执行。
 dotnet run --project src/ProcessKeeper.Tests/ProcessKeeper.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Settings.Tests/ProcessKeeper.Settings.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.CloudProfiles.Tests/ProcessKeeper.CloudProfiles.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Tools.Tests/ProcessKeeper.Tools.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.Search.Tests/ProcessKeeper.Search.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Autorun.Tests/ProcessKeeper.Autorun.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Update.Tests/ProcessKeeper.Update.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Architecture.Tests/ProcessKeeper.Architecture.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
+dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
+dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 ```
 
 这些命令只是示例，并非完整发布检查。其他项目覆盖已安装应用目录、图标、操作记录、AVD 参数与恢复、特殊窗口、浏览器预览、窗口路由、启动、单实例、本地化和正常退出。
+
+云端配置测试使用假 GitHub Contents 响应及隔离文件，覆盖固定目录、元数据与内容 SHA、UTF-8 和便携格式限制、错误与取消、空白默认规则、可选七应用模板，以及修订版本检查和最多五套的原子导入。无需 GitHub 凭据，不修改用户白名单。下载器使用受控 HTTP 响应；本地回环与原生界面验证不代表外网下载速度或旧设备兼容性。
 
 验证实际 x86 Framework 后端：
 
@@ -24,6 +32,9 @@ dotnet run --project src/ProcessKeeper.Update.Tests/ProcessKeeper.Update.Tests.c
 dotnet build src/ProcessKeeper.Legacy.Core.Tests/ProcessKeeper.Legacy.Core.Tests.csproj -c Release
 & ./src/ProcessKeeper.Legacy.Core.Tests/bin/Release/net462/ProcessKeeper.Legacy.Core.Tests.exe
 dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests.csproj -c Release --framework net462
+dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net462
+dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net462
+dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net462
 ```
 
 Legacy 测试程序必须在装有兼容 .NET Framework 的 Windows 中实际运行；仅构建成功不代表运行通过。它使用共享夹具、隔离文件和只读进程身份检查。可选参数 `--read-only-live` 会枚举真实自启动来源但不修改它们，普通回归请省略此参数。
@@ -51,6 +62,12 @@ Legacy 测试程序必须在装有兼容 .NET Framework 的 Windows 中实际运
 真实旧系统和旧硬件验证仍未完成。不能因为 Framework 程序在新系统运行，就标注 Windows 7 已实测。
 
 ## 报告可复现结果
+
+### 原生加载页主题
+
+[Test-StartupTheme.ps1](../src/ProcessKeeper.UniversalLauncher/Test-StartupTheme.ps1) 要求显式指定 `-FixturePath` 和 `-OutputDirectory`。先使用 `build-native.ps1 -UiFixture` 及其要求的资源参数构建隔离启动器。脚本执行前检查仅测试夹具导出的 PE 标识，拒绝生产包及无关程序。临时文件和截图应重定向至选定的测试目录。
+
+矩阵检查三语言、深浅色和注入的高对比度配色、权限与恢复页面、实际文字对比度、主题变更消息及 GDI 资源增长。脚本只读取当前 Windows 应用主题，不修改主机主题；这些检查仅覆盖本机自有测试窗口，不覆盖生产解包、UAC 或旧系统硬件。
 
 记录源码提交、命令、系统构建号、架构、运行时、退出码、通过/失败/跳过数量，以及相关主题、语言、尺寸和 DPI。非零退出、失败用例或未解释的跳过不算完整通过。测试数量会变化，应以实际控制台或 JSON 结果为准，不依赖历史固定总数。
 

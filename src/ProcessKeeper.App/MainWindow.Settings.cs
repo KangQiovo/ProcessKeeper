@@ -34,7 +34,7 @@ public sealed partial class MainWindow
     private void ReopenIntroduction(object sender, RoutedEventArgs args)
     {
         if (_closed) return;
-        if (_working || _dialogOpen || _windowOperationRunning || _autorunsView?.IsChanging == true || _updatesView?.IsBusy == true)
+        if (HasPendingTool || _working || _dialogOpen || _checkingCompatibility || _windowOperationRunning || _autorunsView?.IsChanging == true || _updatesView?.IsBusy == true)
         {
             ShowNotice(L.T("请等待当前操作完成"), L.T("操作完成后即可重新查看引导。"), InfoBarSeverity.Informational);
             return;
@@ -50,7 +50,7 @@ public sealed partial class MainWindow
 
     private ViewPreferences CurrentView => new(LiveToggle.IsOn, ShowSystemToggle.IsChecked == true,
         Math.Max(0, CategoryFilter.SelectedIndex), Math.Max(0, SortFilter.SelectedIndex), _languagePreference, HistoryAutoScrollToggle.IsOn, _installedDrivePreference,
-        _groupGamePlatforms, _hideMicrosoftApps);
+        _groupGamePlatforms, _hideMicrosoftApps, _syncEmptyProfileRules);
 
     private void InitializeViewPreferences(string? initialLanguagePreference = null)
     {
@@ -73,6 +73,7 @@ public sealed partial class MainWindow
         try
         {
             _languagePreference = value.Language;
+            _syncEmptyProfileRules = value.SyncEmptyProfileRules;
             LanguageChoice.SelectedIndex = Array.IndexOf(new[] { "auto", "zh-Hans", "zh-Hant", "en" }, value.Language);
             LanguageStatus.Text = L.F($"当前界面语言：{L.LanguageName(LanguageResolver.ResolveCurrent(value.Language))}");
             LiveToggle.IsOn = value.LiveRefresh;
@@ -93,9 +94,17 @@ public sealed partial class MainWindow
 
     private void LanguageSelectionChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (!_viewReady || _changingViews || _closed || _working || _dialogOpen || _updatesView?.IsBusy == true || LanguageChoice.SelectedIndex < 0) return;
+        if (!_viewReady || _changingViews || _closed || LanguageChoice.SelectedIndex < 0) return;
         var selected = new[] { "auto", "zh-Hans", "zh-Hant", "en" }[LanguageChoice.SelectedIndex];
         if (selected == _languagePreference) return;
+        if (HasPendingTool || _working || _dialogOpen || _windowOperationRunning || _uninstallView?.IsBusy == true || _autorunsView?.IsChanging == true || _updatesView?.IsBusy == true)
+        {
+            _changingViews = true;
+            try { LanguageChoice.SelectedIndex = Array.IndexOf(new[] { "auto", "zh-Hans", "zh-Hant", "en" }, _languagePreference); }
+            finally { _changingViews = false; }
+            ShowNotice(L.T("请等待当前操作完成"), "", InfoBarSeverity.Informational);
+            return;
+        }
         try
         {
             _viewStore.Save(CurrentView with { Language = selected });
@@ -217,7 +226,7 @@ public sealed partial class MainWindow
             var profileExport = rulesOnly ? null : new WhitelistProfilesStore(Path.GetDirectoryName(_store.FilePath)!).ExportSnapshot();
             if (profileExport is not null && choice.SelectedIndex == 0)
                 profileExport = profileExport with { Profiles = profileExport.Profiles.Select(profile => profile with { Rules = RulePortability.ForSharing(profile.Rules) }).ToArray() };
-            var bundle = profileExport is null ? null : new SettingsBundle(profileExport.ActiveRules, CurrentAppearance, CurrentView, new UpdatePreferencesStore().Load(), profileExport);
+            var bundle = profileExport is null ? null : new SettingsBundle(profileExport.ActiveRules, CurrentAppearance, CurrentView, new UpdatePreferencesStore().Load(), profileExport, PerformanceForExport(), WhitelistScopeForExport());
             var picker = new FileSavePicker(AppWindow.Id)
             {
                 SuggestedFileName = $"ProcessKeeper-{(rulesOnly ? choice.SelectedIndex == 0 ? L.T("分享规则") : L.T("完整备份规则") : choice.SelectedIndex == 0 ? L.T("分享设置") : L.T("全部设置备份"))}-{DateTime.Now:yyyyMMdd}",
@@ -290,7 +299,7 @@ public sealed partial class MainWindow
         panel.Children.Add(new TextBlock { Text = L.T("确认后立即应用界面设置。规则导入只更新白名单，不触发关闭操作。"), TextWrapping = TextWrapping.Wrap, FontSize = 12 });
         panel.Children.Add(new TextBlock { Text = L.F($"界面语言：{(imported.View.Language == "auto" ? L.T("自动（系统语言优先）") : L.LanguageName(imported.View.Language))}"), TextWrapping = TextWrapping.Wrap });
         panel.Children.Add(new TextBlock { Text = L.F($"操作记录自动滚动：{(imported.View.HistoryAutoScroll ? L.T("开启") : L.T("暂停"))}"), TextWrapping = TextWrapping.Wrap });
-        panel.Children.Add(new TextBlock { Text = L.F($"已安装软件盘符：{(imported.View.InstalledDrive.Length == 0 ? L.T("所有盘符") : imported.View.InstalledDrive)}"), TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new TextBlock { Text = L.F($"已安装应用盘符：{(imported.View.InstalledDrive.Length == 0 ? L.T("所有盘符") : imported.View.InstalledDrive)}"), TextWrapping = TextWrapping.Wrap });
         if (imported.Updates is { } updates)
             panel.Children.Add(new TextBlock { Text = L.F($"更新仓库：{updates.Repository}"), TextWrapping = TextWrapping.Wrap });
         var importViewport = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -303,7 +312,7 @@ public sealed partial class MainWindow
         try { importDecision = await ShowDialog(NewDialog(L.T("预览全部设置"), importViewport, L.T("确认导入"))); }
         finally { Root.SizeChanged -= resized; }
         if (importDecision != ContentDialogResult.Primary || _closed) return;
-        if (_working || _dialogOpen || !_configurationHealthy || _windowOperationRunning || _updatesView?.IsBusy == true)
+        if (HasPendingTool || _working || _dialogOpen || !_configurationHealthy || _windowOperationRunning || _updatesView?.IsBusy == true)
         { ShowNotice(L.T("请等待当前操作完成"), "", InfoBarSeverity.Informational); return; }
         try
         {
@@ -313,15 +322,20 @@ public sealed partial class MainWindow
             if (profiles is not null)
                 profiles = profiles with { Profiles = profiles.Profiles.Select(profile => profile with
                 { Rules = profile.Id == profiles.ActiveId ? rules : RulePortability.PrepareImport(profile.Rules, allowLocal.IsChecked == true) }).ToArray() };
-            var next = new SettingsBundle(rules, imported.Appearance, imported.View, imported.Updates, profiles);
+            var next = new SettingsBundle(rules, imported.Appearance, imported.View, imported.Updates, profiles, imported.Performance, imported.WhitelistScope);
+            await FlushPerformanceAsync();
             SettingsBundleStore.CommitAll(Path.GetDirectoryName(_store.FilePath)!, next);
             var previousLanguage = L.Language;
             _rules = rules;
-            ProfilesHost.Content = null;
-            EnsureProfilesView();
+            ApplyWhitelistScope(next.WhitelistScope);
+            _configurationHealthy = _scopeReadable;
+            RefreshWhitelistActionGuards();
             ApplyImportedAppearance(next.Appearance);
             ApplyViewPreferences(next.View);
+            ProfilesHost.Content = null;
+            EnsureProfilesView();
             if (next.Updates is not null) _updatesView?.Apply(next.Updates);
+            if (next.Performance is not null) _performanceView?.ApplyPreferences(next.Performance);
             _lastDetailSignature = "";
             UpdateRules();
             RenderApps();

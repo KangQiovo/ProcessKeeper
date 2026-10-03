@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+ <ItemGroup><Compile Include="../ProcessKeeper.Core/MemoryOptimization.cs" Link="MemoryOptimization.cs"/><Compile Include="../ProcessKeeper.Core/MemoryOptimization.Windows.cs" Link="MemoryOptimization.Windows.cs"/><Compile Include="../ProcessKeeper.Core/ResourceDownload.cs" Link="ResourceDownload.cs"/><Compile Include="../ProcessKeeper.Core/ResourceDownload.Adaptive.cs" Link="ResourceDownload.Adaptive.cs"/></ItemGroup>
+</Project>

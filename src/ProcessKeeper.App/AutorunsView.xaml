@@ -10,6 +10,7 @@
    <AutoSuggestBox x:Name="Search" QueryIcon="Find" PlaceholderText="{local:Loc Text='搜索软件、进程、PID 或路径'}" TextChanged="SearchChanged" AutomationProperties.Name="{local:Loc Text='搜索自启动项目'}"/>
    <StackPanel x:Name="ScanActions" Grid.Column="1" Orientation="Horizontal" Spacing="8">
     <ProgressRing x:Name="ScanProgress" Width="20" Height="20" IsActive="False"/>
+    <Button x:Name="SelectionToggle" Click="ToggleSelectionClicked" Content="{local:Loc Text='全选'}"/>
     <Button x:Name="ScanButton" Click="ScanClicked" Content="{local:Loc Text='重新扫描'}"/>
     <Button x:Name="CancelScanButton" Click="CancelScanClicked" Content="{local:Loc Text='取消扫描'}" Visibility="Collapsed"/>
    </StackPanel>
@@ -23,15 +24,15 @@
    <ToggleSwitch x:Name="ComplexMode" Grid.Column="2" IsOn="False" OffContent="{local:Loc Text='简单'}" OnContent="{local:Loc Text='复杂'}" Toggled="ModeChanged" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" MinWidth="0"/>
   </Grid>
   <Grid Grid.Row="3">
-   <ListView x:Name="EntriesList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="EntryClicked" ContainerContentChanging="ContainerChanging" ContextRequested="EntryContextRequested" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+   <ListView x:Name="EntriesList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="False" SelectionChanged="EntrySelectionChanged" ContainerContentChanging="ContainerChanging" ContextRequested="EntryContextRequested" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
     <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="8,10"/><Setter Property="Margin" Value="0,0,0,4"/></Style></ListView.ItemContainerStyle>
     <ListView.ItemTemplate>
      <DataTemplate>
       <Grid RowSpacing="10" Margin="{Binding RowMargin}">
        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
        <Grid ColumnSpacing="12">
-        <Grid.ColumnDefinitions><ColumnDefinition Width="16"/><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <FontIcon Glyph="{Binding Chevron}" FontSize="12" VerticalAlignment="Center"/>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <Button Tag="{Binding}" Click="ExpandEntryClicked" Visibility="{Binding ChevronVisibility}" Padding="0" MinWidth="0" Width="24" Height="28" Background="Transparent" BorderThickness="0" AutomationProperties.Name="{local:Loc Text='展开或折叠'}"><FontIcon Glyph="{Binding Chevron}" FontSize="12"/></Button>
         <Image Grid.Column="1" Source="{Binding Icon}" Width="32" Height="32" VerticalAlignment="Center"/>
         <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Name}"/>
@@ -39,6 +40,7 @@
          <TextBlock Text="{Binding ProcessSummary}" FontSize="12" TextTrimming="CharacterEllipsis" Visibility="{Binding ProcessVisibility}"/>
         </StackPanel>
         <Button Grid.Column="3" Tag="{Binding}" Content="{Binding ActionText}" Visibility="{Binding ActionVisibility}" IsEnabled="{Binding CanAct}" Click="ChangeEntryClicked" VerticalAlignment="Center" MinWidth="72" ToolTipService.ToolTip="{Binding ActionHint}"/>
+        <CheckBox x:Name="RowSelection" Grid.Column="4" Content="{local:Loc Text='选择'}" local:RowSelectionCheckBox.Enabled="True" HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" FontSize="12" AutomationProperties.Name="{local:Loc Text='选择'}"/>
        </Grid>
        <StackPanel Grid.Row="1" Margin="60,0,0,0" Spacing="8" Visibility="{Binding DetailVisibility}">
         <TextBlock Text="{Binding DetailText}" TextWrapping="Wrap" IsTextSelectionEnabled="True" FontSize="12"/>

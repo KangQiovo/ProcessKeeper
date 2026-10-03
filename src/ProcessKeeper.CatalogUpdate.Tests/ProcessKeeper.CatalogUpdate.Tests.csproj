@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFrameworks>net8.0-windows10.0.19041.0;net462</TargetFrameworks><LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType><PolySharpUseEmbeddedAttributeForGeneratedTypes>false</PolySharpUseEmbeddedAttributeForGeneratedTypes></PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)'=='net462'"><PlatformTarget>x86</PlatformTarget></PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)'!='net462'"><ProjectReference Include="../ProcessKeeper.Core/ProcessKeeper.Core.csproj"/></ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net462'"><ProjectReference Include="../ProcessKeeper.Legacy.Core/ProcessKeeper.Legacy.Core.csproj"/><PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all"/><PackageReference Include="PolySharp" Version="1.16.0" PrivateAssets="all"/></ItemGroup>
+  <ItemGroup><None Include="../../catalog/v1/catalog.json" Link="catalog.json" CopyToOutputDirectory="PreserveNewest"/><None Include="../../catalog/v1/catalog.sig" Link="catalog.sig" CopyToOutputDirectory="PreserveNewest"/></ItemGroup>
+</Project>

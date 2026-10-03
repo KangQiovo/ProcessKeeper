@@ -20,6 +20,8 @@
 ```powershell
 ./build.ps1
 if ($LASTEXITCODE -ne 0) { throw 'Modern build failed.' }
+./build.ps1 -Architecture arm64 -SkipBuildStamp -SkipTests
+if ($LASTEXITCODE -ne 0) { throw 'ARM64 build failed.' }
 dotnet run --project src/ProcessKeeper.Legacy.Core.Tests/ProcessKeeper.Legacy.Core.Tests.csproj -c Release
 if ($LASTEXITCODE -ne 0) { throw 'Compatibility tests failed.' }
 dotnet build src/ProcessKeeper.Legacy.App/ProcessKeeper.Legacy.App.csproj -c Release
@@ -30,17 +32,20 @@ if ($LASTEXITCODE -ne 0) { throw 'Compatibility build failed.' }
 
 `build.ps1` 產生一次統一時間戳記、執行受控回歸並將現代載荷輸出至 `App`。之後基於**相同時間戳記**建置相容載荷，不要在期間重新產生建置時間。自備 SDK/快取可傳 `-DotnetPath`、`-NugetPackages`，原生測試僅使用自行擁有的測試程序。
 
-封裝兩套載荷，不啟動應用程式：
+封裝三套載荷，不啟動應用程式：
+
+第二次建置呼叫將現代 ARM64 載荷交叉編譯至 `App-arm64`，共用相同時間戳記。外層啟動器與更新助手仍為 x86，不需要 ARM64 MSVC 工具來編譯它們；在 x64 上編譯成功無法取代 ARM 裝置執行驗證。
 
 ```powershell
 New-Item -ItemType Directory -Path artifacts -Force | Out-Null
 ./package-universal.ps1 `
   -ModernDirectory ./App `
+  -Arm64Directory ./App-arm64 `
   -LegacyDirectory ./src/ProcessKeeper.Legacy.App/bin/Release/net462 `
   -OutputPath ./artifacts/ProcessKeeper-preview.exe
 ```
 
-每次選擇**新輸出檔名**，腳本拒絕覆寫已有套件。它驗證日期與渠道、建置更新助手、產生具清單/雜湊的 CAB 並嵌入原生 x86 EXE。`package-single-file.ps1` 轉交通用封裝器，同樣需要兩套載荷，不是另一條發行路線。
+每次選擇**新輸出檔名**，腳本拒絕覆寫已有套件。它驗證日期與渠道、建置更新助手、產生具清單/雜湊的 CAB 並嵌入原生 x86 EXE。`package-single-file.ps1` 轉交通用封裝器，同樣需要三套載荷，不是另一條發行路線。
 
 直接執行 `App/ProcessKeeper.exe` 屬開發路線，缺少通用入口的可信內容，應用程式內更新和捷徑會顯示不可用，不能當作更新測試成功。
 
@@ -53,10 +58,13 @@ New-Item -ItemType Directory -Path artifacts -Force | Out-Null
 ```powershell
 ./build.ps1 -StableRelease
 if ($LASTEXITCODE -ne 0) { throw 'Stable modern build failed.' }
+./build.ps1 -Architecture arm64 -SkipBuildStamp -SkipTests -StableRelease
+if ($LASTEXITCODE -ne 0) { throw 'Stable ARM64 build failed.' }
 dotnet build src/ProcessKeeper.Legacy.App/ProcessKeeper.Legacy.App.csproj -c Release -p:ProcessKeeperReleaseChannel=Stable
 if ($LASTEXITCODE -ne 0) { throw 'Stable compatibility build failed.' }
 ./package-universal.ps1 -StableRelease `
   -ModernDirectory ./App `
+  -Arm64Directory ./App-arm64 `
   -LegacyDirectory ./src/ProcessKeeper.Legacy.App/bin/Release/net462 `
   -OutputPath ./artifacts/ProcessKeeper.exe
 ```
@@ -71,6 +79,6 @@ if ($LASTEXITCODE -ne 0) { throw 'Stable compatibility build failed.' }
 
 檢查已追蹤檔名、常見憑證模式、開發者路徑、文件相對連結及語言對應檔。這不是完整機密稽核，圖片隱私需人工看圖。
 
-`App`、`bin`、`obj`、`artifacts`、EXE、DLL、套件及個人狀態皆排除，不要強制加入。測試原始碼可以提交，**測試套件不可以**。
+`App`、`App-arm64`、`bin`、`obj`、`artifacts`、EXE、DLL、套件及個人狀態皆排除，不要強制加入。測試原始碼可以提交，**測試套件不可以**。
 
 [可選 GitHub Actions 範例](examples/source-validation.yml) 可在管理員取得工作流程寫入授權後放入 `.github/workflows/`。它只測試/建置，不上傳 EXE 或發行。其餘見[測試說明](TESTING.zh-TW.md)。

@@ -28,8 +28,7 @@ public static class ProcessIdentity
         "runtimebroker.exe", "applicationframehost.exe", "ctfmon.exe", "chsime.exe", "textinputhost.exe", "tabtip.exe",
         "conhost.exe", "openconsole.exe", "audiodg.exe", "wudfhost.exe", "dllhost.exe", "unsecapp.exe",
         "securityhealthsystray.exe", "securityhealthservice.exe", "msmpeng.exe", "nissrv.exe", "mssense.exe",
-        "defendersessionhelper.exe", "nvdisplay.container.exe", "nvcontainer.exe", "rtkauduservice64.exe",
-        "igfxem.exe", "igfxcuiservice.exe"
+        "defendersessionhelper.exe"
     };
 
     private static readonly HashSet<string> HuorongComponents = new(StringComparer.OrdinalIgnoreCase)
@@ -104,7 +103,7 @@ public static class ProcessIdentity
             evidence = L.T("无法读取可执行文件路径及包身份；单独显示，不推断程序归属");
         }
 
-        bool system = process.IsSystem || process.Id is 0 or 4 || CoreSystemNames.Contains(name);
+        bool system = process.IsSystem || process.NativeCritical == true || process.Id is 0 or 4;
         string systemReason = process.SystemReason;
         if (system && systemReason.Length == 0) systemReason = L.T("Windows 核心、桌面、安全或驱动基础组件");
         return process with
@@ -117,6 +116,8 @@ public static class ProcessIdentity
             SystemReason = systemReason
         };
     }
+
+    internal static bool IsWindowsComponentName(string name) => CoreSystemNames.Contains(name);
 
     public static IReadOnlyList<ProcessRecord> ClassifyAll(IEnumerable<ProcessRecord> source)
     {

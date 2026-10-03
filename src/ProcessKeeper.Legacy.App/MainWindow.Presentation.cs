@@ -19,16 +19,28 @@ public partial class MainWindow
         HideMicrosoft.Content = L.T("隐藏 Microsoft 应用"); HideMicrosoft.IsChecked = _view.HideMicrosoftApps;
         GroupPlatforms.ToolTip = L.T("仅整理显示；关闭与白名单操作仍只针对原应用。");
         HideMicrosoft.ToolTip = L.T("仅隐藏已核实的 Microsoft 应用；未知身份仍显示。");
+        _uninstallView?.ApplyPresentation(_displayCatalog, _view.GroupGamePlatforms, _view.HideMicrosoftApps);
     }
     private async void PresentationChanged(object sender, RoutedEventArgs args)
     {
         if (!_ready || _closed) return;
         _view = _view with { GroupGamePlatforms = GroupPlatforms.IsChecked == true, HideMicrosoftApps = HideMicrosoft.IsChecked == true };
+        _uninstallView?.ApplyPresentation(_displayCatalog, _view.GroupGamePlatforms, _view.HideMicrosoftApps);
+        SaveView(); await RenderAsync(); RequestPresentationCapture();
+    }
+    private async void UninstallPresentationChanged(object? sender, EventArgs args)
+    {
+        if (!_ready || _closed || _uninstallView is null) return;
+        _view = _view with { GroupGamePlatforms = _uninstallView.GroupGamePlatforms, HideMicrosoftApps = _uninstallView.HideMicrosoftApps };
+        // Synchronize the shared page choices without firing two intermediate renders.
+        bool wasReady = _ready; _ready = false;
+        try { GroupPlatforms.IsChecked = _view.GroupGamePlatforms; HideMicrosoft.IsChecked = _view.HideMicrosoftApps; }
+        finally { _ready = wasReady; }
         SaveView(); await RenderAsync(); RequestPresentationCapture();
     }
     private async void RequestPresentationCapture()
     {
-        if (_closed || (!_view.GroupGamePlatforms && !_view.HideMicrosoftApps)) return;
+        if (_closed || (!_view.GroupGamePlatforms && !_view.HideMicrosoftApps && !(_uninstallView?.InventoryEntries.Count > 0))) return;
         _displayDirty = true;
         if (_displayCapturing) return;
         _displayCapturing = true;
@@ -37,10 +49,13 @@ public partial class MainWindow
             while (_displayDirty && !_closed)
             {
                 _displayDirty = false;
-                var snapshot = _snapshot; var installed = _installed; var autoruns = _autoruns.Entries;
-                var result = await Task.Run(() => _backend.CaptureDisplay(snapshot, installed, autoruns, _life.Token), _life.Token);
+                var snapshot = _snapshot; var installed = AllInstalledApplications(); var autoruns = _autoruns.Entries;
+                var uninstall = _uninstallView?.InventoryEntries ?? Array.Empty<UninstallEntry>();
+                var verifyMicrosoft = _view.HideMicrosoftApps || uninstall.Count > 0;
+                var result = await Task.Run(() => _backend.CaptureDisplayForView(snapshot, installed, autoruns, uninstall, verifyMicrosoft, _life.Token), _life.Token);
                 if (_closed || _life.IsCancellationRequested) return;
-                _displayCatalog = result; await RenderAsync();
+                if (_displayCatalog.HasSamePresentationAs(result)) continue;
+                _displayCatalog = result; _uninstallView?.ApplyPresentation(result, _view.GroupGamePlatforms, _view.HideMicrosoftApps); await RenderAsync();
             }
         }
         catch (OperationCanceledException) when (_life.IsCancellationRequested) { }

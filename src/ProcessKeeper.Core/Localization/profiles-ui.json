@@ -1,10 +1,56 @@
 [
-  { "source": "新配置 {0}", "en": "New profile {0}" },
-  { "source": "当前配置：分享 {0} 条通用规则；完整备份 {1} 条规则。", "en": "Active profile: {0} portable rules for sharing; {1} rules for a full backup." },
-  { "source": "全部设置包含所有白名单配置。", "en": "All-settings exports include every whitelist profile." },
-  { "source": "将清空全部白名单配置，恢复为一套空配置。原始文件会另存为备份，所有自定义规则将不再生效。", "en": "Reset all whitelist profiles to one empty profile. The original file will be backed up; all custom rules will stop applying." },
-  { "source": "确认", "en": "Confirm" },
-  { "source": "包含 {0} 套配置；将整体恢复配置列表。", "en": "Contains {0} profiles. The entire profile list will be restored." },
+  {
+    "source": "空白规则实时同步",
+    "en": "Sync empty rules in real time"
+  },
+  {
+    "source": "已手动编辑，实时同步已暂停。",
+    "en": "Manual edits paused live sync."
+  },
+  {
+    "source": "正在跟随当前白名单。保存后写入此配置。",
+    "en": "Following the active whitelist. Save to keep these rules in this profile."
+  },
+  {
+    "source": "仅空白配置跟随当前白名单；手动编辑后停止。",
+    "en": "Empty profiles follow the active whitelist until you edit them."
+  },
+  {
+    "source": "展开编辑器",
+    "en": "Expand editor"
+  },
+  {
+    "source": "收起编辑器",
+    "en": "Collapse editor"
+  },
+  {
+    "source": "编辑器字号",
+    "en": "Editor font size"
+  },
+  {
+    "source": "新配置 {0}",
+    "en": "New profile {0}"
+  },
+  {
+    "source": "当前配置：分享 {0} 条通用规则；完整备份 {1} 条规则。",
+    "en": "Active profile: {0} portable rules for sharing; {1} rules for a full backup."
+  },
+  {
+    "source": "全部设置包含所有白名单配置。",
+    "en": "All-settings exports include every whitelist profile."
+  },
+  {
+    "source": "将清空全部白名单配置，恢复为一套空配置。原始文件会另存为备份，所有自定义规则将不再生效。",
+    "en": "Reset all whitelist profiles to one empty profile. The original file will be backed up; all custom rules will stop applying."
+  },
+  {
+    "source": "确认",
+    "en": "Confirm"
+  },
+  {
+    "source": "包含 {0} 套配置；将整体恢复配置列表。",
+    "en": "Contains {0} profiles. The entire profile list will be restored."
+  },
   {
     "source": "白名单配置",
     "en": "Whitelist profiles"

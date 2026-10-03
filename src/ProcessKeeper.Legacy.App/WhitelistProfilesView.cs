@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Automation;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -7,7 +8,7 @@ using ProcessKeeper.Core;
 
 namespace ProcessKeeper.App;
 
-internal sealed class WhitelistProfilesView : UserControl
+internal sealed partial class WhitelistProfilesView : UserControl
 {
     private readonly WhitelistProfilesStore _store;
     private readonly Func<bool> _canEdit;
@@ -20,19 +21,28 @@ internal sealed class WhitelistProfilesView : UserControl
         MaxLength = 1048576, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, FontFamily = new FontFamily("Consolas"), FontSize = 12 };
     private readonly TextBlock _summary = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly CheckBox _syncToggle = new();
+    private readonly TextBlock _syncStatus = new() { TextWrapping = TextWrapping.Wrap, FontSize = 12 };
+    private readonly ToggleButton _expandEditor = new() { Padding = new Thickness(12, 6, 12, 6) };
+    private readonly ComboBox _fontSize = new() { Width = 84, Margin = new Thickness(10, 0, 0, 0) };
+    private readonly Action<bool>? _syncPreferenceChanged;
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
     private readonly List<Button> _actions = new();
     private readonly DispatcherTimer _noticeTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private WhitelistProfilesSnapshot? _snapshot;
     private string _selectedId = "", _savedText = "";
-    private bool _busy, _selecting;
+    private bool _busy, _selecting, _settingEditor, _followingCurrent, _manualEdited, _refreshing, _refreshPending, _emptyOrigin, _changingSyncPreference;
+    private Window? _editorWindow;
 
     internal WhitelistProfilesView(WhitelistProfilesStore store, Func<bool> canEdit,
         Func<string, string, Task<bool>> confirm,
         Func<Func<WhitelistProfilesSnapshot>, Task<WhitelistProfilesSnapshot>> mutate,
-        Action<WhitelistProfilesSnapshot> changed)
+        Action<WhitelistProfilesSnapshot> changed, bool syncEmptyRules = true, Action<bool>? syncPreferenceChanged = null,
+        CloudWhitelistProfiles? cloudProfiles = null)
     {
         _store = store; _canEdit = canEdit; _confirm = confirm; _mutate = mutate; _changed = changed;
+        _cloudProfiles = cloudProfiles; _ownsCloudService = cloudProfiles is null;
+        _syncPreferenceChanged = syncPreferenceChanged;
         var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 0, 0, 18) };
         void AddElement(FrameworkElement item) { item.Margin = new Thickness(0, 0, 0, 10); panel.Children.Add(item); }
         void Label(string value) => AddElement(new TextBlock { Text = L.T(value), TextWrapping = TextWrapping.Wrap });
@@ -48,13 +58,27 @@ internal sealed class WhitelistProfilesView : UserControl
         }
         Add("新建空配置", CreateAsync); Add("应用此配置", ActivateAsync); Add("重命名", RenameAsync);
         Add("删除配置", DeleteAsync); Add("重新读取", ReloadAsync);
-        AddElement(commands); Label("规则 JSON"); AddElement(_editor); AutomationProperties.SetName(_editor, L.T("规则 JSON"));
+        AddElement(commands);
+        _syncToggle.Content = new TextBlock { Text = L.T("空白规则实时同步"), TextWrapping = TextWrapping.Wrap };
+        _syncToggle.IsChecked = syncEmptyRules;
+        _syncToggle.Checked += async (_, _) => await SyncPreferenceChangedAsync();
+        _syncToggle.Unchecked += async (_, _) => await SyncPreferenceChangedAsync();
+        AddElement(_syncToggle); AddElement(_syncStatus);
+        var editorTools = new WrapPanel();
+        _expandEditor.Content = L.T("展开编辑器");
+        _expandEditor.Checked += (_, _) => ResizeEditor(); _expandEditor.Unchecked += (_, _) => ResizeEditor();
+        _fontSize.ItemsSource = new[] { 12, 14, 16, 18, 22 }; _fontSize.SelectedItem = 12;
+        AutomationProperties.SetName(_fontSize, L.T("编辑器字号"));
+        _fontSize.SelectionChanged += (_, _) => { if (_fontSize.SelectedItem is int size) _editor.FontSize = size; };
+        editorTools.Children.Add(_expandEditor); editorTools.Children.Add(_fontSize); AddElement(editorTools);
+        Label("规则 JSON"); AddElement(_editor); AutomationProperties.SetName(_editor, L.T("规则 JSON"));
         var saveRow = new WrapPanel();
         var validate = new Wpf.Ui.Controls.Button { Content = L.T("检查格式"), Margin = new Thickness(0, 0, 10, 8) };
         validate.Click += async (_, _) => await RunAsync(() => { var rules = RuleFileCodec.Parse(_editor.Text); Report(L.F($"格式正确 | {rules.Count} 条规则"), true); return Task.CompletedTask; });
         var save = new Wpf.Ui.Controls.Button { Content = L.T("保存规则"), Margin = new Thickness(0, 0, 0, 8) };
         save.Click += async (_, _) => await RunAsync(SaveAsync);
-        saveRow.Children.Add(validate); saveRow.Children.Add(save); AddElement(saveRow); AddElement(_status); Content = panel;
+        saveRow.Children.Add(validate); saveRow.Children.Add(save); AddElement(saveRow); AddElement(_status);
+        AddElement(CreateCloudSection()); Content = panel;
         _choice.SelectionChanged += async (_, _) =>
         {
             if (_selecting || _busy || _choice.SelectedItem is not ComboBoxItem { Tag: string nextId } || nextId == _selectedId) return;
@@ -62,18 +86,26 @@ internal sealed class WhitelistProfilesView : UserControl
             await RunAsync(async () => { if (!await CanDiscardAsync()) { Select(previousId); return; } ShowProfile(nextId); });
         };
         _noticeTimer.Tick += (_, _) => { _noticeTimer.Stop(); _status.Visibility = Visibility.Collapsed; };
-        Loaded += async (_, _) => { if (_snapshot is null) await RunAsync(ReloadAsync); };
-        Unloaded += (_, _) => _noticeTimer.Stop();
+        _editor.TextChanged += (_, _) => { if (!_settingEditor) { _manualEdited = true; _followingCurrent = false; UpdateSyncStatus(); } };
+        Loaded += async (_, _) =>
+        {
+            _editorWindow = Window.GetWindow(this);
+            if (_editorWindow is not null) _editorWindow.SizeChanged += EditorWindowChanged;
+            ResizeEditor();
+            if (_snapshot is null) await RunAsync(ReloadAsync); else await NotifyRulesChangedAsync();
+        };
+        Unloaded += (_, _) => { _noticeTimer.Stop(); CancelCloudRequest(); if (_editorWindow is not null) _editorWindow.SizeChanged -= EditorWindowChanged; _editorWindow = null; };
     }
     private bool Dirty => _editor.Text != _savedText;
     private async Task<bool> CanDiscardAsync() => !Dirty || await _confirm(L.T("放弃未保存的编辑？"), L.T("未保存的规则编辑将被丢弃。"));
     private async Task RunAsync(Func<Task> action)
     {
         if (_busy) return;
-        _busy = true; _choice.IsEnabled = _name.IsEnabled = _editor.IsEnabled = false;
+        _busy = true; _choice.IsEnabled = _name.IsEnabled = _editor.IsEnabled = _syncToggle.IsEnabled = false;
         foreach (var button in _actions) button.IsEnabled = false;
+        RefreshCloudControls();
         try { await action(); } catch (Exception ex) { Report(ex.Message, false); }
-        finally { _busy = false; _choice.IsEnabled = _name.IsEnabled = _editor.IsEnabled = true; foreach (var button in _actions) button.IsEnabled = true; }
+        finally { _busy = false; _choice.IsEnabled = _name.IsEnabled = _editor.IsEnabled = _syncToggle.IsEnabled = true; foreach (var button in _actions) button.IsEnabled = true; RefreshCloudControls(); if (_refreshPending) await NotifyRulesChangedAsync(); }
     }
     private void Report(string text, bool success)
     {
@@ -89,7 +121,12 @@ internal sealed class WhitelistProfilesView : UserControl
     }
     private void Apply(WhitelistProfilesSnapshot state, string? selected = null)
     {
-        _snapshot = state; _selecting = true;
+        _snapshot = state; RefreshChoices(state);
+        ShowProfile(state.Profiles.Any(p => p.Id == selected) ? selected! : state.ActiveId);
+    }
+    private void RefreshChoices(WhitelistProfilesSnapshot state)
+    {
+        _selecting = true;
         try
         {
             _choice.Items.Clear();
@@ -97,15 +134,79 @@ internal sealed class WhitelistProfilesView : UserControl
                 Content = profile.Name + (profile.Id == state.ActiveId ? " | " + L.T("当前使用") : "") });
         }
         finally { _selecting = false; }
-        ShowProfile(state.Profiles.Any(p => p.Id == selected) ? selected! : state.ActiveId);
     }
     private void ShowProfile(string id)
     {
         if (_snapshot is null) return;
         var profile = _snapshot.Profiles.First(p => p.Id == id); _selectedId = id; Select(id); _name.Text = profile.Name;
-        _editor.Text = RuleFileCodec.Serialize(profile.Rules); _savedText = _editor.Text;
-        _summary.Text = L.F($"{profile.Rules.Count} 条规则 | {_snapshot.Profiles.Count}/5 套配置") +
+        SetEditor(profile.Rules); _savedText = _editor.Text;
+        _manualEdited = false; _emptyOrigin = profile.Rules.Count == 0; _followingCurrent = _syncToggle.IsChecked == true && _emptyOrigin;
+        if (_followingCurrent) SetEditor(_snapshot.ActiveRules);
+        UpdateSyncStatus();
+        _summary.Text = L.F($"{(_followingCurrent ? _snapshot.ActiveRules.Count : profile.Rules.Count)} 条规则 | {_snapshot.Profiles.Count}/5 套配置") +
             (id == _snapshot.ActiveId ? " | " + L.T("当前使用") : " | " + L.T("仅预览，尚未应用"));
+        RefreshCloudControls();
+    }
+    private void SetEditor(IReadOnlyList<WhitelistRule> rules)
+    {
+        _settingEditor = true;
+        try { _editor.Text = RuleFileCodec.Serialize(rules); }
+        finally { _settingEditor = false; }
+    }
+    private void UpdateSyncStatus() => _syncStatus.Text = L.T(_manualEdited && _syncToggle.IsChecked == true
+        ? "已手动编辑，实时同步已暂停。"
+        : _followingCurrent ? "正在跟随当前白名单。保存后写入此配置。" : "仅空白配置跟随当前白名单；手动编辑后停止。");
+    private async Task SyncPreferenceChangedAsync()
+    {
+        if (_changingSyncPreference) return;
+        try { _syncPreferenceChanged?.Invoke(_syncToggle.IsChecked == true); }
+        catch (Exception ex)
+        {
+            _changingSyncPreference = true;
+            try { _syncToggle.IsChecked = _syncToggle.IsChecked != true; }
+            finally { _changingSyncPreference = false; }
+            Report(ex.Message, false); return;
+        }
+        _followingCurrent = _syncToggle.IsChecked == true && !_manualEdited && _emptyOrigin;
+        UpdateSyncStatus();
+        if (_followingCurrent) await NotifyRulesChangedAsync();
+    }
+    internal async Task NotifyRulesChangedAsync()
+    {
+        _refreshPending = true;
+        if (_busy || _refreshing) return;
+        _refreshing = true;
+        try
+        {
+            while (_refreshPending)
+            {
+                _refreshPending = false;
+                if (!_followingCurrent || _syncToggle.IsChecked != true || _manualEdited || _snapshot is null) continue;
+                var previous = _snapshot; var selectedId = _selectedId;
+                var next = await Task.Run(_store.Load);
+                if (_busy) { _refreshPending = true; break; }
+                if (!_followingCurrent || _syncToggle.IsChecked != true || _manualEdited || !ReferenceEquals(_snapshot, previous) || _selectedId != selectedId) continue;
+                var profile = next.Profiles.FirstOrDefault(p => p.Id == selectedId);
+                if (profile is null || (selectedId != next.ActiveId && profile.Rules.Count != 0))
+                { _followingCurrent = false; UpdateSyncStatus(); continue; }
+                _snapshot = next; RefreshChoices(next); Select(selectedId);
+                if (_name.Text == previous.Profiles.First(p => p.Id == selectedId).Name) _name.Text = profile.Name;
+                SetEditor(next.ActiveRules);
+                if (selectedId == next.ActiveId) _savedText = _editor.Text;
+                _summary.Text = L.F($"{next.ActiveRules.Count} 条规则 | {next.Profiles.Count}/5 套配置") +
+                    " | " + L.T(selectedId == next.ActiveId ? "当前使用" : "仅预览，尚未应用");
+                UpdateSyncStatus();
+            }
+        }
+        catch (Exception ex) { Report(ex.Message, false); }
+        finally { _refreshing = false; }
+    }
+    private void EditorWindowChanged(object sender, SizeChangedEventArgs args) => ResizeEditor();
+    private void ResizeEditor()
+    {
+        var expanded = _expandEditor.IsChecked == true;
+        _editor.Height = expanded ? Math.Max(300, Math.Min(900, (_editorWindow?.ActualHeight ?? 800) * .65)) : 230;
+        _expandEditor.Content = L.T(expanded ? "收起编辑器" : "展开编辑器");
     }
     private async Task ReloadAsync() { if (await CanDiscardAsync()) Apply(await Task.Run(_store.Load), _selectedId); }
     private void RequireEdit()

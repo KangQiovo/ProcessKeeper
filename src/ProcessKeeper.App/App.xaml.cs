@@ -10,6 +10,9 @@ public partial class App : Application
     private Window? _window;
     private SingleInstanceCoordinator? _instances;
     private bool _starting, _superseded;
+    private readonly CancellationTokenSource _avatarLifetime = new();
+    private bool _avatarStarted;
+    internal static Task<byte[]?> SharedAuthorAvatarTask { get; private set; } = Task.FromResult<byte[]?>(null);
     public App()
     {
         try { L.Language = LanguageResolver.ResolveCurrent(new ViewPreferencesStore().Load().Language); }
@@ -36,9 +39,17 @@ public partial class App : Application
         try
         {
             _instances?.Dispose();
-            _instances = new SingleInstanceCoordinator(() => dispatcher.TryEnqueue(() =>
+            _instances = new SingleInstanceCoordinator(() => dispatcher.TryEnqueue(async () =>
             {
                 _superseded = true;
+                _avatarLifetime.Cancel();
+                if (_window is MainWindow current)
+                {
+                    // An already-running language/close transition may own the input guard.
+                    // Still wait for its writer before ending this superseded process.
+                    if (!await current.PrepareWindowTransitionAsync())
+                        try { await current.FlushPerformanceAsync(); } catch { current.TryDiscardFailedPerformanceSave(); }
+                }
                 _window?.Close();
                 _instances?.Dispose();
                 Exit();
@@ -46,6 +57,11 @@ public partial class App : Application
             var result = await _instances.AcquireAsync();
             if (result == InstanceAcquireResult.Superseded || _superseded) { Exit(); return; }
             if (result == InstanceAcquireResult.Blocked) { ShowInstanceBlocked(); return; }
+            if (!_avatarStarted)
+            {
+                _avatarStarted = true;
+                SharedAuthorAvatarTask = AuthorAvatarSource.CreateAsync(_avatarLifetime.Token);
+            }
             var waiting = _window;
             OpenInitialWindow();
             if (waiting is not null && !ReferenceEquals(waiting, _window)) waiting.Close();
@@ -90,11 +106,15 @@ public partial class App : Application
     private void OpenMainWindow(string? initialLanguagePreference = null)
     {
         if (!IsAdministrator()) return;
-        var main = new MainWindow(initialLanguagePreference);
-        main.IntroductionRequested += () => OpenIntroductionReview(main);
-        main.LanguageChanged += () =>
+        var main = new MainWindow(initialLanguagePreference, SharedAuthorAvatarTask);
+        main.IntroductionRequested += async () =>
+        {
+            if (await main.PrepareWindowTransitionAsync()) OpenIntroductionReview(main);
+        };
+        main.LanguageChanged += async () =>
         {
             if (!ReferenceEquals(_window, main) || _superseded) return;
+            if (!await main.PrepareWindowTransitionAsync() || !ReferenceEquals(_window, main) || _superseded) return;
             var position = main.AppWindow.Position;
             var size = main.AppWindow.Size;
             OpenMainWindow();
@@ -112,7 +132,12 @@ public partial class App : Application
     private void TrackWindow(Window window)
     {
         _window = window;
-        window.Closed += (_, _) => { if (ReferenceEquals(_window, window)) _instances?.Dispose(); };
+        window.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(_window, window)) return;
+            _avatarLifetime.Cancel();
+            _instances?.Dispose();
+        };
     }
 
     private void OpenIntroductionReview(MainWindow main)

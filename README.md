@@ -19,6 +19,8 @@ The modern interface uses **WinUI 3**. An **x86 WPF / WPF UI compatibility inter
 
 ## Features
 
+**1.6.0** adds application removal, a signed recommendation catalog, Utilities, confirmed system-memory optimization, a resumable file downloader, native ARM64 packaging, executable-role labels and a refined performance display. Lists keep their selection during refresh, use a single right-aligned checkbox per row, and preserve each game's original local icon under platform groups. Utilities follows Settings in the sidebar. Device compatibility limits remain documented below.
+
 | Area | What you can do |
 | --- | --- |
 | Running applications | Separate visible, minimized, hidden and system/service processes; expand applications to inspect identity, memory, children and windows. |
@@ -26,6 +28,8 @@ The modern interface uses **WinUI 3**. An **x86 WPF / WPF UI compatibility inter
 | Whitelist | Search software and processes, inspect matches, enable/disable rules, and share portable rules or complete local backups. |
 | Profiles and grouping | Keep up to five editable whitelist profiles; group Steam, Epic Games, Ubisoft Connect and EA app games; optionally hide verified Microsoft software. |
 | Startup | Switch simple common/hidden categories and advanced sources; change supported entries with confirmation, backup and state revalidation. |
+| Uninstall | Inspect traditional and hidden uninstall registrations; review the registered uninstaller before a confirmed normal or quiet removal. |
+| Performance | See app UI FPS and memory in-app; show computer CPU and used/total physical memory in the desktop overlay. |
 | Hidden windows | Restore existing windows or use dedicated actions for supported AVD, virtual-machine, browser and tray scenarios. |
 | Settings | English, 简体中文 and 繁體中文; system-language detection; theme/material controls; settings backup; repeatable onboarding. |
 | Activity | Live history, oldest first, including year, milliseconds and time-zone offset, with optional auto-scroll. |
@@ -33,29 +37,40 @@ The modern interface uses **WinUI 3**. An **x86 WPF / WPF UI compatibility inter
 
 ## Screenshots
 
-These captures show the actual Windows UI in isolated fixtures on a modern Windows host, with anonymous demonstration data. They are not mockups and **do not demonstrate Windows 7 execution**. Complete application windows use the Stable channel.
+Each language edition uses captures of its corresponding application language. These show actual Windows controls with anonymous demonstration data on a modern Windows host. Current development captures retain the preview notice and **do not demonstrate Windows 7 or ARM64 device execution**.
 
-![Modern running applications](docs/images/modern-running.png)
+**Auradio**, the author's music player in development, appears as a small demo-data easter egg. Its sample processes and whitelist entries are screenshot fixtures, not preinstalled release rules.
+
+![Modern running applications](docs/images/en/modern-running.png)
 *Expand an application to inspect its relationship to the processes underneath it.*
 
 | Startup management | Settings and updates |
 | --- | --- |
-| ![Modern startup management](docs/images/modern-startup.png) | ![Modern settings and updates](docs/images/modern-settings.png) |
+| ![Modern startup management](docs/images/en/modern-startup.png) | ![Modern settings and updates](docs/images/en/modern-settings.png) |
 | Check the source and current state before making a supported change. | Native controls, theme-aware content and explicit update confirmation. |
 
-![WPF compatibility interface](docs/images/legacy-overview.png)
+![WPF compatibility interface](docs/images/en/legacy-overview.png)
 *The compatibility interface preserves the main workflow, with documented material and capability differences.*
 
 | Platform grouping | Whitelist profiles |
 | --- | --- |
-| ![Expandable platform and game rows](docs/images/modern-platforms.png) | ![Native whitelist profile editor](docs/images/modern-profiles.png) |
+| ![Expandable platform and game rows](docs/images/en/modern-platforms.png) | ![Native whitelist profile editor](docs/images/en/modern-profiles.png) |
 | Expand a platform, game, then its processes; each app keeps its own actions. | Preview and validate rules before explicitly applying a profile. |
+
+| Uninstall registrations | App performance display |
+| --- | --- |
+| ![Normal and hidden uninstall entries](docs/images/en/modern-uninstall.png) | ![Performance controls and the in-app display](docs/images/en/modern-performance.png) |
+| Inspect the registered command and confirm before removal. | Actual feature controls; memory and UI callback rate are live readings from the demonstration window. |
+
+![Compact acrylic desktop overlay](docs/images/en/modern-overlay.png)
+
+*The optional single-line overlay shows computer CPU and used/total RAM in a small rounded panel.*
 
 ## Getting started
 
 1. Launch the portable EXE. Windows requests administrator permission; cancelling opens the permission page instead of management.
 2. Complete the environment check and onboarding. Automatic language selection prefers the system display language.
-3. Review running or installed software and mark applications to keep. Click a row to inspect matching processes or executable components.
+3. Review running or installed software and mark applications to keep. Click rows to select multiple items; use the arrow to inspect processes or executable components.
 4. Choose a close action and review its exact target list. Graceful exit is the default; forced termination requires an explicit choice.
 5. Read the activity log. Failures, unavailable capabilities and unverifiable identities are not counted as success.
 
@@ -63,15 +78,23 @@ These captures show the actual Windows UI in isolated fixtures on a modern Windo
 
 In **Settings → Backup**, create up to **five named profiles**. Select one to preview its rules, edit the JSON and check its format, then save. **Apply** switches the active whitelist after confirmation; selecting an inactive profile does not change protection. Saving the active profile also asks for confirmation. Full settings backups include every profile; whitelist-only exports contain only the active rules.
 
+The profile editor sits below the backup tools. **Sync empty rules in real time** lets an empty profile preview follow changes to the active whitelist until you type in the editor. Saving remains explicit; other profiles are untouched. The switch is remembered and included in full settings backups. Expand the editor and adjust its font size for larger rule files.
+
+**Cloud profiles are optional.** In the profile section, load the public repository list manually, preview a file, then confirm **Import and apply**. Imports create a new profile and count toward the five-profile limit. The seven-app `kangqi-default.json` is an opt-in community template; initial local rules remain empty. Anyone can propose portable configuration files under `community/profiles/` through a Pull Request. See [Cloud profiles and co-creation](docs/CLOUD-PROFILES.md) for the schema, privacy requirements and workflow.
+
 ### Applications and processes
 
 Running, installed and whitelist pages search application names, process names, paths and exact PIDs. A matching child keeps its parent application visible. Available details include executable identity, account/session, parent PID, services and windows. Icons come from the original local executable when readable.
 
+A single **Select all / Deselect all** button selects the currently visible rows. Parent and child rows can be selected independently without Ctrl; use the arrow to expand them. Rows with Keep/Enable show only that checkbox on the right; click the row itself to select it, shown by the native selection highlight. Rows without a protection checkbox show a matching right-aligned selection checkbox. Selection does not change whitelist rules. In the whitelist page, choose which pages protection covers: Running and Installed by default, with optional Startup and Uninstall scopes. Full settings backups retain these choices. Checking a parent selection checkbox selects every descendant, including collapsed children; clearing it clears that branch. Partial child selection marks the parent as mixed. Keep/Enable checkboxes retain their protection meaning.
+
+Installed executable children label explicit entry points in green, possible main files in yellow and uninstallers in red. Main candidates come first, followed by uninstallers; other components retain their inventory order. Local rules match English application names to EXE names, using file descriptions and known helper/uninstall evidence. Filename inference always remains yellow. Inferred labels may be wrong and do not establish safety or successful launch. Parent file-location actions prefer a unique resolved main executable; ambiguous entries open the folder rather than arbitrarily selecting the first EXE.
+
 Installed-software discovery uses registrations, shortcuts and supported package metadata across drives. It does **not** promise to find every portable EXE on every disk. Dormant applications show discovered executable components and associated live processes, not a fabricated future process tree.
 
-Running, installed and startup lists can group games under **Steam, Epic Games, Ubisoft Connect or EA app**. Expand a platform to see the independent application rows. Membership uses supported local installation records, not process ancestry. Platform headings are display groups: expanding or collapsing one does not whitelist or close its children. Unidentified games remain ordinary rows. **Hide Microsoft apps** requires verified publisher or Windows component evidence; a company-name string alone is insufficient, and unknown items remain visible.
+Running, installed, startup and uninstall lists can group games under **Steam, Epic Games, Ubisoft Connect or EA app**. Expand a platform to see the independent application rows. Membership uses supported local installation records, not process ancestry. Platform headings are display groups: expanding or collapsing one does not whitelist, close or uninstall its children. Unidentified games remain ordinary rows. **Hide Microsoft apps** requires verified publisher or Windows component evidence; a company-name string alone is insufficient, and unknown items remain visible.
 
-Only the three application-list pages expose the shared real-time update switch. Pausing it does not pause logging. Lists use virtualization, bounded caches and background collection; slow disks or system providers can still delay completion.
+Only the running, installed and whitelist pages expose the shared real-time update switch. Pausing it does not pause logging. Lists use virtualization, bounded caches and background collection; slow disks or system providers can still delay completion.
 
 ### Closing software safely
 
@@ -99,15 +122,42 @@ Supported entries can be enabled or disabled after confirmation. Recognized Wind
 | Headless browser | Supported modern Chrome/Edge instances may offer live preview through their existing verified debugging capability. The compatibility build has no live preview. |
 | Tray software | Offer supported activation routes. The program may re-hide or show login; a launch request alone is not successful recovery. |
 
+### Uninstall and performance
+
+The **Uninstall** page combines readable 32-bit and 64-bit registrations for the machine and current user, including entries hidden from Control Panel. Search and inspect the publisher, location and registered command before confirming. System components remain read-only.
+
+Simple mode shows system apps, third-party apps, and drivers/runtimes; advanced mode exposes registration and recommendation filters. Identical display names expand into their registered versions, architectures and scopes. Each child remains a separate uninstall target. Right-click a row to locate its files or copy its details. Missing or unusable registrations stay available in advanced mode.
+
+The uninstall filter bar reuses the other lists' platform and Microsoft visibility controls, with the category filter on their right. Platform groups can contain expandable version groups; search retains the matching application's hierarchy. Group headings have no uninstall action.
+
+The built-in recommendation catalog contains **68 product rules and 117 explicit aliases**, checked on **2026-09-30**, with particular attention to Chinese bundled-software reports. It separates **12 watchlist rules** (including selected 360 and Kingsoft products) from **56 rules linked to 26 first-party reports**. Details show the matching name, reason, source and available report date. These are review hints, not file-infection verdicts or a complete antivirus database. Nothing is selected or uninstalled automatically. Read the [catalog, sources and matching limits](docs/UNINSTALL-RULES.md).
+
+The Uninstall page can **check and apply rule updates** separately from app updates. Downloads use the fixed official repository; an embedded public key verifies the maintainer's RSA-SHA256 signature before strict format and revision checks. Updates require an explicit action, never upload your app list, and retain the current rules on network or validation failure. See [signed catalog updates](docs/CATALOG-UPDATES.md).
+
+Normal removal uses the application's registered native uninstaller. A registered quiet command is available only when present and requires an additional confirmation. The executable and registration are checked again before launch. A process exit is not reported as successful removal while the registration remains. This feature cannot guarantee removal of resistant software, discover every portable application, or safely substitute for malware remediation. It does not recursively delete application folders or drivers.
+
+**Uninstall all suggested apps** reviews eligible recommendations from the full scan, including items outside the current search. It requires **three separate confirmations** covering the fixed application list, risks/disclaimer and final execution. Risk-ignoring mode cannot skip them. Normal uninstallers run one at a time; changed identities, failures, cancellation or an unverifiable removal stop the remaining queue. Cancelling observation does not stop an already running uninstaller.
+
+To keep large registrations from freezing confirmation dialogs, a batch is limited to 100 recommendation records and 64,000 characters per preview. Exceeding either limit rejects the whole batch before execution; it never hides targets and proceeds. Handle some entries individually and scan again.
+
+In **Utilities → Performance**, choose in-app or desktop placement, detail, layout, position, size and locking. The in-app panel stays inside the content area and shows UI rendering callbacks, app memory and total physical RAM. The desktop overlay shows computer CPU, physical RAM and observed desktop composition FPS, which is neither a game FPS counter nor the monitor refresh rate. A static desktop can have a low rate; unavailable data remains unavailable. Settings are included in full backups. See [Utilities](docs/UTILITIES.md) for measurement and compatibility limits.
+
 ## Compatibility
+
+The single-file launcher's old preparation message has been replaced by the app icon, English name and a small loading ring. Preparation runs off the UI thread; the transition waits for a verified graphical application window. Startup, closing and setup card changes use eased native transitions. Reduced-motion and high-contrast settings bypass them. **Settings → About → Environment check** reruns the environment checks without resetting settings; detected issues offer official help or download links with browser confirmation.
+
+The loading page follows the Windows app light/dark preference and updates when it changes. Its text, background and loading ring use a coordinated palette; high-contrast mode uses Windows accessibility colors. Error and permission pages retain readable native actions.
 
 | System | Interface | Runtime |
 | --- | --- | --- |
 | Windows 10 2004 / build 19041+ x64; Windows 11 x64 | WinUI 3 modern UI | .NET / Windows App SDK included in packaged builds |
+| Windows 10 build 19041+ ARM64; Windows 11 ARM64 | Native ARM64 WinUI 3 UI | Included runtime; native x86 bootstrapper uses Windows emulation |
 | Windows 7 **SP1** x86/x64; Windows 8.1 x86/x64; older/x86 Windows 10 | x86 WPF compatibility UI | .NET Framework **4.6.2** or a compatible newer 4.x runtime |
-| Windows 7 without SP1, original Windows 8, XP, Vista, ARM | No supported management route | Launcher explains requirements |
+| Windows 7 without SP1, original Windows 8, XP, Vista, ARM32 | No supported management route | Launcher explains requirements |
 
-**Still open:** no real Windows 7 / 8.1 / 10 machine validation has been completed. The compatibility build lacks WinRT package inventory/startup declarations, live browser preview and x64 AVD environment reconstruction. Materials, animations, fonts, graphics behavior and old-hardware performance can differ. Modern-host x86 tests do not prove old-OS support.
+**Still open:** no real Windows 7 / 8.1 / 10 or ARM64 device validation has been completed. The compatibility build lacks WinRT package inventory/startup declarations, live browser preview and x64 AVD environment reconstruction. ARM64 also disables the x64-only AVD environment reader. Materials, animations, fonts, graphics behavior and old-hardware performance can differ. Cross-compilation and modern-host x86 tests do not prove device compatibility.
+
+System-memory optimization is available with explicit confirmation, including whitelisted apps. Its global native calls have not been executed in development validation and still need device testing. Undocumented steps may be unsupported on older Windows versions. The adaptive direct-link downloader is independent of optional GitHub mirrors and cannot guarantee full bandwidth. Its implementation boundaries are explained in [Utilities](docs/UTILITIES.md). The compatibility overlay uses native acrylic only when the required backdrop and rounded-corner APIs are available; otherwise it retains the preference and uses a solid background.
 
 Read the [compatibility matrix and known limitations](docs/COMPATIBILITY.md). Reproducible [issues](https://github.com/KangQiovo/ProcessKeeper/issues/new/choose), screenshots and focused fixes are welcome.
 
@@ -131,6 +181,8 @@ Build time is preserved to the second with a UTC+8 baseline and displayed in the
 Source, generic rule examples, docs and screenshots belong in Git. Binaries, test packages, caches, personal rules and logs do not. There is no automatic binary-release publishing workflow.
 
 ## Credits and license
+
+The About page shows KangQi's circular GitHub avatar above the author name, aligned left. A bounded background request starts once at app startup and stays in memory; changing pages or language does not start another download. GitHub is tried first, followed by the configured fixed public-avatar proxy routes when necessary. No app inventory or settings are sent. If all sources fail, the avatar is hidden without a placeholder. These image requests are independent of release-update preferences.
 
 Created by **KangQi**: [GitHub](https://github.com/KangQiovo) | [Coolapk](https://www.coolapk.com/u/21241695) | [Bilibili](https://space.bilibili.com/329073257).
 

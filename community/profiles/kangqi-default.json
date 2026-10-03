@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Rules": [
+    { "Id": "community-kangqi-clash", "Name": "Clash Verge", "Kind": "Application", "Value": "known:clash", "Enabled": true, "IncludeDescendants": true },
+    { "Id": "community-kangqi-codex", "Name": "Codex", "Kind": "Application", "Value": "known:codex", "Enabled": true, "IncludeDescendants": true },
+    { "Id": "community-kangqi-qq", "Name": "QQ", "Kind": "Application", "Value": "known:qq", "Enabled": true, "IncludeDescendants": true },
+    { "Id": "community-kangqi-steam", "Name": "Steam", "Kind": "Application", "Value": "known:steam", "Enabled": true, "IncludeDescendants": true },
+    { "Id": "community-kangqi-huorong", "Name": "Huorong Security", "Kind": "Application", "Value": "known:huorong", "Enabled": true, "IncludeDescendants": true },
+    { "Id": "community-kangqi-uu", "Name": "UU Remote", "Kind": "Application", "Value": "known:uu", "Enabled": true, "IncludeDescendants": true },
+    { "Id": "community-kangqi-translucenttb", "Name": "TranslucentTB", "Kind": "Application", "Value": "known:translucenttb", "Enabled": true, "IncludeDescendants": true }
+  ]
+}

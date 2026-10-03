@@ -1,4 +1,10 @@
 [
-  { "source": "[界面已截短 | 完整内容保留在日志文件中]", "en": "[Display truncated | Full content remains in the log file]" },
-  { "source": "日志无法读取", "en": "Could not read the activity log" }
+  {
+    "source": "[界面已截短 | 完整内容保留在日志文件中]",
+    "en": "[Display truncated | Full content remains in the log file]"
+  },
+  {
+    "source": "日志无法读取",
+    "en": "Could not read the activity log"
+  }
 ]

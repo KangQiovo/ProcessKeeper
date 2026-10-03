@@ -36,15 +36,19 @@ public partial class MainWindow : Window
     private DateTime _lastInstalled = DateTime.MinValue;
     private CancellationTokenSource? _render;
     public MainWindow() : this(new LegacyBackend(), null) { }
-    public MainWindow(LegacyBackend backend, string? configurationDirectory)
+    public MainWindow(LegacyBackend backend, string? configurationDirectory, Task<byte[]?>? authorAvatarTask = null)
     {
         _backend = backend;
         _directory = configurationDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProcessKeeper");
         InitializeComponent(); FitWorkingArea(_backend.WorkingArea()); List.ItemsSource = _rows;
+        BeginAuthorAvatar(authorAvatarTask);
         RiskConfirmationMode.Changed += RiskModeChanged;
         List.ContextMenu = new ContextMenu();
         Loaded += async (_, _) => await InitializeAsync();
-        Closed += (_, _) => { _closed = true; RiskConfirmationMode.Changed -= RiskModeChanged; _life.Cancel(); _render?.Cancel(); _updateCheckCancellation?.Cancel(); _updatePromptTimer.Stop(); _buildDateTimer.Stop(); _refresh.Stop(); _searchDelay.Stop(); _noticeTimer.Stop(); };
+        Closing += CloseAfterPerformanceSave;
+        InitializeWindowMotion();
+        Loaded += RevealShell;
+        Closed += (_, _) => { _closed = true; _memoryView?.Dispose(); _downloadView?.Dispose(); _performanceView?.Dispose(); _uninstallView?.Dispose(); RiskConfirmationMode.Changed -= RiskModeChanged; _life.Cancel(); _render?.Cancel(); _updateCheckCancellation?.Cancel(); _updatePromptTimer.Stop(); _buildDateTimer.Stop(); _refresh.Stop(); _searchDelay.Stop(); _noticeTimer.Stop(); };
         _refresh.Tick += async (_, _) => await RefreshLiveAsync();
         _searchDelay.Tick += async (_, _) => { _searchDelay.Stop(); await RenderAsync(); };
         _noticeTimer.Tick += (_, _) => { _noticeTimer.Stop(); Status.Text = ""; };
@@ -73,7 +77,7 @@ public partial class MainWindow : Window
         catch (DirectoryNotFoundException) { }
         catch (Exception ex) { Notice(ex.Message); }
         _livePages[0] = _livePages[1] = _livePages[2] = _view.LiveRefresh;
-        ApplyTheme(); ConfigureLanguage();
+        InitializeWhitelistScope(); ApplyTheme(); ConfigureLanguage();
         ShowSystem.IsChecked = _view.ShowSystemProcesses; HistoryAuto.IsChecked = _view.HistoryAutoScroll;
         _ready = true;
         Navigation.SelectedIndex = 0;
@@ -82,6 +86,8 @@ public partial class MainWindow : Window
         if (!onboarding.IsCompleted(out _)) ShowOnboarding(false);
         _refresh.Start();
         _ = InitializeUpdatesAsync();
+        EnsureUninstallPage(); _ = _uninstallView?.ScanAsync();
+        try { EnsurePerformance(); EnsureMisc(); } catch (Exception ex) { Notice(ex.Message); }
         await Task.WhenAll(CaptureAsync(), ScanInstalledAsync(), ScanAutorunsAsync());
         if (warning is not null) Notice(warning);
     }
@@ -89,10 +95,11 @@ public partial class MainWindow : Window
     {
         var ready = _ready; _ready = false;
         Navigation.Items.Clear();
-        string[] names = { "运行中的程序", "已安装软件", "白名单", "自启动", "操作记录", "设置" };
-        string[] symbols = { "▤", "▥", "✓", "◴", "↶", "⚙" };
-        for (int i = 0; i < names.Length; i++) Navigation.Items.Add(new ListBoxItem { Content = _collapsed ? symbols[i] : symbols[i] + "   " + L.T(names[i]), ToolTip = L.T(names[i]), Padding = new Thickness(8, 12, 4, 12) });
-        Navigation.SelectedIndex = _page;
+        string[] names = { "运行中的程序", "已安装应用", "白名单", "自启动", "操作记录", "设置", "应用卸载", "杂项" };
+        string[] symbols = { "▤", "▥", "✓", "◴", "↶", "⚙", "⊗", "◇" };
+        int[] order = { 0, 1, 6, 3, 2, 4, 5, 7 };
+        foreach (var i in order) Navigation.Items.Add(new ListBoxItem { Tag = i, Content = _collapsed ? symbols[i] : symbols[i] + "   " + L.T(names[i]), ToolTip = L.T(names[i]), Padding = new Thickness(8, 12, 4, 12) });
+        Navigation.SelectedIndex = Array.IndexOf(order, _page);
         TestingText.Text = L.T("测试版本不代表最终品质"); TestingText.Visibility = !_collapsed && BuildInfo.IsPreviewBuild ? Visibility.Visible : Visibility.Collapsed;
         LocalText.Text = L.T("本地运行 | 不上传数据"); LocalText.Margin = new Thickness(0, BuildInfo.IsPreviewBuild ? 7 : 0, 0, 0);
         CompatibilityText.Text = L.T("当前使用兼容运行环境，部分效果和功能可能与新系统不同。");
@@ -103,19 +110,32 @@ public partial class MainWindow : Window
         Search.ToolTip = L.T("搜索软件、进程、PID 或路径");
         UpdateRiskModeUi();
         _ready = ready; ConfigurePage();
+        if (_performanceView is not null && _performanceLanguage != L.Language)
+        {
+            try { EnsurePerformance(); EnsureMisc(); }
+            catch (Exception ex) { Notice(ex.Message); }
+        }
     }
     private void ConfigurePage()
     {
         if (TitleText is null) return;
         var ready = _ready; _ready = false;
-        string[] titles = { "运行中的程序", "已安装软件", "白名单", "自启动", "操作记录", "设置" };
+        string[] titles = { "运行中的程序", "已安装应用", "白名单", "自启动", "操作记录", "设置", "应用卸载", "杂项" };
         ConfigurePresentationOptions();
-        string[] subtitles = { "看清每个程序，让需要的留下。", "软件未运行，也可以提前加入白名单。", "把需要的程序留下，规则由你决定。", "管理登录、计划任务和服务的启动行为。", "每次更改和关闭，即时记录。", "语言、外观与备份。" };
+        RefreshSelectionButton();
+        SelectAllButton.Visibility = _page < 4 ? Visibility.Visible : Visibility.Collapsed;
+        SelectAllButton.ToolTip = L.T("选择当前列表中显示的应用和子项目，不更改白名单。");
+        string[] subtitles = { "看清每个程序，让需要的留下。", "软件未运行，也可以提前加入白名单。", "把需要的程序留下，规则由你决定。", "管理登录、计划任务和服务的启动行为。", "每次更改和关闭，即时记录。", "语言、外观与备份。", "查看常规与隐藏卸载项，确认后移除不需要的软件。", "按需优化内存、下载文件与查看实时性能。" };
         TitleText.Text = L.T(titles[_page]); SubtitleText.Text = L.T(subtitles[_page]);
         Toolbar.Visibility = Filters.Visibility = _page < 4 ? Visibility.Visible : Visibility.Collapsed;
         List.Visibility = _page < 4 ? Visibility.Visible : Visibility.Collapsed;
         SettingsScroll.Visibility = _page == 5 ? Visibility.Visible : Visibility.Collapsed;
         HistoryPage.Visibility = _page == 4 ? Visibility.Visible : Visibility.Collapsed;
+        UninstallHost.Visibility = _page == 6 ? Visibility.Visible : Visibility.Collapsed;
+        MiscHost.Visibility = _page == 7 ? Visibility.Visible : Visibility.Collapsed;
+        WhitelistScopeExpander.Visibility = _page == 2 ? Visibility.Visible : Visibility.Collapsed; WhitelistScopeExpander.Header = L.T("白名单作用范围");
+        if (_page == 7) EnsureMisc();
+        if (_page == 6) EnsureUninstallPage();
         Live.Visibility = _page < 3 ? Visibility.Visible : Visibility.Collapsed;
         Live.IsChecked = _page < 3 && _livePages[_page];
         ShowSystem.Visibility = _page < 3 ? Visibility.Visible : Visibility.Collapsed;
@@ -132,10 +152,10 @@ public partial class MainWindow : Window
         Sort.ItemsSource = (_page == 3 ? new[] { "所有状态", "已启用", "已禁用", "状态未知", "可更改" } : new[] { "默认", "名称", "内存占用", "进程数量" }).Select(L.T).ToArray();
         Sort.SelectedIndex = _page == 0 ? _view.SortOrder : _page == 3 ? _autorunState : 0;
         UpdateDrives(); _ready = ready;
-        if (_page == 5) BuildSettings(); if (_page == 4) UpdateHistory();
+        if (_page == 5 && (SettingsContent.Children.Count == 0 || _settingsLanguage != L.Language)) BuildSettings(); if (_page == 4) UpdateHistory();
     }
     private async void Navigate(object sender, SelectionChangedEventArgs e)
-    { if (!_ready || Navigation.SelectedIndex < 0) return; _page = Navigation.SelectedIndex; _render?.Cancel(); ConfigurePage(); await RenderAsync(); }
+    { if (!_ready || Navigation.SelectedItem is not ListBoxItem { Tag: int page }) return; _page = page; _render?.Cancel(); ConfigurePage(); await RenderAsync(); }
     private void ToggleNavigation(object sender, RoutedEventArgs e)
     { _collapsed = !_collapsed; NavColumn.Width = new GridLength(_collapsed ? 68 : 196); Brand.Visibility = TestingText.Visibility = LocalText.Visibility = _collapsed ? Visibility.Collapsed : Visibility.Visible; ConfigureLanguage(); }
     private void DismissCompatibility(object sender, RoutedEventArgs e) { CompatibilityNoticeState.Dismissed = true; CompatibilityNotice.Visibility = Visibility.Collapsed; }
@@ -155,28 +175,28 @@ public partial class MainWindow : Window
     private async Task CaptureAsync()
     {
         if (_capturing || _closed) return; _capturing = true;
-        try { _snapshot = await Task.Run(_backend.Capture, _life.Token); RequestPresentationCapture(); if (_page < 3 && _livePages[_page]) await RenderAsync(); }
+        try { var result = await Task.Run(_backend.Capture, _life.Token); if (_closed || _life.IsCancellationRequested) return; _snapshot = result; RequestPresentationCapture(); if (_page < 3 && _livePages[_page]) await RenderAsync(); }
         catch (OperationCanceledException) { } catch (Exception ex) { Notice(ex.Message); }
         finally { _capturing = false; }
     }
     private async Task ScanInstalledAsync()
     {
         if (_scanningInstalled || _closed) return; _scanningInstalled = true;
-        try { var result = await Task.Run(() => _backend.ScanInstalled(_life.Token), _life.Token); _installed = result; RequestPresentationCapture(); _lastInstalled = DateTime.UtcNow; UpdateDrives(); if (_page == 1 || _page == 2) await RenderAsync(); }
+        try { var result = await Task.Run(() => _backend.ScanInstalled(_life.Token), _life.Token); if (_closed || _life.IsCancellationRequested) return; _installed = result; RequestPresentationCapture(); _lastInstalled = DateTime.UtcNow; UpdateDrives(); if (_page == 1 || _page == 2) await RenderAsync(); }
         catch (OperationCanceledException) { } catch (Exception ex) { Notice(ex.Message); }
         finally { _scanningInstalled = false; }
     }
     private async Task ScanAutorunsAsync()
     {
         if (_scanningAutoruns || _closed) return; _scanningAutoruns = true;
-        try { _autoruns = await Task.Run(() => _backend.ScanAutoruns(_life.Token), _life.Token); RequestPresentationCapture(); if (_page == 3) await RenderAsync(); }
+        try { var result = await Task.Run(() => _backend.ScanAutoruns(_life.Token), _life.Token); if (_closed || _life.IsCancellationRequested) return; _autoruns = result; RequestPresentationCapture(); if (_page == 3) await RenderAsync(); }
         catch (OperationCanceledException) { } catch (Exception ex) { Notice(ex.Message); }
         finally { _scanningAutoruns = false; }
     }
     private void UpdateDrives()
     {
         if (Drive is null) return; var ready = _ready; _ready = false;
-        var items = new[] { L.T("所有盘符") }.Concat(InstalledApplicationSearch.Drives(_installed)).ToArray(); Drive.ItemsSource = items;
+        var items = new[] { L.T("所有盘符") }.Concat(InstalledApplicationSearch.Drives(AllInstalledApplications())).ToArray(); Drive.ItemsSource = items;
         var selected = Array.IndexOf(items, _view.InstalledDrive); Drive.SelectedIndex = selected >= 0 ? selected : 0; _ready = ready;
     }
     private async void RefreshClick(object sender, RoutedEventArgs e) { if (_page == 1) await ScanInstalledAsync(); else if (_page == 3) await ScanAutorunsAsync(); else await CaptureAsync(); await RenderAsync(); }

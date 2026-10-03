@@ -1,8 +1,32 @@
 [
-  {"source":"部分 Steam 库配置无法读取，未猜测游戏归属。","en":"Some Steam library settings could not be read. Game ownership was not guessed.","zh-Hant":"部分 Steam 庫設定無法讀取，未猜測遊戲歸屬。"},
-  {"source":"部分 Steam 游戏清单无法核实，保持原有分组。","en":"Some Steam game manifests could not be verified. Existing grouping is retained.","zh-Hant":"部分 Steam 遊戲清單無法核實，保留原有分組。"},
-  {"source":"Steam 库读取达到本轮上限，未识别的应用保持原有分组。","en":"The Steam library scan reached its limit. Unidentified apps keep their existing grouping.","zh-Hant":"Steam 庫讀取達到本輪上限，未識別的應用程式保留原有分組。"},
-  {"source":"游戏平台读取达到本轮上限，未核实的软件保持原有分组。","en":"The game platform scan reached its limit. Unverified apps keep their existing grouping.","zh-Hant":"遊戲平台讀取達到本輪上限，未核實的軟體保留原有分組。"},
-  {"source":"部分游戏平台安装记录无法核实，保持原有分组。","en":"Some game platform installation records could not be verified. Existing grouping is retained.","zh-Hant":"部分遊戲平台安裝記錄無法核實，保留原有分組。"},
-  {"source":"部分发布者仍未核实，相关应用暂时保留显示。","en":"Some publishers are not yet verified. Those apps remain visible.","zh-Hant":"部分發行者仍未核實，相關應用程式暫時保留顯示。"}
+  {
+    "source": "部分 Steam 库配置无法读取，未猜测游戏归属。",
+    "en": "Some Steam library settings could not be read. Game ownership was not guessed.",
+    "zh-Hant": "部分 Steam 庫設定無法讀取，未猜測遊戲歸屬。"
+  },
+  {
+    "source": "部分 Steam 游戏清单无法核实，保持原有分组。",
+    "en": "Some Steam game manifests could not be verified. Existing grouping is retained.",
+    "zh-Hant": "部分 Steam 遊戲清單無法核實，保留原有分組。"
+  },
+  {
+    "source": "Steam 库读取达到本轮上限，未识别的应用保持原有分组。",
+    "en": "The Steam library scan reached its limit. Unidentified apps keep their existing grouping.",
+    "zh-Hant": "Steam 庫讀取達到本輪上限，未識別的應用程式保留原有分組。"
+  },
+  {
+    "source": "游戏平台读取达到本轮上限，未核实的软件保持原有分组。",
+    "en": "The game platform scan reached its limit. Unverified apps keep their existing grouping.",
+    "zh-Hant": "遊戲平台讀取達到本輪上限，未核實的軟體保留原有分組。"
+  },
+  {
+    "source": "部分游戏平台安装记录无法核实，保持原有分组。",
+    "en": "Some game platform installation records could not be verified. Existing grouping is retained.",
+    "zh-Hant": "部分遊戲平台安裝記錄無法核實，保留原有分組。"
+  },
+  {
+    "source": "部分发布者仍未核实，相关应用暂时保留显示。",
+    "en": "Some publishers are not yet verified. Those apps remain visible.",
+    "zh-Hant": "部分發行者仍未核實，相關應用程式暫時保留顯示。"
+  }
 ]

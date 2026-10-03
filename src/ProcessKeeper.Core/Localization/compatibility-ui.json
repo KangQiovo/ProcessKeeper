@@ -1,0 +1,18 @@
+[
+  {
+    "source": "环境检测通过",
+    "en": "Environment check passed"
+  },
+  {
+    "source": "环境检测需要关注",
+    "en": "Environment check needs attention"
+  },
+  {
+    "source": "64 位",
+    "en": "64-bit"
+  },
+  {
+    "source": "32 位",
+    "en": "32-bit"
+  }
+]

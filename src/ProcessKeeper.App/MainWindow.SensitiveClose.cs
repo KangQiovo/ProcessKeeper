@@ -9,7 +9,7 @@ public sealed partial class MainWindow
     private async Task CloseSensitiveProcessAsync(ProcessRecord target)
     {
         if (_closed || _working || _dialogOpen || _windowOperationRunning || !_configurationHealthy || _autorunsView?.IsChanging == true) return;
-        var decision = _policy.EvaluateSensitiveClose(target, _snapshot, _rules);
+        var decision = _policy.EvaluateSensitiveClose(target, _snapshot, RunningRules);
         if (decision.Protected)
         {
             ShowNotice(L.T("敏感进程仍受保护"), decision.Reason, InfoBarSeverity.Warning);
@@ -38,7 +38,7 @@ public sealed partial class MainWindow
             LoadingRing.IsActive = true;
             var latest = await Task.Run(_collector.Capture, token);
             if (_closed || token.IsCancellationRequested) return;
-            var rules = _rules.ToArray();
+            var rules = RunningRules.ToArray();
             ProtectionDecision Recheck(ProcessRecord frozen) => _policy.EvaluateSensitiveClose(frozen, latest, rules);
             decision = Recheck(target);
             if (decision.Protected)

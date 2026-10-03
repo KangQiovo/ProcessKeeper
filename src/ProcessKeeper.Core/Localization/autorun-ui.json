@@ -1,70 +1,274 @@
 [
-  { "source": "仅查看", "en": "View only" },
-  { "source": "禁用", "en": "Disable" },
-  { "source": "更改下次触发时的启动行为，不结束当前进程。", "en": "Change future startup behavior without stopping running processes." },
-  { "source": "所有来源", "en": "All sources" },
-  { "source": "注册表登录项", "en": "Registry logon" },
-  { "source": "启动文件夹", "en": "Startup folders" },
-  { "source": "计划任务", "en": "Scheduled tasks" },
-  { "source": "服务", "en": "Services" },
-  { "source": "驱动", "en": "Drivers" },
-  { "source": "高级系统入口", "en": "Advanced system entries" },
-  { "source": "WMI 订阅", "en": "WMI subscriptions" },
-  { "source": "打包应用启动项", "en": "Packaged startup apps" },
-  { "source": "所有状态", "en": "All states" },
-  { "source": "已启用", "en": "Enabled" },
-  { "source": "已禁用", "en": "Disabled" },
-  { "source": "状态未知", "en": "Unknown state" },
-  { "source": "可以更改", "en": "Manageable" },
-  { "source": "扫描已取消，保留上次结果。", "en": "Scan canceled. Previous results are retained." },
-  { "source": "自启动扫描失败", "en": "Startup scan failed" },
-  { "source": "正在后台读取登录项、任务和服务…", "en": "Reading logon entries, tasks and services in the background…" },
-  { "source": "没有符合条件的自启动项目", "en": "No matching startup entries" },
-  { "source": "正在读取自启动入口…", "en": "Reading startup entries…" },
-  { "source": "自启动列表读取失败", "en": "Could not load startup entries" },
-  { "source": "一次性登录项", "en": "Run once at logon" },
-  { "source": "策略登录项", "en": "Policy logon" },
-  { "source": "隐藏任务", "en": "Hidden task" },
-  { "source": "系统项", "en": "System entry" },
-  { "source": "显示系统项", "en": "Show system entries" },
-  { "source": "匹配 {0} 个运行进程", "en": "{0} matching processes" },
-  { "source": "来源位置：{0}", "en": "Source: {0}" },
-  { "source": "启动命令：{0}", "en": "Command: {0}" },
-  { "source": "目标文件：{0}", "en": "Target: {0}" },
-  { "source": "触发条件：{0}", "en": "Triggers: {0}" },
-  { "source": "文件路径或服务身份匹配的运行进程：", "en": "Processes matching the file path or service identity:" },
-  { "source": "进程匹配不代表本次由此入口启动；共享脚本宿主不会仅凭文件名关联。", "en": "A match does not prove this entry launched the process. Shared script hosts are not linked by filename alone." },
-  { "source": "显示 {0} / {1} 项 | {2:HH:mm:ss}", "en": "Showing {0} / {1} entries | {2:HH:mm:ss}" },
-  { "source": "尚未完成扫描", "en": "Scan not yet completed" },
-  { "source": " | 部分来源未完整读取", "en": " | Some sources are incomplete" },
-  { "source": "仅更改此入口。不会立即运行、停止或重启程序；同一软件的其他入口保持不变。", "en": "Only this entry will change. No application will be started, stopped or restarted. Other entries for this software remain unchanged." },
-  { "source": "恢复后将在下一次满足触发条件时生效。", "en": "The restored entry takes effect when its trigger next occurs." },
-  { "source": "确认后先保存恢复信息，再禁用此入口。后台功能可能在下次触发时不可用。", "en": "Recovery information is saved before disabling this entry. Its background features may be unavailable at the next trigger." },
-  { "source": "启用自启动项目？", "en": "Enable this startup entry?" },
-  { "source": "禁用自启动项目？", "en": "Disable this startup entry?" },
-  { "source": "确认启用", "en": "Enable" },
-  { "source": "确认禁用", "en": "Disable" },
-  { "source": "自启动 | {0} | {1} | {2}", "en": "Startup | {0} | {1} | {2}" },
-  { "source": "自启动设置已更新", "en": "Startup configuration updated" },
-  { "source": "自启动更改未确认", "en": "Startup change not confirmed" },
-  { "source": "自启动更改失败：{0} | {1}", "en": "Startup change failed: {0} | {1}" },
-  { "source": "自启动更改失败", "en": "Startup change failed" },
-  { "source": "读取注册表登录项、启动文件夹、包含隐藏项目的计划任务、自动及触发服务、驱动和高级系统入口。任务也可能按时间或事件触发，并非全部开机执行。", "en": "Reads registry logon entries, startup folders, scheduled tasks including hidden entries, automatic and triggered services, drivers and advanced system entries. Tasks may run on a schedule or event rather than at boot." },
-  { "source": "高级系统入口和无法确认状态的项目仅供查看。无法访问的来源、未加载用户配置及读取上限可能导致遗漏；本页不保证找出所有启动机制。", "en": "Advanced system entries and entries with unverified states are view only. Inaccessible sources, unloaded user profiles and scan limits can leave gaps; this page cannot guarantee every startup mechanism is found." },
-  { "source": "本次扫描未报告额外读取问题。", "en": "No additional read issues were reported by this scan." },
-  { "source": "扫描详情", "en": "Scan details" },
-  { "source": "关闭", "en": "Close" },
-  { "source": "复制启动信息", "en": "Copy startup details" },
-  { "source": "自启动", "en": "Startup" },
-  { "source": "查看登录、任务和服务等后台启动入口。", "en": "Inspect logon entries, tasks and background services." },
-  { "source": "搜索自启动项目", "en": "Search startup entries" },
-  { "source": "取消扫描", "en": "Cancel scan" },
-  { "source": "自启动来源", "en": "Startup source" },
-  { "source": "自启动状态", "en": "Startup state" },
-  { "source": "查看程序与进程关系，保留需要的程序。", "en": "Explore apps and their processes. Keep the ones you need." },
-  { "source": "作者信息", "en": "Author" },
-  { "source": "酷安", "en": "Coolapk" },
-  { "source": "配置状态：{0}", "en": "Configuration: {0}" },
-  { "source": "启用此项", "en": "Enable" },
-  { "source": "禁用此项", "en": "Disable" }
+  {
+    "source": "仅查看",
+    "en": "View only"
+  },
+  {
+    "source": "禁用",
+    "en": "Disable"
+  },
+  {
+    "source": "更改下次触发时的启动行为，不结束当前进程。",
+    "en": "Change future startup behavior without stopping running processes."
+  },
+  {
+    "source": "所有来源",
+    "en": "All sources"
+  },
+  {
+    "source": "注册表登录项",
+    "en": "Registry logon"
+  },
+  {
+    "source": "启动文件夹",
+    "en": "Startup folders"
+  },
+  {
+    "source": "计划任务",
+    "en": "Scheduled tasks"
+  },
+  {
+    "source": "服务",
+    "en": "Services"
+  },
+  {
+    "source": "驱动",
+    "en": "Drivers"
+  },
+  {
+    "source": "高级系统入口",
+    "en": "Advanced system entries"
+  },
+  {
+    "source": "WMI 订阅",
+    "en": "WMI subscriptions"
+  },
+  {
+    "source": "打包应用启动项",
+    "en": "Packaged startup apps"
+  },
+  {
+    "source": "所有状态",
+    "en": "All states"
+  },
+  {
+    "source": "已启用",
+    "en": "Enabled"
+  },
+  {
+    "source": "已禁用",
+    "en": "Disabled"
+  },
+  {
+    "source": "状态未知",
+    "en": "Unknown state"
+  },
+  {
+    "source": "可以更改",
+    "en": "Manageable"
+  },
+  {
+    "source": "扫描已取消，保留上次结果。",
+    "en": "Scan canceled. Previous results are retained."
+  },
+  {
+    "source": "自启动扫描失败",
+    "en": "Startup scan failed"
+  },
+  {
+    "source": "正在后台读取登录项、任务和服务…",
+    "en": "Reading logon entries, tasks and services in the background…"
+  },
+  {
+    "source": "没有符合条件的自启动项目",
+    "en": "No matching startup entries"
+  },
+  {
+    "source": "正在读取自启动入口…",
+    "en": "Reading startup entries…"
+  },
+  {
+    "source": "自启动列表读取失败",
+    "en": "Could not load startup entries"
+  },
+  {
+    "source": "一次性登录项",
+    "en": "Run once at logon"
+  },
+  {
+    "source": "策略登录项",
+    "en": "Policy logon"
+  },
+  {
+    "source": "隐藏任务",
+    "en": "Hidden task"
+  },
+  {
+    "source": "系统项",
+    "en": "System entry"
+  },
+  {
+    "source": "显示系统项",
+    "en": "Show system entries"
+  },
+  {
+    "source": "匹配 {0} 个运行进程",
+    "en": "{0} matching processes"
+  },
+  {
+    "source": "来源位置：{0}",
+    "en": "Source: {0}"
+  },
+  {
+    "source": "启动命令：{0}",
+    "en": "Command: {0}"
+  },
+  {
+    "source": "目标文件：{0}",
+    "en": "Target: {0}"
+  },
+  {
+    "source": "触发条件：{0}",
+    "en": "Triggers: {0}"
+  },
+  {
+    "source": "文件路径或服务身份匹配的运行进程：",
+    "en": "Processes matching the file path or service identity:"
+  },
+  {
+    "source": "进程匹配不代表本次由此入口启动；共享脚本宿主不会仅凭文件名关联。",
+    "en": "A match does not prove this entry launched the process. Shared script hosts are not linked by filename alone."
+  },
+  {
+    "source": "显示 {0} / {1} 项 | {2:HH:mm:ss}",
+    "en": "Showing {0} / {1} entries | {2:HH:mm:ss}"
+  },
+  {
+    "source": "尚未完成扫描",
+    "en": "Scan not yet completed"
+  },
+  {
+    "source": " | 部分来源未完整读取",
+    "en": " | Some sources are incomplete"
+  },
+  {
+    "source": "仅更改此入口。不会立即运行、停止或重启程序；同一软件的其他入口保持不变。",
+    "en": "Only this entry will change. No application will be started, stopped or restarted. Other entries for this software remain unchanged."
+  },
+  {
+    "source": "恢复后将在下一次满足触发条件时生效。",
+    "en": "The restored entry takes effect when its trigger next occurs."
+  },
+  {
+    "source": "确认后先保存恢复信息，再禁用此入口。后台功能可能在下次触发时不可用。",
+    "en": "Recovery information is saved before disabling this entry. Its background features may be unavailable at the next trigger."
+  },
+  {
+    "source": "启用自启动项目？",
+    "en": "Enable this startup entry?"
+  },
+  {
+    "source": "禁用自启动项目？",
+    "en": "Disable this startup entry?"
+  },
+  {
+    "source": "确认启用",
+    "en": "Enable"
+  },
+  {
+    "source": "确认禁用",
+    "en": "Disable"
+  },
+  {
+    "source": "自启动 | {0} | {1} | {2}",
+    "en": "Startup | {0} | {1} | {2}"
+  },
+  {
+    "source": "自启动设置已更新",
+    "en": "Startup configuration updated"
+  },
+  {
+    "source": "自启动更改未确认",
+    "en": "Startup change not confirmed"
+  },
+  {
+    "source": "自启动更改失败：{0} | {1}",
+    "en": "Startup change failed: {0} | {1}"
+  },
+  {
+    "source": "自启动更改失败",
+    "en": "Startup change failed"
+  },
+  {
+    "source": "读取注册表登录项、启动文件夹、包含隐藏项目的计划任务、自动及触发服务、驱动和高级系统入口。任务也可能按时间或事件触发，并非全部开机执行。",
+    "en": "Reads registry logon entries, startup folders, scheduled tasks including hidden entries, automatic and triggered services, drivers and advanced system entries. Tasks may run on a schedule or event rather than at boot."
+  },
+  {
+    "source": "高级系统入口和无法确认状态的项目仅供查看。无法访问的来源、未加载用户配置及读取上限可能导致遗漏；本页不保证找出所有启动机制。",
+    "en": "Advanced system entries and entries with unverified states are view only. Inaccessible sources, unloaded user profiles and scan limits can leave gaps; this page cannot guarantee every startup mechanism is found."
+  },
+  {
+    "source": "本次扫描未报告额外读取问题。",
+    "en": "No additional read issues were reported by this scan."
+  },
+  {
+    "source": "扫描详情",
+    "en": "Scan details"
+  },
+  {
+    "source": "关闭",
+    "en": "Close"
+  },
+  {
+    "source": "复制启动信息",
+    "en": "Copy startup details"
+  },
+  {
+    "source": "自启动",
+    "en": "Startup"
+  },
+  {
+    "source": "查看登录、任务和服务等后台启动入口。",
+    "en": "Inspect logon entries, tasks and background services."
+  },
+  {
+    "source": "搜索自启动项目",
+    "en": "Search startup entries"
+  },
+  {
+    "source": "取消扫描",
+    "en": "Cancel scan"
+  },
+  {
+    "source": "自启动来源",
+    "en": "Startup source"
+  },
+  {
+    "source": "自启动状态",
+    "en": "Startup state"
+  },
+  {
+    "source": "查看程序与进程关系，保留需要的程序。",
+    "en": "Explore apps and their processes. Keep the ones you need."
+  },
+  {
+    "source": "作者信息",
+    "en": "Author"
+  },
+  {
+    "source": "酷安",
+    "en": "Coolapk"
+  },
+  {
+    "source": "配置状态：{0}",
+    "en": "Configuration: {0}"
+  },
+  {
+    "source": "启用此项",
+    "en": "Enable"
+  },
+  {
+    "source": "禁用此项",
+    "en": "Disable"
+  }
 ]

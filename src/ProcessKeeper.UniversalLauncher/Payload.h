@@ -16,12 +16,15 @@ struct Manifest {
 };
 void ValidateRelativePath(const std::wstring& path);
 Manifest ParseManifest(const std::string& text);
+std::wstring PayloadDirectory(Route route);
+bool IsPayloadFile(const std::wstring& path, Route route);
 struct PreparedPayload {
     std::wstring directory;
     std::vector<Handle> files, parents;
 };
-PreparedPayload PreparePayload(bool modern, const std::atomic_bool* canceled = nullptr);
+PreparedPayload PreparePayload(Route route, const std::atomic_bool* canceled = nullptr);
 #ifdef PK_FIXTURE_BUILD
+void ExtractCabinetFixture(const std::vector<BYTE>& archive, const Manifest& manifest, const std::wstring& root, Route route);
 void ExtractCabinetFixture(const std::vector<BYTE>& archive, const Manifest& manifest, const std::wstring& root, bool modern);
 #endif
 }

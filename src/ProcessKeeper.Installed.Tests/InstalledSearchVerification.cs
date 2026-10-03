@@ -27,7 +27,7 @@ internal static class InstalledSearchVerification
         {
             new ProcessRecord { Id = 51235, Name = "helper.exe", Path = @"C:\Apps\Editor\helper.exe", SessionId = 1, Description = "Preview renderer" },
             new ProcessRecord { Id = 76431, Name = "edit.exe", Path = @"C:\Apps\Editor\edit.exe", SessionId = 1 },
-            new ProcessRecord { Id = 93001, Name = "helper.exe", Path = @"D:\Apps\Editor\helper.exe", SessionId = 0 }
+            new ProcessRecord { Id = 93001, Name = "helper.exe", Path = @"D:\Apps\Editor\helper.exe", SessionId = 0, IsSystem = true }
         };
         var visible = new InstalledApplicationSearch(processes, false);
         var all = new InstalledApplicationSearch(processes, true);
@@ -41,6 +41,7 @@ internal static class InstalledSearchVerification
         check(visible.Matches(alpha, @"C:\Apps\Editor\edit.exe"), "full executable path search remains available");
         check(!visible.Matches(alpha, "5123"), "PID search requires the complete numeric process identifier");
         check(!visible.Matches(duplicate, "93001") && all.Matches(duplicate, "93001"), "system PID queries respect the explicit system-process visibility option");
+        check(new InstalledApplicationSearch(new[] { processes[2] with { IsSystem = false } }, false).Matches(duplicate, "93001"), "a third-party session-zero component remains visible without verified Windows identity");
         check(visible.ProcessesFor(alpha.Executables[1]).Single().Id == 51235, "association returns the exact running process to show under its software");
         check(new InstalledApplicationSearch([], false).Matches(alpha, "helper.exe"), "non-running installed components remain searchable");
         check(InstalledApplicationSearch.DriveOf(@"c:\Apps\Editor") == "C:", "drive extraction normalizes letter case");

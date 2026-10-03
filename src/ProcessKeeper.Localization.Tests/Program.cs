@@ -84,12 +84,36 @@ suite.Case("all English catalog templates are valid and preserve placeholders", 
     }
 });
 
+suite.Case("shared and compatibility translation catalogs agree", () =>
+{
+    var merged = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var directory in new[] { "ProcessKeeper.Core", "ProcessKeeper.Legacy.Core" })
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(sourceRoot, directory, "Localization"), "*.json"))
+        {
+            using var catalog = JsonDocument.Parse(File.ReadAllText(file));
+            foreach (var entry in catalog.RootElement.EnumerateArray())
+            {
+                var key = entry.GetProperty("source").GetString()!;
+                var value = entry.GetProperty("en").GetString()!;
+                suite.Check(!merged.TryGetValue(key, out var previous) || previous == value,
+                    "shared and compatibility English agree: " + key);
+                merged[key] = value;
+            }
+        }
+});
+
 suite.Case("production static translation keys all have English entries", () =>
 {
-    var catalog = L.EnglishCatalog;
+    var catalog = new Dictionary<string, string>(L.EnglishCatalog, StringComparer.Ordinal);
+    foreach (var file in Directory.EnumerateFiles(Path.Combine(sourceRoot, "ProcessKeeper.Legacy.Core", "Localization"), "*.json"))
+    {
+        using var legacy = JsonDocument.Parse(File.ReadAllText(file));
+        foreach (var entry in legacy.RootElement.EnumerateArray())
+            catalog[entry.GetProperty("source").GetString()!] = entry.GetProperty("en").GetString()!;
+    }
     int keys = 0;
     var missing = new List<string>();
-    foreach (var directory in new[] { "ProcessKeeper.Core", "ProcessKeeper.App" })
+    foreach (var directory in new[] { "ProcessKeeper.Core", "ProcessKeeper.App", "ProcessKeeper.Legacy.Core", "ProcessKeeper.Legacy.App" })
         foreach (var file in Directory.EnumerateFiles(Path.Combine(sourceRoot, directory), "*.cs", SearchOption.TopDirectoryOnly))
         {
             if (Path.GetFileName(file) == "Localization.cs") continue;

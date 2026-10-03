@@ -7,7 +7,7 @@ namespace ProcessKeeper.App;
 
 public sealed record ViewPreferences(bool LiveRefresh = true, bool ShowSystemProcesses = false,
     int CategoryFilter = 0, int SortOrder = 0, string Language = "auto", bool HistoryAutoScroll = true, string InstalledDrive = "",
-    bool GroupGamePlatforms = true, bool HideMicrosoftApps = false);
+    bool GroupGamePlatforms = true, bool HideMicrosoftApps = false, bool SyncEmptyProfileRules = true);
 
 public sealed class ViewPreferencesStore
 {
@@ -95,12 +95,14 @@ internal static class SettingsJson
         var hasInstalledDrive = root.TryGetProperty("InstalledDrive", out var installedDrive);
         var hasGroupGamePlatforms = root.TryGetProperty("GroupGamePlatforms", out _);
         var hasHideMicrosoftApps = root.TryGetProperty("HideMicrosoftApps", out _);
+        var hasSyncEmptyProfileRules = root.TryGetProperty("SyncEmptyProfileRules", out _);
         var fields = new List<string> { "Version", "LiveRefresh", "ShowSystemProcesses", "CategoryFilter", "SortOrder" };
         if (hasLanguage) fields.Add("Language");
         if (hasHistoryAutoScroll) fields.Add("HistoryAutoScroll");
         if (hasInstalledDrive) fields.Add("InstalledDrive");
         if (hasGroupGamePlatforms) fields.Add("GroupGamePlatforms");
         if (hasHideMicrosoftApps) fields.Add("HideMicrosoftApps");
+        if (hasSyncEmptyProfileRules) fields.Add("SyncEmptyProfileRules");
         RequireObject(root, fields.ToArray());
         Version(root);
         if (hasLanguage && (language.ValueKind != JsonValueKind.String || !LanguageResolver.IsPreference(language.GetString())))
@@ -110,7 +112,8 @@ internal static class SettingsJson
         var value = new ViewPreferences(Boolean(root, "LiveRefresh"), Boolean(root, "ShowSystemProcesses"),
             Integer(root, "CategoryFilter"), Integer(root, "SortOrder"), hasLanguage ? language.GetString()! : "auto",
             !hasHistoryAutoScroll || Boolean(root, "HistoryAutoScroll"), hasInstalledDrive ? installedDrive.GetString()! : "",
-            !hasGroupGamePlatforms || Boolean(root, "GroupGamePlatforms"), hasHideMicrosoftApps && Boolean(root, "HideMicrosoftApps"));
+            !hasGroupGamePlatforms || Boolean(root, "GroupGamePlatforms"), hasHideMicrosoftApps && Boolean(root, "HideMicrosoftApps"),
+            !hasSyncEmptyProfileRules || Boolean(root, "SyncEmptyProfileRules"));
         ValidateView(value);
         return value;
     }
@@ -136,7 +139,7 @@ internal static class SettingsJson
     internal static byte[] ViewBytes(ViewPreferences value)
     {
         ValidateView(value);
-        return JsonSerializer.SerializeToUtf8Bytes(new { Version = 1, value.LiveRefresh, value.ShowSystemProcesses, value.CategoryFilter, value.SortOrder, value.Language, value.HistoryAutoScroll, value.InstalledDrive, value.GroupGamePlatforms, value.HideMicrosoftApps }, Options);
+        return JsonSerializer.SerializeToUtf8Bytes(new { Version = 1, value.LiveRefresh, value.ShowSystemProcesses, value.CategoryFilter, value.SortOrder, value.Language, value.HistoryAutoScroll, value.InstalledDrive, value.GroupGamePlatforms, value.HideMicrosoftApps, value.SyncEmptyProfileRules }, Options);
     }
 
     internal static byte[] AppearanceBytes(AppearancePreferences? value)

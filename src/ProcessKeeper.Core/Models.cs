@@ -39,13 +39,15 @@ public sealed record ProcessRecord
     public bool IsSystem { get; init; }
     /// <summary>Native critical-process query result; null means unverified. Independent of display/name classification.</summary>
     public bool? NativeCritical { get; init; }
+    /// <summary>Collection could not query critical status. Close protection only; never Windows display ownership.</summary>
+    public bool CriticalStatusUnknown { get; init; }
     public bool IsSelf { get; init; }
     public IReadOnlyList<WindowRecord> Windows { get; init; } = [];
     public IReadOnlyList<ServiceRecord> Services { get; init; } = [];
     public bool HasVisibleWindow => Windows.Any(w => w.IsVisible && !w.IsCloaked && !w.IsMinimized);
     public bool HasMinimizedWindow => Windows.Any(w => w.IsVisible && !w.IsCloaked && w.IsMinimized);
     public bool IsForeground => Windows.Any(w => w.IsForeground);
-    public RunCategory Category => IsSystem || SessionId == 0 || Services.Count > 0 ? RunCategory.System :
+    public RunCategory Category => IsSystem ? RunCategory.System :
         HasVisibleWindow ? RunCategory.Visible : HasMinimizedWindow ? RunCategory.Minimized : RunCategory.Background;
 }
 

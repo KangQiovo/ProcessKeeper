@@ -27,7 +27,7 @@ public partial class MainWindow
                 Margin = new Thickness(12, 8, 12, 0), HorizontalAlignment = HorizontalAlignment.Stretch
             });
         foreach (var button in FindRiskButtons(SettingsContent))
-            button.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
+            button.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险模式"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
     }
     private static IEnumerable<Button> FindRiskButtons(DependencyObject parent)
     {

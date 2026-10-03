@@ -39,13 +39,18 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         std::to_wstring(ProcessCreated(GetCurrentProcess())), EncodeContextText(UserSid())};
     const auto context = ParseLaunchContext(fields, session, self.path().substr(0, self.path().find_last_of(L'\\')));
     const auto jobId = NewContextId();
-    const std::vector<std::wstring> job = {L"PKUP2", session, jobId, std::wstring(64, L'a'), L"1.5.1-beta.1", L"KangQiovo/ProcessKeeper"};
+    const std::wstring currentVersion = ProductVersion;
+    const auto patchOffset = currentVersion.find_last_of(L'.') + 1;
+    const auto nextVersion = currentVersion.substr(0, patchOffset) +
+        std::to_wstring(std::stoul(currentVersion.substr(patchOffset)) + 1) + L"-beta.1";
+    check(IsNewerUpdateVersion(nextVersion, currentVersion), L"update fixture targets a version newer than the current build");
+    const std::vector<std::wstring> job = {L"PKUP2", session, jobId, std::wstring(64, L'a'), nextVersion, L"KangQiovo/ProcessKeeper"};
     check(!rejects([&] { ValidateUpdateJob(job, context, jobId); }), L"update job binds the fixed official repository across managed and native boundaries");
     auto wrongJob = job; wrongJob[5] = L"fork/ProcessKeeper";
     check(rejects([&] { ValidateUpdateJob(wrongJob, context, jobId); }), L"native job from another repository is refused");
     wrongJob = job; wrongJob[0] = L"PKUP1"; wrongJob.pop_back();
     check(rejects([&] { ValidateUpdateJob(wrongJob, context, jobId); }), L"older unbound update job format is refused");
-    wrongJob = job; wrongJob[4] = L"1.5.0";
+    wrongJob = job; wrongJob[4] = ProductVersion;
     check(rejects([&] { ValidateUpdateJob(wrongJob, context, jobId); }), L"repository binding never permits same-version replacement");
     auto caller = OpenContextProcessFixture(context);
     check(caller.valid() && context.original == self.path() && context.originalHash == self.sha256(), L"real source-locked wrapper identity round-trips through the production context parser");

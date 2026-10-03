@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0-windows10.0.19041.0;net462</TargetFrameworks>
+    <LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)'=='net462'"><PlatformTarget>x86</PlatformTarget></PropertyGroup>
+  <ItemGroup><Compile Include="../ProcessKeeper.Core/AuthorAvatar*.cs" Link="Core/%(Filename)%(Extension)" /></ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net462'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+</Project>

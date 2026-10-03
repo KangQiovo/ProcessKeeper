@@ -39,6 +39,7 @@ public sealed partial class AutorunsView : UserControl
     {
         InitializeComponent();
         EntriesList.ItemsSource = _rows;
+        NativeSelectionTree.Attach(EntriesList, row => ((AutorunRow)row).RowKey, SelectionNodes, UpdateSelectionToggle);
         DisplayOptions.Apply(true, false);
         DisplayOptions.Changed += (_, _) => { PresentationChanged?.Invoke(this, EventArgs.Empty); Render(); };
         SetSources();
@@ -149,30 +150,32 @@ public sealed partial class AutorunsView : UserControl
                         (index.Matches(e, query) || MatchesPlatformQuery(e, query, display)))
                         .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(e => e.Id, StringComparer.Ordinal)
                         .Select(e => CreateRow(e, index, expanded.Contains(e.Id), query, collapsedSearch.Contains(e.Id))).ToArray();
-                    return GroupRows(items, display, groupPlatforms, collapsedPlatforms, query);
+                    return ExpandProcessRows(GroupRows(items, display, groupPlatforms, collapsedPlatforms, query));
                 }, _lifetime.Token);
                 if (_closed || !_active) return;
                 if (revision != _revision) continue;
-                var keys = rows.Select(row => row.Entry.Id).ToHashSet(StringComparer.Ordinal);
+                var keys = rows.Select(row => row.RowKey).ToHashSet(StringComparer.Ordinal);
                 for (var i = _rows.Count - 1; i >= 0; i--)
-                    if (!keys.Contains(_rows[i].Entry.Id)) { _rows[i].Icon = null; _rows.RemoveAt(i); }
-                var existing = _rows.ToDictionary(row => row.Entry.Id, StringComparer.Ordinal);
+                    if (!keys.Contains(_rows[i].RowKey)) { _rows[i].Icon = null; _rows.RemoveAt(i); }
+                var existing = _rows.ToDictionary(row => row.RowKey, StringComparer.Ordinal);
                 for (var i = 0; i < rows.Length; i++)
                 {
                     if (_closed || !_active || revision != _revision) break;
                     var next = rows[i];
-                    if (existing.TryGetValue(next.Entry.Id, out var row))
+                    if (existing.TryGetValue(next.RowKey, out var row))
                     {
-                        if (!ReferenceEquals(_rows[i], row)) _rows.Move(_rows.IndexOf(row), i);
-                        if (row.Entry != next.Entry) { row.Icon = null; _rows[i] = next; row = next; }
-                        else
-                        {
-                            row.Summary = next.Summary; row.ProcessSummary = next.ProcessSummary;
-                            row.DetailText = next.DetailText; row.IsExpanded = next.IsExpanded;
-                            row.IsPresentationGroup = next.IsPresentationGroup; row.PresentationDepth = next.PresentationDepth; row.PresentationPlatformId = next.PresentationPlatformId;
-                        }
+                        if (!ReferenceEquals(_rows[i], row)) NativeListSelection.Move(EntriesList, _rows, _rows.IndexOf(row), i, item => item.RowKey);
+                        if (!string.Equals(row.IconPath, next.IconPath, StringComparison.OrdinalIgnoreCase))
+                        { row.Icon = null; row.NotifyIcon(); }
+                        row.Entry = next.Entry;
+                        row.Process = next.Process; row.Processes = next.Processes;
+                        row.Summary = next.Summary; row.ProcessSummary = next.ProcessSummary;
+                        row.DetailText = next.DetailText; row.IsExpanded = next.IsExpanded;
+                        row.IsPresentationGroup = next.IsPresentationGroup; row.PresentationDepth = next.PresentationDepth; row.PresentationPlatformId = next.PresentationPlatformId;
                     }
                     else { row = next; _rows.Insert(i, row); }
+                    row.IsWhitelistProtected = IsWhitelistProtected(row.Entry);
+                    if (row.IsWhitelistProtected && row.Entry.Enabled == true) row.Summary = L.T("白名单保护") + " | " + row.Summary;
                     row.Busy = _changing;
                     row.Notify();
                     if ((i + 1) % 64 == 0) await Task.Yield();
@@ -181,6 +184,8 @@ public sealed partial class AutorunsView : UserControl
                 EmptyText.Text = _loaded ? L.T("没有符合条件的自启动项目") : L.T("正在读取自启动入口…");
                 EmptyText.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
                 UpdateStatus();
+                NativeSelectionTree.For(EntriesList)?.Invalidate();
+                UpdateSelectionToggle();
                 LoadRealizedIcons();
             } while (!_closed && _active && revision != _revision);
         }
@@ -213,7 +218,7 @@ public sealed partial class AutorunsView : UserControl
         var detail = expanded ? BuildDetails(entry, apps, orderedProcesses) : "";
         return new AutorunRow
         {
-            Entry = entry, Summary = summary, IsExpanded = expanded, DetailText = detail,
+            Entry = entry, Summary = summary, IsExpanded = expanded, DetailText = detail, Processes = orderedProcesses,
             ProcessSummary = processes.Count > 0 ? L.F($"匹配 {processes.Count} 个运行进程") + " | " + string.Join(" | ", orderedProcesses.Take(3).Select(p => $"{p.ApplicationName} ({p.Id})")) : apps.Count > 0 ? L.F($"所属软件：{string.Join(" | ", apps)}") : ""
         };
     }
@@ -235,13 +240,13 @@ public sealed partial class AutorunsView : UserControl
     private void UpdateStatus()
     {
         if (_scanning) return;
-        Status.Text = _loaded ? L.F($"显示 {_rows.Count(row => !row.IsPresentationGroup)} / {_inventory.Entries.Count} 项 | {_inventory.CapturedAt.LocalDateTime:HH:mm:ss}") : L.T("尚未完成扫描");
+        Status.Text = _loaded ? L.F($"显示 {_rows.Count(row => !row.IsPresentationGroup && !row.IsProcess)} / {_inventory.Entries.Count} 项 | {_inventory.CapturedAt.LocalDateTime:HH:mm:ss}") : L.T("尚未完成扫描");
         if (_inventory.Warnings.Count > 0 || _inventory.Truncated) Status.Text += L.T(" | 部分来源未完整读取");
     }
 
-    private void EntryClicked(object sender, ItemClickEventArgs args)
+    private void ExpandEntryClicked(object sender, RoutedEventArgs args)
     {
-        if (args.ClickedItem is not AutorunRow row || _changing) return;
+        if (sender is not Button { Tag: AutorunRow row } || row.IsProcess || _changing) return;
         if (row.IsPresentationGroup)
         {
             if (!_collapsedPlatforms.Add(row.PresentationPlatformId)) _collapsedPlatforms.Remove(row.PresentationPlatformId);
@@ -266,6 +271,7 @@ public sealed partial class AutorunsView : UserControl
             return;
         }
         var enable = entry.Enabled == false;
+        if (!enable && IsWhitelistProtected(entry)) return;
         var attempted = false;
         _changing = true;
         foreach (var visible in _rows) { visible.Busy = true; visible.Notify(); }
@@ -283,9 +289,11 @@ public sealed partial class AutorunsView : UserControl
                 Content = new ScrollViewer { Content = panel, MaxHeight = 380, HorizontalScrollMode = ScrollMode.Disabled },
                 PrimaryButtonText = enable ? L.T("确认启用") : L.T("确认禁用"), CloseButtonText = L.T("取消"), DefaultButton = ContentDialogButton.Close
             };
-            if (await _showDialog(dialog) != ContentDialogResult.Primary || _closed) return;
+            if (await _showDialog(dialog) != ContentDialogResult.Primary || _closed || !enable && IsWhitelistProtected(entry)) return;
             attempted = true;
-            var result = await Task.Run(() => ChangeConfiguration(entry, enable, _lifetime.Token), _lifetime.Token);
+            var result = await Task.Run(() => !enable && IsWhitelistProtected(entry)
+                ? new AutorunChangeResult(false, L.T("白名单保护"))
+                : ChangeConfiguration(entry, enable, _lifetime.Token), _lifetime.Token);
             var message = L.F($"自启动 | {entry.Name} | {SourceLabel(entry.SourceKind)} | {result.Message}");
             _log?.Invoke(message);
             if (_closed) return;
@@ -331,7 +339,7 @@ public sealed partial class AutorunsView : UserControl
         args.Handled = true;
         if (row.IsPresentationGroup) return;
         var menu = new MenuFlyout();
-        var path = row.Entry.TargetPath;
+        var path = row.IconPath;
         var open = new MenuFlyoutItem { Text = L.T("显示文件所在目录"), Icon = new SymbolIcon(Symbol.OpenFile), IsEnabled = Path.IsPathFullyQualified(path) && File.Exists(path) };
         open.Click += (_, _) => _openLocation?.Invoke(path);
         menu.Items.Add(open);
@@ -343,8 +351,13 @@ public sealed partial class AutorunsView : UserControl
 
     private void ContainerChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (_realized.Remove(args.ItemContainer, out var previous)) { previous.Icon = null; previous.NotifyIcon(); }
+        if (_realized.Remove(args.ItemContainer, out var previous) && (!_active || !_rows.Contains(previous)))
+        { previous.Icon = null; previous.NotifyIcon(); }
         if (!args.InRecycleQueue && args.Item is AutorunRow row) { _realized[args.ItemContainer] = row; LoadIcon(row); }
+        // Preserve images through collection moves without retaining every scrolled row.
+        var visible = _realized.Values.ToHashSet();
+        foreach (var old in _rows.Where(item => item.Icon is not null && !visible.Contains(item)).Skip(96))
+        { old.Icon = null; old.NotifyIcon(); }
     }
     private void LoadRealizedIcons() { foreach (var row in _realized.Values.Distinct()) LoadIcon(row); }
     private async void LoadIcon(AutorunRow row)
@@ -352,7 +365,7 @@ public sealed partial class AutorunsView : UserControl
         if (_closed || !_active || _icons is null || row.Icon is not null || !_loadingIcons.Add(row)) return;
         try
         {
-            var icon = await _icons.GetAsync(row.Entry.TargetPath);
+            var icon = await _icons.GetAsync(row.IconPath);
             if (!_closed && _active && _realized.Values.Contains(row)) { row.Icon = icon; row.NotifyIcon(); }
         }
         catch (OperationCanceledException) { }

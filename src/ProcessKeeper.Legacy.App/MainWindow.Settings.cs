@@ -7,6 +7,7 @@ using ProcessKeeper.Core;
 namespace ProcessKeeper.App;
 public partial class MainWindow
 {
+    private string _settingsLanguage = "";
     private static TextBlock Text(string value, double size = 14) => new() { Text = value, FontSize = size, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Left, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 0, 0, 12) };
     private static Button Button(string value, Action action) { var button = new Wpf.Ui.Controls.Button { Content = value, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 8, 12), Padding = new Thickness(12, 8, 12, 8) }; button.Click += (_, _) => action(); return button; }
     private void ApplyTheme()
@@ -21,11 +22,15 @@ public partial class MainWindow
         Resources["PanelBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#292B30" : "#FFFFFF"));
         Resources["InkBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#F3F4F6" : "#17191C"));
         Resources["MutedBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#BFC5D0" : "#505763"));
+        Resources["RoleSuccessBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#153E25" : "#DFF6DD"));
+        Resources["RoleCautionBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#433519" : "#FFF4CE"));
+        Resources["RoleCriticalBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(dark ? "#442726" : "#FDE7E9"));
         // Popup menus are rebuilt after changes so a previously open menu cannot keep the old theme.
         List.ContextMenu = new ContextMenu();
     }
     private void BuildSettings()
     {
+        _settingsLanguage = L.Language;
         SettingsContent.Children.Clear();
         var tabs = new TabControl { Background = Brushes.Transparent, BorderThickness = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top };
         SettingsContent.Children.Add(tabs);
@@ -33,18 +38,35 @@ public partial class MainWindow
         var language = Tab("语言");
         language.Children.Add(Text(L.T("显示语言"), 20));
         var languages = new ComboBox { ItemsSource = new[] { L.T("自动（跟随系统）"), "简体中文", "繁體中文", "English" }, SelectedIndex = Array.IndexOf(new[] { "auto", "zh-Hans", "zh-Hant", "en" }, _view.Language), MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left };
-        languages.SelectionChanged += async (_, _) => { if (languages.SelectedIndex < 0) return; _view = _view with { Language = new[] { "auto", "zh-Hans", "zh-Hant", "en" }[languages.SelectedIndex] }; SaveView(); L.Language = LanguageResolver.ResolveCurrent(_view.Language); ConfigureLanguage(); await RenderAsync(); };
+        bool restoringLanguage = false;
+        languages.SelectionChanged += async (_, _) =>
+        {
+            if (restoringLanguage || languages.SelectedIndex < 0) return;
+            var codes = new[] { "auto", "zh-Hans", "zh-Hant", "en" };
+            if (codes[languages.SelectedIndex] == _view.Language) return;
+            if (HasPendingTool || _closed || _busy || _uninstallView?.IsBusy == true || _updateDialogOpen || _updateDownloading || _shortcutBusy)
+            {
+                restoringLanguage = true;
+                try { languages.SelectedIndex = Array.IndexOf(codes, _view.Language); }
+                finally { restoringLanguage = false; }
+                if (!_closed) Notice(L.T("请等待当前操作完成"));
+                return;
+            }
+            _view = _view with { Language = codes[languages.SelectedIndex] };
+            SaveView(); L.Language = LanguageResolver.ResolveCurrent(_view.Language); ConfigureLanguage(); await RenderAsync();
+        };
         language.Children.Add(languages);
         var appearance = Tab("外观"); appearance.Children.Add(Text(L.T("应用主题"), 20));
         var themes = new ComboBox { ItemsSource = new[] { L.T("跟随系统"), L.T("浅色"), L.T("深色") }, SelectedIndex = (int)_appearance.Theme, MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 16) };
         themes.SelectionChanged += (_, _) => { if (themes.SelectedIndex < 0) return; _appearance = _appearance with { Theme = (AppearanceTheme)themes.SelectedIndex }; try { new AppearancePreferencesStore(_directory).Save(_appearance); ApplyTheme(); } catch (Exception ex) { Notice(ex.Message); } };
         appearance.Children.Add(themes); appearance.Children.Add(Text(L.T("当前环境使用纯色背景。")));
-        var backup = Tab("备份"); AddProfilesView(backup); backup.Children.Add(Text(L.T("全部设置"), 20));
+        var backup = Tab("备份"); backup.Children.Add(Text(L.T("全部设置"), 20));
         backup.Children.Add(Button(L.T("导出"), ExportSettings)); backup.Children.Add(Button(L.T("导入全部设置"), async () => await ImportSettings()));
         backup.Children.Add(Button(L.T("导出白名单"), () => ExportRulesClick(this, new RoutedEventArgs())));
         backup.Children.Add(Button(L.T("导入白名单"), () => ImportRulesClick(this, new RoutedEventArgs())));
-        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(Text(CurrentAppVersion + " | .NET Framework 4.6.2 | " + (Environment.Is64BitProcess ? "x64" : "x86")));
-        if (BuildInfo.IsPreviewBuild) about.Children.Add(Text(L.T("测试版本不代表最终品质"))); BuildUpdateSettings(about); about.Children.Add(Text(L.T("作者信息"), 20)); about.Children.Add(Text("KangQi"));
+        AddProfilesView(backup);
+        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(Text(CurrentAppVersion + " | .NET Framework 4.6.2 | " + L.T(Environment.Is64BitProcess ? "64 位" : "32 位")));
+        if (BuildInfo.IsPreviewBuild) about.Children.Add(Text(L.T("测试版本不代表最终品质"))); BuildUpdateSettings(about); about.Children.Add(Text(L.T("作者信息"), 20)); AddAuthorAvatar(about); about.Children.Add(Text("KangQi"));
         var links = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left }; links.Children.Add(AuthorButton("GitHub", AuthorIcons.Github, "https://github.com/KangQiovo")); links.Children.Add(AuthorButton(L.T("酷安"), AuthorIcons.Coolapk, "https://www.coolapk.com/u/21241695", true)); links.Children.Add(AuthorButton(L.T("B站"), AuthorIcons.Bilibili, "https://space.bilibili.com/329073257")); about.Children.Add(links);
         about.Children.Add(Text(L.T("引用项目"), 20));
         foreach (var project in ReferencedProjects.All)
@@ -56,13 +78,30 @@ public partial class MainWindow
             about.Children.Add(reference);
             about.Children.Add(Text(project.Description, 12));
         }
-        about.Children.Add(Button(L.T("重新进入引导（OOBE）"), () => { if (_busy) Notice(L.T("请等待当前操作完成")); else ShowOnboarding(true); }));
+        about.Children.Add(Button(L.T("运行环境检测"), async () => await CheckCompatibilityAsync()));
+        about.Children.Add(Button(L.T("重新进入引导（OOBE）"), () => { if (HasPendingTool || _busy || _checkingCompatibility) Notice(L.T("请等待当前操作完成")); else ShowOnboarding(true); }));
         var diagnostics = Text(L.T("正在读取运行环境…")); about.Children.Add(diagnostics);
-        about.Children.Add(Button(L.T("重新检测"), async () => diagnostics.Text = (await Task.Run(_backend.CaptureEnvironment)).Description));
-        _ = LoadDiagnostics(); async Task LoadDiagnostics() { try { diagnostics.Text = (await Task.Run(_backend.CaptureEnvironment)).Description; } catch (Exception ex) { diagnostics.Text = ex.Message; } }
+        about.Children.Add(Button(L.T("刷新诊断信息"), async () => await LoadDiagnostics()));
+        _ = LoadDiagnostics();
+        async Task LoadDiagnostics()
+        {
+            try
+            {
+                var result = await Task.Run(_backend.CaptureEnvironment, _life.Token);
+                if (!_closed) diagnostics.Text = result.Description;
+            }
+            catch (OperationCanceledException) when (_closed) { }
+            catch (Exception ex)
+            {
+                if (_closed) return;
+                diagnostics.Text = L.T("部分运行环境无法读取，可重新检测。");
+                Notice(L.T("环境检测需要关注") + " | " + ex.Message);
+            }
+        }
+
         var risk = Button("", async () => await ToggleRiskModeAsync());
         risk.Tag = "risk-mode-toggle"; risk.Background = new SolidColorBrush(Color.FromRgb(176, 0, 32)); risk.Foreground = Brushes.White;
-        risk.Style = (Style)Resources[typeof(Button)]; risk.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
+        risk.Style = (Style)Resources[typeof(Button)]; risk.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险模式"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
         about.Children.Add(Text(L.T("仅本次运行生效；重新启动后恢复风险确认。"))); about.Children.Add(risk);
     }
     private void OpenWebsite(string uri) { try { if (_backend.OpenWebPage is not null) _backend.OpenWebPage(uri); else Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); } catch (Exception ex) { Notice(ex.Message); } }
@@ -99,7 +138,7 @@ public partial class MainWindow
             {
                 var profiles = new WhitelistProfilesStore(_directory).ExportSnapshot();
                 if (options.ForSharing) profiles = profiles with { Profiles = profiles.Profiles.Select(profile => profile with { Rules = RulePortability.ForSharing(profile.Rules) }).ToArray() };
-                SettingsBundleStore.Export(path, new SettingsBundle(profiles.ActiveRules, _appearance, _view, ReadUpdatesForExport(), profiles));
+                SettingsBundleStore.Export(path, new SettingsBundle(profiles.ActiveRules, _appearance, _view, ReadUpdatesForExport(), profiles, PerformanceForExport(), WhitelistScopeForExport()));
             }
             Notice(L.T("导出成功"), true);
         }
@@ -108,7 +147,7 @@ public partial class MainWindow
     private UpdatePreferences ReadUpdatesForExport() => new UpdatePreferencesStore(_directory).Load();
     private async Task ImportSettings()
     {
-        if (_closed || _busy) return;
+        if (_closed || _busy || HasPendingTool) return;
         var picker = new OpenFileDialog { Filter = "JSON (*.json)|*.json", CheckFileExists = true }; if (picker.ShowDialog(this) != true) return;
         try
         {
@@ -120,6 +159,7 @@ public partial class MainWindow
             if (profiles is not null) detail += "\n" + L.F($"包含 {profiles.Profiles.Count} 套配置；将整体恢复配置列表。");
             if (!await Confirm(L.T("导入全部设置"), detail)) return;
             if (_closed || _busy) return;
+            await FlushPerformanceAsync();
             SettingsBundleStore.CommitAll(_directory, bundle); ApplyImportedSettings(bundle); Log(L.T("全部设置已导入")); await RenderAsync();
         }
         catch (SettingsCommitException ex) { if (!ex.RollbackSucceeded) _rulesReadable = false; Notice(ex.Message); }
@@ -130,11 +170,15 @@ public partial class MainWindow
         var ready = _ready; _ready = false;
         try
         {
-            _rules = bundle.Rules; _view = bundle.View; _appearance = bundle.Appearance; _rulesReadable = true;
+            ApplyWhitelistScope(bundle.WhitelistScope);
+            _rules = bundle.Rules; _view = bundle.View; _appearance = bundle.Appearance; _rulesReadable = _scopeReadable;
+            RefreshWhitelistActionGuards();
             if (bundle.Updates is not null) ApplyUpdatePreferences(bundle.Updates);
             _livePages[0] = _livePages[1] = _livePages[2] = _view.LiveRefresh;
             L.Language = LanguageResolver.ResolveCurrent(_view.Language);
+            SettingsContent.Children.Clear();
             ApplyTheme(); ConfigureLanguage();
+            if (bundle.Performance is not null) _performanceView?.ApplyPreferences(bundle.Performance);
             ShowSystem.IsChecked = _view.ShowSystemProcesses; HistoryAuto.IsChecked = _view.HistoryAutoScroll;
         }
         finally { _ready = ready; }

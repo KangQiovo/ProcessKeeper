@@ -52,10 +52,8 @@ foreach ($file in Get-ChildItem -LiteralPath $sourceDirectory -File -Filter '*.c
         $source = Replace-Required $source 'ReadConfigScalar(service, 12)' '(LegacyWindowsCapabilities.IsServiceLaunchProtectionSupported ? ReadConfigScalar(service, 12) : 0U)'
     }
     if ($file.Name -eq 'ProcessCollector.cs') {
-        $source = Replace-Required $source 'bool critical = false;' 'bool critical = false, criticalUnknown = false;'
         $source = Replace-Required $source 'CollectorNative.OpenProcess(0x1000,' 'CollectorNative.OpenProcess(LegacyWindowsCapabilities.ProcessQueryAccess,'
-        $source = Replace-Required $source 'if (CollectorNative.IsProcessCritical(process, out bool isCritical)) { critical = isCritical; nativeCritical = isCritical; }' 'if (LegacyWindowsCapabilities.IsProcessCritical(process, out bool isCritical)) { critical = isCritical; nativeCritical = isCritical; } else { critical = true; criticalUnknown = true; warnings.Add(L.T("无法核实关键进程标志，已保守保护此进程。")); }'
-        $source = Replace-Required $source 'SystemReason = critical ? L.T("Windows 标记为关键进程") : ""' 'SystemReason = criticalUnknown ? L.T("无法核实关键进程标志，已保守保护此进程。") : critical ? L.T("Windows 标记为关键进程") : ""'
+        $source = Replace-Required $source 'if (CollectorNative.IsProcessCritical(process, out bool isCritical)) { critical = isCritical; nativeCritical = isCritical; }' 'if (LegacyWindowsCapabilities.IsProcessCritical(process, out bool isCritical)) { critical = isCritical; nativeCritical = isCritical; } else { warnings.Add(L.T("无法核实关键进程标志，已保守保护此进程。")); }'
         $source = Replace-Required $source 'CollectorNative.GetPackageFamilyName(' 'LegacyWindowsCapabilities.GetPackageFamilyName(' 2
         $source = Replace-Required $source 'CollectorNative.DwmGetWindowAttribute(' 'LegacyWindowsCapabilities.DwmGetWindowAttribute('
     }

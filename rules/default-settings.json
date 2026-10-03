@@ -19,7 +19,8 @@
     "SortOrder": 0,
     "Language": "auto",
     "HistoryAutoScroll": true,
-    "InstalledDrive": ""
+    "InstalledDrive": "",
+    "SyncEmptyProfileRules": true
   },
   "Updates": {
     "Version": 1,

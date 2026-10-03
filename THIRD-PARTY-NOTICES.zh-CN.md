@@ -23,7 +23,7 @@ Process Keeper参考 Gallery 的 WinUI 控件示例及 Fluent 界面用法，包
 
 ## .NET
 
-项目使用 .NET 8；本次自包含发布实际携带 `Microsoft.NETCore.App 8.0.31`。已从相同版本的 `Microsoft.NETCore.App.Runtime.win-x64` 官方包原样保留其[许可](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-LICENSE.txt)及[第三方声明](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-THIRD-PARTY-NOTICES.txt)。
+项目使用 .NET 8；本次自包含发布实际携带 `Microsoft.NETCore.App 8.0.31`。已从相同版本的 `Microsoft.NETCore.App.Runtime.win-x64` 官方包原样保留其[许可](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-LICENSE.txt)及[第三方声明](licenses/Microsoft.NETCore.App.Runtime.win-x64.8.0.31-NOTICES.txt)。经逐字节校验，ARM64 官方包的这两份文件与 x64 相同，两个架构共用完整文本。
 
 - [.NET Runtime 官方仓库](https://github.com/dotnet/runtime)
 - [.NET Runtime 许可](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT)
@@ -45,8 +45,14 @@ Process Keeper参考 Gallery 的 WinUI 控件示例及 Fluent 界面用法，包
 
 列表中的其他软件名称、文件版本信息和图标来自用户本机的相应进程、可执行文件或 Windows 元数据，用于说明当前运行的程序。相关名称、商标及图标属于各自权利人，不构成这些软件对Process Keeper的认可。
 
+截图使用匿名演示数据。Auradio 名称及图标经作者许可作为演示彩蛋使用，未包含 Auradio 私有源代码，相关权利仍归其权利人所有。
+
 ## 构建依赖与原文
 
 PolySharp 1.16.0 的源码生成使用 [MIT 许可](licenses/PolySharp.1.16.0-LICENSE.txt)，Framework 4.6.2 引用程序集使用[对应上游许可](licenses/Framework-Reference-Assemblies-LICENSE.txt)。NuGet 恢复的构建工具仍遵循各自条款。
 
 本项目源码采用 [MIT](LICENSE)，不会将第三方二进制或字体自动改为 MIT。三语言说明不替代许可原文；licenses 中的第三方原文不翻译或改写。更新依赖时应重新核对许可与声明。
+
+## 行为参考
+
+[PCL](https://github.com/Meloong-Git/PCL) 和 [PCL Community](https://github.com/PCL-Community/PCL-CE) 用于研究内存及下载机制。功能独立实现，没有包含其源码、程序或私有模块；本项目的 MIT 不改变它们的许可。详见[杂项说明](docs/UTILITIES.zh-CN.md)。

@@ -282,6 +282,9 @@ catch (SettingsCommitException ex)
 }
 finally { rollbackBlocker?.Dispose(); }
 UpdateSettingsVerification.Run(root, oldBundle, newBundle, Check);
+ProfileSyncPreferencesVerification.Run(root, Check);
+PerformanceSettingsVerification.Run(root, oldBundle, Check);
+WhitelistScopeVerification.Run(root, oldBundle, Check);
 BuildInfoVerification.Run(Check);
 RuleMatcherVerification.Run(Check);
 Report($"PASS: {count} settings assertions; only scratch fixtures were written.");

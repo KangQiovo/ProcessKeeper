@@ -13,7 +13,7 @@ public partial class MainWindow
     {
         var assembly = typeof(MainWindow).Assembly;
         var information = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)?.InformationalVersion;
-        return UpdateVersion.TryParse(information, out var parsed) ? parsed!.Value : assembly.GetName().Version?.ToString(3) ?? "1.5.0";
+        return UpdateVersion.TryParse(information, out var parsed) ? parsed!.Value : assembly.GetName().Version?.ToString(3) ?? "1.6.0";
     }
     private UpdatePreferences _updates = new();
     private bool _updatesReadable = true, _updateDialogOpen, _updateDownloading, _shortcutBusy;
@@ -272,6 +272,7 @@ public partial class MainWindow
             SetUpdateStatus(L.T("下载完成"));
             if (!await Confirm(L.T("更新并重新启动"), L.T("更新下载完成，确认后将退出并重新启动 Process Keeper。") + "\n\n" + selection.Release.Tag + " | " + selection.Asset.Name)) return;
             if (_closed || cancellation.IsCancellationRequested) return;
+            await FlushPerformanceAsync();
             var result = await Task.Run(prepared.Start, cancellation.Token);
             if (!result.Success) { SetUpdateStatus(L.T("更新失败") + " | " + result.Message); return; }
             started = true; Log(result.Message);

@@ -1,6 +1,7 @@
 #requires -Version 7.0
 param(
     [Parameter(Mandatory)][string]$ModernDirectory,
+    [Parameter(Mandatory)][string]$Arm64Directory,
     [Parameter(Mandatory)][string]$LegacyDirectory,
     [Parameter(Mandatory)][string]$OutputPath,
     [string]$IntermediateDirectory = (Join-Path $PSScriptRoot 'artifacts/packages'),
@@ -52,9 +53,10 @@ function Get-PublishedFiles([string]$Root) {
                 if ($item.Name -notin @('src','obj','bin','.git','work','backups')) { $pending.Push($item.FullName) }
                 continue
             }
-            if ($item.Extension -in @('.pdb','.log') -or $item.Name -ilike 'whitelist.json*' -or $item.Name -ilike 'settings.json*' -or
+            if ($item.Extension -in @('.pdb','.log') -or $item.Name -ilike 'whitelist.json*' -or $item.Name -ilike 'whitelist-scope.json*' -or $item.Name -ilike 'settings.json*' -or
                 $item.Name -ilike 'appearance.json*' -or $item.Name -ilike 'view.json*' -or $item.Name -ilike 'profile.json*' -or
-                $item.Name -ilike 'activity.log*' -or $item.Name -ilike 'errors.log*' -or $item.Name -ilike 'update.json*' -or
+                $item.Name -ilike 'profiles.json*' -or $item.Name -ilike 'onboarding.json*' -or
+                $item.Name -ilike 'activity.log*' -or $item.Name -ilike 'errors.log*' -or $item.Name -ilike 'update.json*' -or $item.Name -ilike 'performance.json*' -or
                 $item.Name -in @('context.txt','job.txt','ready.txt','status.txt','commit.txt','accepted.txt','execute.txt','使用说明.md','兼容性评估.md') -or $item.Name -like '*.pending*') { continue }
             $item
         }
@@ -70,7 +72,7 @@ function Read-Machine([string]$Path) {
         return $reader.ReadUInt16()
     } finally { $stream.Dispose() }
 }
-function Read-BuildMetadata([string]$Path, [string]$ExpectedChannel = 'Preview') {
+function Read-BuildMetadata([string]$Path, [string]$ExpectedChannel = 'Preview', [string]$ExpectedVersion) {
     # System.Text.Json keeps date literals intact on every PowerShell 7 version.
     $document = [System.Text.Json.JsonDocument]::Parse([string](Get-Content -LiteralPath $Path -Raw))
     try {
@@ -84,7 +86,9 @@ function Read-BuildMetadata([string]$Path, [string]$ExpectedChannel = 'Preview')
         $info = [pscustomobject]$fields
     } finally { $document.Dispose() }
     if ($ExpectedChannel -cnotin @('Preview','Stable') -or $info.ReleaseChannel -cne $ExpectedChannel) { throw 'Build channel mismatch. Stable packaging requires explicit -StableRelease and matching Stable payloads.' }
-    if ($info.Version -cne '1.5.0' -or $info.BuiltAtUtc -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$' -or
+    if ($ExpectedVersion -cnotmatch '\A(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\z' -or
+        $info.Version -cne $ExpectedVersion -or $ExpectedVersion.Split('.').Where({ [long]$_ -gt 65535 }).Count -ne 0 -or
+        $info.BuiltAtUtc -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$' -or
         $info.BuiltAtUtc8 -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$') { throw 'Invalid fixed release build timestamp.' }
     $utc = [DateTimeOffset]::ParseExact($info.BuiltAtUtc,"yyyy-MM-dd'T'HH:mm:ss'Z'",[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::AssumeUniversal)
     $utc8 = [DateTimeOffset]::ParseExact($info.BuiltAtUtc8,"yyyy-MM-dd'T'HH:mm:sszzz",[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::None)
@@ -105,12 +109,25 @@ function Assert-CoreBuildStamp([string]$Path, [object]$Info) {
     if ($even.Contains($opposite,[StringComparison]::Ordinal) -or $odd.Contains($opposite,[StringComparison]::Ordinal)) { throw 'Core assembly contains mixed release channel markers.' }
 }
 $buildInfoPath = Join-Path $PSScriptRoot 'build-info.json'
-$buildInfo = Read-BuildMetadata $buildInfoPath $expectedChannel
-$roots = [ordered]@{ modern = (Assert-PlainDirectory $ModernDirectory); legacy = (Assert-PlainDirectory $LegacyDirectory) }
-foreach ($root in $roots.Values) { if ($outputFile.StartsWith($root.TrimEnd('\') + '\',[StringComparison]::OrdinalIgnoreCase)) { throw 'The outer EXE must be written outside both published payload directories.' } }
+[xml]$projectMetadata = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'src/ProcessKeeper.App/ProcessKeeper.App.csproj'))
+$projectVersions = @($projectMetadata.SelectNodes('/Project/PropertyGroup/Version'))
+if ($projectVersions.Count -ne 1) { throw 'Missing or ambiguous product version.' }
+$expectedVersion = $projectVersions[0].InnerText
+$buildInfo = Read-BuildMetadata $buildInfoPath $expectedChannel $expectedVersion
+$resourceVersion = ($buildInfo.Version.Split('.') + '0') -join ','
+$roots = [ordered]@{ modern = (Assert-PlainDirectory $ModernDirectory); 'modern/arm64' = (Assert-PlainDirectory $Arm64Directory); legacy = (Assert-PlainDirectory $LegacyDirectory) }
+foreach ($first in $roots.Values) { foreach ($second in $roots.Values) {
+    if ($first -ne $second -and $first.StartsWith($second.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Published architecture roots must not contain one another.' }
+} }
+if (@($roots.Values | Sort-Object -Unique).Count -ne 3) { throw 'Each architecture must have an independent published directory.' }
+foreach ($root in $roots.Values) { if ($outputFile.StartsWith($root.TrimEnd('\') + '\',[StringComparison]::OrdinalIgnoreCase)) { throw 'The outer EXE must be written outside all published payload directories.' } }
 Assert-CoreBuildStamp (Join-Path $roots.modern 'ProcessKeeper.Core.dll') $buildInfo
+Assert-CoreBuildStamp (Join-Path $roots['modern/arm64'] 'ProcessKeeper.Core.dll') $buildInfo
 Assert-CoreBuildStamp (Join-Path $roots.legacy 'ProcessKeeper.Legacy.Core.dll') $buildInfo
 if ((Read-Machine (Join-Path $roots.modern 'ProcessKeeper.exe')) -ne 0x8664) { throw 'The modern payload must be x64.' }
+foreach ($entry in @('ProcessKeeper.exe','coreclr.dll','hostfxr.dll','hostpolicy.dll','Microsoft.UI.Xaml.dll')) {
+    if ((Read-Machine (Join-Path $roots['modern/arm64'] $entry)) -ne 0xAA64) { throw "The ARM64 payload must include its own native runtime: $entry" }
+}
 if ((Read-Machine (Join-Path $roots.legacy 'ProcessKeeper.exe')) -ne 0x14c) { throw 'The compatibility payload must be an x86/AnyCPU PE.' }
 if (-not (Test-Path -LiteralPath (Join-Path $roots.modern 'Microsoft.UI.Xaml.dll'))) { throw 'The modern payload must include its self-contained WinUI runtime.' }
 if (-not (Test-Path -LiteralPath (Join-Path $roots.legacy 'ProcessKeeper.exe.config'))) { throw 'The compatibility payload runtime configuration is missing.' }
@@ -136,6 +153,9 @@ foreach ($variant in $roots.Keys) {
     $packageFiles.Add([pscustomobject]@{File=(Get-Item -LiteralPath $updater); Relative='ProcessKeeper.Updater.exe'; Extra=$false})
     foreach ($file in Get-PublishedFiles $root | Sort-Object FullName) {
         $relative = [IO.Path]::GetRelativePath($root, $file.FullName).Replace('\','/')
+        # Always stage the complete current notices from the repository below.
+        # Reused publish directories can retain obsolete (and overlong) license names.
+        if ($relative.StartsWith('licenses/', [StringComparison]::OrdinalIgnoreCase) -or $relative -imatch '^THIRD-PARTY-NOTICES(?:\.zh-CN|\.zh-TW)?\.md$') { continue }
         $packageFiles.Add([pscustomobject]@{File=$file; Relative=$relative; Extra=$false})
     }
     # Each extracted route is independently accompanied by the complete product notices.
@@ -145,10 +165,12 @@ foreach ($variant in $roots.Keys) {
     foreach ($file in $licenseItems.Where({ -not $_.PSIsContainer })) {
         $packageFiles.Add([pscustomobject]@{File=$file; Relative=('licenses/' + [IO.Path]::GetRelativePath($productLicenseRoot,$file.FullName).Replace('\','/')); Extra=$true})
     }
-    $packageFiles.Add([pscustomobject]@{File=(Get-Item -LiteralPath (Join-Path $PSScriptRoot 'THIRD-PARTY-NOTICES.md')); Relative='THIRD-PARTY-NOTICES.md'; Extra=$true})
+    foreach ($file in Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'THIRD-PARTY-NOTICES*.md' -File) {
+        $packageFiles.Add([pscustomobject]@{File=$file; Relative=$file.Name; Extra=$true})
+    }
     $packageFiles.Add([pscustomobject]@{File=(Get-Item -LiteralPath (Join-Path $PSScriptRoot 'LICENSE')); Relative='LICENSE'; Extra=$true})
     foreach ($file in Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'README*.md' -File) { $packageFiles.Add([pscustomobject]@{File=$file; Relative=$file.Name; Extra=$true}) }
-    foreach ($file in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'docs') -Filter 'COMPATIBILITY*.md' -File) { $packageFiles.Add([pscustomobject]@{File=$file; Relative=('docs/' + $file.Name); Extra=$true}) }
+    foreach ($file in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'docs') -File | Where-Object { $_.Name -match '^(?:COMPATIBILITY|UTILITIES|CLOUD-PROFILES).*\.md$' }) { $packageFiles.Add([pscustomobject]@{File=$file; Relative=('docs/' + $file.Name); Extra=$true}) }
     foreach ($default in @('default-rules.json','default-settings.json')) {
         $packageFiles.Add([pscustomobject]@{File=(Get-Item -LiteralPath (Join-Path $PSScriptRoot "rules/$default")); Relative="rules/$default"; Extra=$true})
     }
@@ -167,7 +189,7 @@ foreach ($variant in $roots.Keys) {
             $outputStream = [IO.File]::Open($staged,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
             try { $inputStream.CopyTo($outputStream); $outputStream.Flush($true) } finally { $outputStream.Dispose() }
         } finally { $inputStream.Dispose() }
-        if ($relative -in @('modern/ProcessKeeper.Core.dll','legacy/ProcessKeeper.Legacy.Core.dll')) { Assert-CoreBuildStamp $staged $buildInfo }
+        if ($relative -in @('modern/ProcessKeeper.Core.dll','modern/arm64/ProcessKeeper.Core.dll','legacy/ProcessKeeper.Legacy.Core.dll')) { Assert-CoreBuildStamp $staged $buildInfo }
         $records.Add([pscustomobject]@{ Relative=$relative; Staged=$staged; Length=(Get-Item -LiteralPath $staged).Length; Hash=(Get-FileHash -LiteralPath $staged -Algorithm SHA256).Hash.ToLowerInvariant() })
     }
 }
@@ -176,7 +198,7 @@ foreach ($line in @('.OPTION EXPLICIT','.Set Cabinet=ON','.Set Compress=ON','.Se
     ".Set DiskDirectoryTemplate=`"$cabinetDirectory`"",'.Set MaxDiskSize=0','.Set MaxCabinetSize=0','.Set FolderSizeThreshold=2147483647','.Set FolderFileCountThreshold=50000','.Set CabinetFileCountThreshold=0')) { $directives.Add($line) }
 $previousVariant = ''
 foreach ($record in $records) {
-    $variant = $record.Relative.Split('/')[0]
+    $variant = if ($record.Relative.StartsWith('modern/arm64/', [StringComparison]::Ordinal)) { 'arm64' } else { $record.Relative.Split('/')[0] }
     if ($previousVariant -and $previousVariant -ne $variant) { $directives.Add('.New Folder') }
     $directives.Add('"' + $record.Staged + '" "' + $record.Relative.Replace('/','\') + '"')
     $previousVariant = $variant
@@ -202,8 +224,8 @@ $resourceText = @"
 102 RCDATA "$($cabinet.Replace('\','/'))"
 201 ICON "$($icon.Replace('\','/'))"
 1 VERSIONINFO
-FILEVERSION 1,5,0,0
-PRODUCTVERSION 1,5,0,0
+FILEVERSION $resourceVersion
+PRODUCTVERSION $resourceVersion
 FILEFLAGS $(if ($StableRelease) { '0' } else { 'VS_FF_PRERELEASE' })
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
@@ -214,9 +236,9 @@ BEGIN
   BEGIN
    VALUE "CompanyName", "KangQi\0"
    VALUE "FileDescription", "Process Keeper\0"
-   VALUE "FileVersion", "1.5.0\0"
+   VALUE "FileVersion", "$($buildInfo.Version)\0"
    VALUE "ProductName", "Process Keeper\0"
-   VALUE "ProductVersion", "1.5.0\0"
+   VALUE "ProductVersion", "$($buildInfo.Version)\0"
    VALUE "BuildDate", "$($buildInfo.BuiltAtUtc8)\0"
    VALUE "BuildDateUtc", "$($buildInfo.BuiltAtUtc)\0"
    VALUE "ReleaseChannel", "$($buildInfo.ReleaseChannel)\0"
@@ -231,11 +253,11 @@ END
 [IO.File]::WriteAllText($resource,$resourceText,[Text.UTF8Encoding]::new($false))
 & $resolvedPowerShell -NoProfile -File (Join-Path $nativeRoot 'build-native.ps1') -ResourceScript $resource -OutputPath $outputFile @nativeOptions
 if ($LASTEXITCODE -ne 0) { throw 'Universal launcher compilation failed.' }
-$currentBuildInfo = Read-BuildMetadata $buildInfoPath $expectedChannel
+$currentBuildInfo = Read-BuildMetadata $buildInfoPath $expectedChannel $expectedVersion
 if ($currentBuildInfo.BuiltAtUtc -cne $buildInfo.BuiltAtUtc -or $currentBuildInfo.BuiltAtUtc8 -cne $buildInfo.BuiltAtUtc8) { throw 'The release build timestamp changed during packaging; this candidate must not be delivered.' }
 $currentSourceInputs = Get-ProcessKeeperSourceInputs $PSScriptRoot
 if ($currentSourceInputs.SHA256 -cne $sourceInputs.SHA256) { throw 'Source inputs changed during packaging; this candidate must not be delivered.' }
-$report = [ordered]@{ Version='1.5.0'; ReleaseChannel=$buildInfo.ReleaseChannel; BuildDate=$buildInfo.BuiltAtUtc8; BuiltAtUtc=$buildInfo.BuiltAtUtc; Output=$outputFile; SHA256=(Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash; FileCount=$records.Count; UncompressedBytes=$totalLength; PackageWork=$packageWork; Modern='x64 Windows 10 build 19041 or later'; Compatibility='Intel/AMD Windows 7 SP1, Windows 8.1, Windows 10/11 | .NET Framework 4.6.2 or later'; TestedOnActualWindows7=$false }
+$report = [ordered]@{ Version=$buildInfo.Version; ReleaseChannel=$buildInfo.ReleaseChannel; BuildDate=$buildInfo.BuiltAtUtc8; BuiltAtUtc=$buildInfo.BuiltAtUtc; Output=$outputFile; SHA256=(Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash; FileCount=$records.Count; UncompressedBytes=$totalLength; PackageWork=$packageWork; Modern='x64 Windows 10 build 19041 or later'; Arm64='Native ARM64 Windows 10 build 19041 or later | x86 outer launcher and updater under emulation'; TestedOnActualArm64=$false; Compatibility='Intel/AMD Windows 7 SP1, Windows 8.1, Windows 10/11 | .NET Framework 4.6.2 or later'; TestedOnActualWindows7=$false }
 $report['SourceInputs'] = $sourceInputs
 $report | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath "$outputFile.package.json" -Encoding utf8NoBOM
 [pscustomobject]$report | Select-Object Version,ReleaseChannel,BuildDate,BuiltAtUtc,Output,SHA256,FileCount,PackageWork | ConvertTo-Json
