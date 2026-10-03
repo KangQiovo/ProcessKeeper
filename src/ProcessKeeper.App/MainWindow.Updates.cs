@@ -35,6 +35,7 @@ public sealed partial class MainWindow
             CreateStage = () => UpdateInstaller.CreateDownloadStage(Context()),
             DiscardStage = stage => UpdateInstaller.DiscardDownloadStage(Context(), stage),
             Install = InstallApplicationUpdateAsync,
+            ExitAfterUpdate = () => { _closeApproved = true; Close(); Microsoft.UI.Xaml.Application.Current.Exit(); },
             Shortcut = async token =>
             {
                 token.ThrowIfCancellationRequested();
@@ -49,7 +50,7 @@ public sealed partial class MainWindow
         _updatesView = new UpdatesView(backend)
         {
             Present = ShowDialog,
-            CanPresent = () => !_closed && !_working && !HasPendingTool && !_dialogOpen && !_windowOperationRunning && _autorunsView?.IsChanging != true,
+            CanPresent = () => !_closed && !_closingIntent && !_closingMotion && !_savingBeforeTransition && !_replacementPreparing && !_working && !HasPendingTool && !_dialogOpen && !_windowOperationRunning && _autorunsView?.IsChanging != true,
             Log = Log
         };
         _updatesView.BusyChanged += busy => { if (!_closed) { LanguageChoice.IsEnabled = !busy; ReopenIntroductionButton.IsEnabled = !busy; } };
@@ -82,7 +83,6 @@ public sealed partial class MainWindow
             if (!result.Success) throw new IOException(result.Message);
             handedOff = true;
             Log(L.T("更新并重新启动") + " | " + download.Release.Tag);
-            Close(); Application.Current.Exit();
         }
         finally
         {

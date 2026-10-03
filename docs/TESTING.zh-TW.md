@@ -17,6 +17,7 @@ dotnet run --project src/ProcessKeeper.Search.Tests/ProcessKeeper.Search.Tests.c
 dotnet run --project src/ProcessKeeper.Autorun.Tests/ProcessKeeper.Autorun.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Update.Tests/ProcessKeeper.Update.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Architecture.Tests/ProcessKeeper.Architecture.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Instance.Tests/ProcessKeeper.Instance.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
@@ -35,6 +36,7 @@ dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests
 dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net462
 dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net462
 dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net462
+dotnet run --project src/ProcessKeeper.Legacy.Instance.Tests/ProcessKeeper.Legacy.Instance.Tests.csproj -c Release
 ```
 
 Legacy 測試程式必須在裝有相容 .NET Framework 的 Windows 中實際執行；僅建置成功不代表執行通過。它使用共用測試夾具、隔離檔案和唯讀處理程序身分檢查。選用參數 `--read-only-live` 會列舉真實自動啟動來源但不修改它們，一般迴歸請省略此參數。
@@ -54,6 +56,8 @@ Legacy 測試程式必須在裝有相容 .NET Framework 的 Windows 中實際執
 詳細說明見 [AVD](../src/ProcessKeeper.Avd.Tests/README.zh-TW.md)、[啟動器](../src/ProcessKeeper.Launcher.Tests/README.zh-TW.md)、[搜尋](../src/ProcessKeeper.Search.Tests/README.zh-TW.md)及 [Legacy Core](../src/ProcessKeeper.Legacy.Core/README.zh-TW.md)。
 
 ## 1.7.0 回歸邊界
+
+單一執行個體檢查應涵蓋同一使用者及工作階段內的不同套件路徑、版本和介面路線。確認獲選者身分來自實際處理程序與受保護的啟動憑據；未獲選的啟動不能因延遲回呼重新開啟引導或主視窗；關閉視窗或釋放鎖後，仍須等待舊處理程序實際結束。保留現有執行個體的結束狀態不能算更新就緒。僅使用隔離且由測試擁有的處理程序，不為此關閉使用者真實應用。
 
 已安裝應用測試涵蓋重複登錄、版本/架構後綴、不同磁碟、缺失或衝突的發行者、共用命令宿主、保留元件角色資訊、精確啟動入口與獨立白名單狀態。解除安裝測試合併相關版本時保留每條登錄。分組必須保留來源身分，列表變短本身不能算通過。
 

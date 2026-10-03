@@ -17,6 +17,7 @@ dotnet run --project src/ProcessKeeper.Search.Tests/ProcessKeeper.Search.Tests.c
 dotnet run --project src/ProcessKeeper.Autorun.Tests/ProcessKeeper.Autorun.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Update.Tests/ProcessKeeper.Update.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Architecture.Tests/ProcessKeeper.Architecture.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Instance.Tests/ProcessKeeper.Instance.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
@@ -35,6 +36,7 @@ dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests
 dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net462
 dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net462
 dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net462
+dotnet run --project src/ProcessKeeper.Legacy.Instance.Tests/ProcessKeeper.Legacy.Instance.Tests.csproj -c Release
 ```
 
 Legacy 测试程序必须在装有兼容 .NET Framework 的 Windows 中实际运行；仅构建成功不代表运行通过。它使用共享夹具、隔离文件和只读进程身份检查。可选参数 `--read-only-live` 会枚举真实自启动来源但不修改它们，普通回归请省略此参数。
@@ -54,6 +56,8 @@ Legacy 测试程序必须在装有兼容 .NET Framework 的 Windows 中实际运
 详细说明见 [AVD](../src/ProcessKeeper.Avd.Tests/README.zh-CN.md)、[启动器](../src/ProcessKeeper.Launcher.Tests/README.zh-CN.md)、[搜索](../src/ProcessKeeper.Search.Tests/README.zh-CN.md)及 [Legacy Core](../src/ProcessKeeper.Legacy.Core/README.zh-CN.md)。
 
 ## 1.7.0 回归边界
+
+单实例检查应覆盖同一用户及会话内的不同包路径、版本和界面路线。确认获选者身份来自实际进程与受保护的启动凭据；未获选的启动不能因延迟回调重新打开引导或主窗口；关闭窗口或释放锁后，仍须等待旧进程实际退出。保留已有实例的退出状态不能算更新就绪。只使用隔离且由测试拥有的进程，不为此关闭用户真实应用。
 
 已安装应用测试覆盖重复登记、版本/架构后缀、不同盘符、缺失及冲突的发布者、共享命令宿主、保留组件角色信息、准确启动入口和独立白名单状态。卸载测试合并相关版本时保留每条登记。分组必须保留来源身份，仅列表变短不能算通过。
 

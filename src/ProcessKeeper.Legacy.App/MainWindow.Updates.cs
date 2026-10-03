@@ -25,6 +25,11 @@ public partial class MainWindow
     private CancellationTokenSource? _updateCheckCancellation;
     private UpdateCheckResult? _pendingUpdate;
     private UpdateDownloadWindow? _updateDownloadWindow;
+    private CancellationTokenSource? _updateDownloadCancellation;
+    private TaskCompletionSource<bool>? _updateTransferFinished;
+    private TaskCompletionSource<bool>? _shortcutFinished;
+    private readonly HashSet<Task> _updateChecks = new();
+    private CancellationTokenSource? _releaseDialogCancellation;
     private readonly HashSet<string> _shownUpdateVersions = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _updatePromptTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
@@ -92,34 +97,37 @@ public partial class MainWindow
     }
     private async Task EnsureDesktopShortcutAsync(bool manual)
     {
-        if (_closed || _shortcutBusy || !_updatesReadable) return;
+        if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || _shortcutBusy || !_updatesReadable) return;
         _shortcutBusy = true;
+        _shortcutFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
             if (!await Task.Run(_backend.Updates.HasTrustedLauncher, _life.Token))
             { if (manual) SetUpdateStatus(L.T("当前文件不支持应用内更新，请从原始单文件 EXE 启动。")); return; }
-            if (_closed || _life.IsCancellationRequested || (!manual && !_updates.AutoDesktopShortcut)) return;
+            if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || _life.IsCancellationRequested || (!manual && !_updates.AutoDesktopShortcut)) return;
             var result = await _backend.Updates.CreateShortcut();
             if (manual || !result.Success) SetUpdateStatus(result.Message);
             if (result.Success && !result.AlreadyExists) Log(result.Message);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { if (manual) SetUpdateStatus(L.T("快捷方式创建失败") + " | " + ex.Message); }
-        finally { _shortcutBusy = false; }
+        finally { _shortcutBusy = false; _shortcutFinished?.TrySetResult(true); _shortcutFinished = null; }
     }
     private async Task CheckUpdatesAsync(bool manual)
     {
+        if (_replacementRequested || _savingBeforeClose || _closingMotion) return;
         if (manual && _updateDownloadWindow is not null) { _updateDownloadWindow.Reveal(); return; }
         if (_closed || !_updatesReadable || _updateDownloading || _updateDialogOpen) return;
         var preferences = _updates;
         var generation = ++_updateCheckGeneration;
         _updateCheckCancellation?.Cancel();
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token); _updateCheckCancellation = cancellation;
+        var finished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously); _updateChecks.Add(finished.Task);
         try
         {
             SetUpdateStatus(L.T("正在检查更新…"));
             var result = await _backend.Updates.Check(preferences, CurrentAppVersion, cancellation.Token);
-            if (_closed || cancellation.IsCancellationRequested || generation != _updateCheckGeneration || preferences != _updates) return;
+            if (_closed || _replacementRequested || cancellation.IsCancellationRequested || generation != _updateCheckGeneration || preferences != _updates) return;
             SetUpdateStatus(result.Message);
             if (manual && result.Releases.Count > 0)
             {
@@ -131,13 +139,13 @@ public partial class MainWindow
         }
         catch (OperationCanceledException) { if (manual && generation == _updateCheckGeneration) SetUpdateStatus(L.T("更新检查已取消")); }
         catch (Exception ex) { if (generation == _updateCheckGeneration) SetUpdateStatus(L.T("检查更新失败") + " | " + ex.Message); }
-        finally { if (ReferenceEquals(_updateCheckCancellation, cancellation)) _updateCheckCancellation = null; cancellation.Dispose(); }
+        finally { if (ReferenceEquals(_updateCheckCancellation, cancellation)) _updateCheckCancellation = null; cancellation.Dispose(); finished.TrySetResult(true); _updateChecks.Remove(finished.Task); }
     }
-    private bool UpdateUiAvailable() => !_closed && !_busy && !_updateDialogOpen && !_riskModeDialogOpen && !_updateDownloading && Overlay.Visibility != Visibility.Visible && OwnedWindows.Count == 0;
+    private bool UpdateUiAvailable() => !_closed && !_replacementRequested && !_savingBeforeClose && !_closingMotion && !_busy && !_updateDialogOpen && !_riskModeDialogOpen && !_updateDownloading && Overlay.Visibility != Visibility.Visible && OwnedWindows.Count == 0;
     private static string ReleaseIdentity(UpdateRelease release) => release.Repository + "|" + release.Tag;
     private async Task ShowPendingUpdateAsync()
     {
-        if (_pendingUpdate is null || _closed) { _updatePromptTimer.Stop(); return; }
+        if (_pendingUpdate is null || _closed || _replacementRequested) { _updatePromptTimer.Stop(); return; }
         if (!UpdateUiAvailable()) return;
         var pending = _pendingUpdate; _pendingUpdate = null; _updatePromptTimer.Stop();
         await ShowUpdateReleasesAsync(pending);
@@ -153,7 +161,7 @@ public partial class MainWindow
             selected = await ChooseUpdateReleaseAsync(result);
         }
         finally { _updateDialogOpen = false; }
-        if (selected is not null && !_closed) await DownloadUpdateAsync(selected);
+        if (selected is not null && !_closed && !_replacementRequested) await DownloadUpdateAsync(selected);
     }
     private sealed record UpdateSelection(UpdateRelease Release, UpdateAsset Asset, UpdatePreferences Preferences);
     private Window UpdateWindow(string title, double width, out Grid root, out StackPanel body, out WrapPanel actions)
@@ -167,9 +175,10 @@ public partial class MainWindow
     }
     private async Task<UpdateSelection?> ChooseUpdateReleaseAsync(UpdateCheckResult result)
     {
+        if (_closed || _replacementRequested) return null;
         var preferences = _updates;
         var window = UpdateWindow(L.T("检查更新"), 720, out _, out var body, out var actions);
-        using var dialogCancellation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token);
+        using var dialogCancellation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token, _updateCheckCancellation?.Token ?? CancellationToken.None);
         window.Closed += (_, _) => dialogCancellation.Cancel();
         body.Children.Add(Text(result.UpdateAvailable && result.LatestRelease is not null ? L.F($"发现新版本 | {result.LatestRelease.Version}") : result.Message, 22));
         body.Children.Add(Text(L.F($"当前版本：{CurrentAppVersion}"), 12)); body.Children.Add(Text(L.F($"更新仓库：{preferences.Repository}"), 12)); body.Children.Add(Text(L.T("版本信息来自 GitHub 官方；更新源用于下载安装包。"), 12));
@@ -237,9 +246,16 @@ public partial class MainWindow
         UpdateSelection? selection = null;
         later.Click += (_, _) => window.DialogResult = false;
         download.Click += (_, _) => { if (!download.IsEnabled || releases.SelectedIndex < 0 || assets.SelectedIndex < 0) return; var release = result.Releases[releases.SelectedIndex]; selection = new UpdateSelection(release, release.Assets[assets.SelectedIndex], preferences); window.DialogResult = true; };
-        using var canceled = _life.Token.Register(() => Dispatcher.BeginInvoke(new Action(() => { if (window.IsVisible) window.Close(); })));
-        if (_closed || _life.IsCancellationRequested) return null;
-        await Task.Yield(); return window.ShowDialog() == true ? selection : null;
+        using var canceled = dialogCancellation.Token.Register(() => Dispatcher.BeginInvoke(new Action(() => { if (window.IsVisible) window.Close(); })));
+        _releaseDialogCancellation = dialogCancellation;
+        try
+        {
+            if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || dialogCancellation.IsCancellationRequested) return null;
+            await Task.Yield();
+            if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || dialogCancellation.IsCancellationRequested) return null;
+            return window.ShowDialog() == true ? selection : null;
+        }
+        finally { if (ReferenceEquals(_releaseDialogCancellation, dialogCancellation)) _releaseDialogCancellation = null; }
     }
     private static string FormatUpdateBytes(long bytes) => bytes >= 1024 * 1024 ? (bytes / 1048576d).ToString("0.0") + " MiB" : bytes >= 1024 ? (bytes / 1024d).ToString("0.0") + " KiB" : bytes + " B";
 
@@ -261,10 +277,12 @@ public partial class MainWindow
 
     private async Task DownloadUpdateAsync(UpdateSelection selection)
     {
-        if (_closed || _busy || _updateDownloading || !_updatesReadable || !selection.Asset.CanAutoInstall) return;
+        if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || _busy || _updateDownloading || !_updatesReadable || !selection.Asset.CanAutoInstall) return;
         _updateDownloading = true;
+        _updateTransferFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         var started = false; var lockedForInstall = false; LegacyUpdateTransaction? preparedTransaction = null;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token);
+        _updateDownloadCancellation = cancellation;
         var transfer = new UpdateTransferController(selection.Preferences, _backend.Updates.CreateStage, _backend.Updates.CleanupStage,
             (preferences, release, asset, stage, progress, token) => _backend.Updates.Download(preferences, release, asset, stage, progress, token),
             _backend.Updates.CreateSession, _backend.Updates.ResumeDownload, _backend.Updates.DiscardSession);
@@ -314,7 +332,6 @@ public partial class MainWindow
                 var result = await Task.Run(preparedTransaction.Start, cancellation.Token);
                 if (!result.Success) throw new IOException(result.Message);
                 started = true; Log(result.Message);
-                if (_backend.Updates.ExitAfterUpdate is not null) _backend.Updates.ExitAfterUpdate(); else Close();
                 return;
             }
         }
@@ -326,7 +343,22 @@ public partial class MainWindow
             _updateDownloadWindow?.Finish(); _updateDownloadWindow = null;
             try { await Task.Run(transfer.Dispose); } catch (Exception ex) { SetUpdateStatus(ex.Message); }
             _updateDownloading = false;
+            _updateDownloadCancellation = null; _updateTransferFinished?.TrySetResult(true); _updateTransferFinished = null;
             if (lockedForInstall) { _busy = false; if (!_closed) Navigation.IsEnabled = List.IsEnabled = true; }
+            if (started)
+            {
+                if (_backend.Updates.ExitAfterUpdate is not null) _backend.Updates.ExitAfterUpdate();
+                else { _closeApproved = true; Close(); }
+            }
         }
+    }
+    private async Task CancelUpdatesAndWaitAsync()
+    {
+        _pendingUpdate = null; _updatePromptTimer.Stop(); _updateCheckGeneration++;
+        _updateCheckCancellation?.Cancel(); _releaseDialogCancellation?.Cancel(); _updateDownloadCancellation?.Cancel();
+        var finished = _updateTransferFinished?.Task;
+        if (finished is not null) await finished;
+        var checks = _updateChecks.ToArray(); if (checks.Length > 0) await Task.WhenAll(checks);
+        var shortcut = _shortcutFinished?.Task; if (shortcut is not null) await shortcut;
     }
 }

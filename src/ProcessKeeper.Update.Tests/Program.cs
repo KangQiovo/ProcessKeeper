@@ -30,6 +30,7 @@ internal static class Program
         Versions(); Preferences(); await FixedRepository();
         InstallerIdentityVerification.Run(Check);
         AppCacheCleanupVerification.Run(Check);
+        InstanceRedirectVerification.Run(Check);
         await UpdatePackageVerification.Run(Check);
         await UpdateResumeVerification.Run(Check);
         await Metadata(); await Sources(); await Downloads(); await Boundaries(); await AdditionalBoundaries();

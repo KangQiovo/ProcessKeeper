@@ -18,7 +18,7 @@ public sealed partial class MainWindow
             ConfirmToolAsync, OpenRowLocation, Log, CanStartTool);
         DownloadHost.Content = _downloadView;
     }
-    private bool CanStartTool() => !_closed && !_working && !_dialogOpen && !_windowOperationRunning &&
+    private bool CanStartTool() => !_closed && !_closingIntent && !_closingMotion && !_savingBeforeTransition && !_replacementPreparing && !_working && !_dialogOpen && !_windowOperationRunning &&
         _updatesView?.IsBusy != true && _uninstallView?.IsBusy != true && _autorunsView?.IsChanging != true;
     private async Task<bool> ConfirmToolAsync(string title, string details)
     {

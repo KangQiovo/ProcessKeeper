@@ -32,6 +32,7 @@ public partial class MainWindow
     }
     private void ShowOnboarding(bool review)
     {
+        if (_closed || _replacementRequested) return;
         _onboardingPage = 0; _reviewOnboarding = review; Overlay.Visibility = Visibility.Visible; Shell.IsEnabled = false; RenderOnboarding();
     }
     private void RenderOnboarding()
@@ -120,7 +121,7 @@ public partial class MainWindow
 
     private async Task MoveOnboardingAsync(int direction)
     {
-        if (_onboardingTransition || _closed || _closingMotion || direction < 0 && (_onboardingPage == 0 || _onboardingPage == 4)) return;
+        if (_onboardingTransition || _closed || _replacementRequested || _closingMotion || direction < 0 && (_onboardingPage == 0 || _onboardingPage == 4)) return;
         _onboardingTransition = true;
         Overlay.IsHitTestVisible = false;
         try
@@ -129,26 +130,26 @@ public partial class MainWindow
             try { await _onboardingEntranceTask; } catch { }
             if (Overlay.Children.Count == 1 && Overlay.Children[0] is FrameworkElement oldPage)
                 await NativeMotion.AnimateAsync(oldPage, 1, 0, 0, direction > 0 ? -8 : 8, MotionEnabled(), _life.Token, 90);
-            if (_closed || _closingMotion) return;
+            if (_closed || _replacementRequested || _closingMotion) return;
             _onboardingPage = Math.Max(0, Math.Min(4, _onboardingPage + direction));
             RenderOnboarding();
             await _onboardingEntranceTask;
         }
-        catch (OperationCanceledException) when (_closed || _closingMotion) { }
-        catch { if (!_closed) RenderOnboarding(); }
-        finally { _onboardingTransition = false; if (!_closed) Overlay.IsHitTestVisible = true; }
+        catch (OperationCanceledException) when (_closed || _replacementRequested || _closingMotion) { }
+        catch { if (!_closed && !_replacementRequested) RenderOnboarding(); }
+        finally { _onboardingTransition = false; if (!_closed && !_replacementRequested) Overlay.IsHitTestVisible = true; }
     }
 
     private async Task CloseOnboardingAsync()
     {
-        if (_onboardingTransition || _closed || _closingMotion) return;
+        if (_onboardingTransition || _closed || _replacementRequested || _closingMotion) return;
         _onboardingTransition = true;
         Overlay.IsHitTestVisible = false;
         try { await NativeMotion.AnimateAsync(Overlay, 1, 0, 0, -8, MotionEnabled(), _life.Token); }
-        catch (OperationCanceledException) when (_closed || _closingMotion) { return; }
+        catch (OperationCanceledException) when (_closed || _replacementRequested || _closingMotion) { return; }
         catch { if (!_closed) Overlay.Opacity = 1; }
         finally { _onboardingTransition = false; if (!_closed) { Overlay.Opacity = 1; Overlay.IsHitTestVisible = true; } }
-        if (_closed || _closingMotion) return;
+        if (_closed || _replacementRequested || _closingMotion) return;
         Overlay.Children.Clear(); Overlay.Visibility = Visibility.Collapsed; Shell.IsEnabled = true; ConfigureLanguage(); _ = RenderAsync();
     }
 

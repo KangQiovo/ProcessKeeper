@@ -11,6 +11,7 @@
   <PackageReference Include="System.Text.Json" Version="8.0.6"/>
   <PackageReference Include="Markdig" Version="0.41.3"/>
   <Compile Include="../ProcessKeeper.App/ReleaseNotesDocument.cs" Link="ReleaseNotesDocument.cs"/>
+  <Compile Include="../ProcessKeeper.App/SingleInstanceCoordinator.cs" Link="SingleInstanceCoordinator.cs"/>
   <Compile Include="../ProcessKeeper.App/UpdateTransferController.cs" Link="UpdateTransferController.cs"/>
   <ProjectReference Include="../ProcessKeeper.Legacy.Core/ProcessKeeper.Legacy.Core.csproj"/>
   <Resource Include="../ProcessKeeper.App/Assets/ProcessKeeper.png" Link="Assets/ProcessKeeper.png"/>

@@ -19,6 +19,7 @@ internal sealed class UpdateUiBackend
     internal Func<UpdateRelease, UpdateAsset, string, UpdateDownloadSession>? CreateSession { get; init; }
     internal Func<UpdatePreferences, UpdateDownloadSession, IProgress<UpdateProgress>, CancellationToken, Task<UpdateDownloadResult>>? ResumeDownload { get; init; }
     internal Action<UpdateDownloadSession>? DiscardSession { get; init; }
+    internal Action? ExitAfterUpdate { get; init; }
 }
 
 /// <summary>Native, bounded update UI. Network and installation boundaries are injected for isolated fixtures.</summary>
@@ -28,6 +29,9 @@ internal sealed class UpdatesView : UserControl
     private readonly UpdatePreferencesStore _store;
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _operation;
+    private TaskCompletionSource<bool>? _operationFinished;
+    private bool _exitAfterCleanup;
+    private bool _closingSuspended;
     private static bool _startupChecked, _startupShortcutAttempted;
     private static readonly HashSet<string> AnnouncedVersions = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _currentVersion = ResolveCurrentVersion();
@@ -129,17 +133,18 @@ internal sealed class UpdatesView : UserControl
 
     internal async Task StartOnLaunchAsync()
     {
-        if (_closed || !_readable) return;
+        if (_closed || _closingSuspended || !_readable) return;
         try
         {
             // Let initial list loading render; no collector work is blocked by networking.
             await Task.Delay(900, _lifetime.Token);
+            if (_closed || _closingSuspended) return;
             if (!_startupShortcutAttempted && Preferences.AutoDesktopShortcut)
             {
                 _startupShortcutAttempted = true;
                 await CreateShortcutAsync(true);
             }
-            if (!_startupChecked && Preferences.CheckOnStartup && !_closed)
+            if (!_startupChecked && Preferences.CheckOnStartup && !_closed && !_closingSuspended)
             {
                 _startupChecked = true;
                 await CheckAsync(true);
@@ -150,6 +155,7 @@ internal sealed class UpdatesView : UserControl
 
     private CancellationToken BeginOperation()
     {
+        _operationFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         _check.IsEnabled = _shortcut.IsEnabled = _save.IsEnabled = _source.IsEnabled = _node.IsEnabled = _onStartup.IsEnabled = _desktop.IsEnabled = false;
         _cancel.Visibility = Visibility.Visible; _progress.Visibility = Visibility.Visible; _progress.IsIndeterminate = true;
@@ -159,6 +165,7 @@ internal sealed class UpdatesView : UserControl
 
     private void EndOperation()
     {
+        _operationFinished?.TrySetResult(true); _operationFinished = null;
         _operation?.Dispose(); _operation = null;
         if (_closed) return;
         _check.IsEnabled = _shortcut.IsEnabled = _save.IsEnabled = _source.IsEnabled = _onStartup.IsEnabled = _desktop.IsEnabled = true;
@@ -169,6 +176,7 @@ internal sealed class UpdatesView : UserControl
 
     private async Task CheckAsync(bool automatic)
     {
+        if (_closingSuspended) return;
         if (!automatic && _downloadWindow is not null) { _downloadWindow.Reveal(); return; }
         if (_closed || IsBusy || !_readable) return;
         if (!automatic && !CanPresent()) { SetStatus(L.T("请等待当前操作完成")); return; }
@@ -192,7 +200,7 @@ internal sealed class UpdatesView : UserControl
         }
         catch (OperationCanceledException) { if (!_closed) SetStatus(L.T("更新检查已取消")); }
         catch (Exception exception) { if (!_closed) { SetStatus(L.T("检查更新失败") + " | " + exception.Message); Log(L.T("检查更新失败") + " | " + exception.Message); } }
-        finally { EndOperation(); }
+        finally { EndOperation(); if (_exitAfterCleanup) { _exitAfterCleanup = false; _backend.ExitAfterUpdate?.Invoke(); } }
     }
 
     private async Task<UpdateAsset?> ChooseReleaseAssetAsync(UpdateRelease release, CancellationToken token)
@@ -293,7 +301,7 @@ internal sealed class UpdatesView : UserControl
                 {
                     transfer.SetPhase(UpdateTransferPhase.Installing, L.T("正在准备更新…"));
                     _cancel.IsEnabled = false; _check.IsEnabled = false;
-                    await _backend.Install(download, token); return;
+                    await _backend.Install(download, token); _exitAfterCleanup = true; return;
                 }
                 catch (UpdateInstallDeferredException)
                 { installChoice = new(TaskCreationOptions.RunContinuationsAsynchronously); _cancel.IsEnabled = _check.IsEnabled = true; transfer.SetPhase(UpdateTransferPhase.Ready, L.T("请等待当前操作完成")); }
@@ -310,7 +318,7 @@ internal sealed class UpdatesView : UserControl
 
     private async Task CreateShortcutAsync(bool automatic)
     {
-        if (_closed || IsBusy) return;
+        if (_closed || _closingSuspended || IsBusy) return;
         if (!automatic && !CanPresent()) { SetStatus(L.T("请等待当前操作完成")); return; }
         var token = BeginOperation();
         try
@@ -349,5 +357,18 @@ internal sealed class UpdatesView : UserControl
         catch (Exception exception) { if (!_closed) SetStatus(exception.Message); }
     }
     private void SetStatus(string message) { if (!_closed) _status.Text = message; }
+    internal async Task CloseAndWaitAsync()
+    {
+        var finished = _operationFinished?.Task; Close();
+        if (finished is not null) await finished;
+    }
+    internal async Task CancelAndWaitAsync()
+    {
+        _closingSuspended = true;
+        var finished = _operationFinished?.Task; _operation?.Cancel();
+        if (finished is not null) await finished;
+    }
+    internal void SuspendForClosing() => _closingSuspended = true;
+    internal void ResumeAfterCloseCancellation() { if (!_closed) _closingSuspended = false; }
     internal void Close() { _closed = true; _buildDateTimer.Stop(); _lifetime.Cancel(); _operation?.Cancel(); _downloadWindow?.Finish(); _downloadWindow = null; }
 }

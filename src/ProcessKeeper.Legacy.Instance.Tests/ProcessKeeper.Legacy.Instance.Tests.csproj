@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net462</TargetFramework><LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><PlatformTarget>x86</PlatformTarget><Prefer32Bit>true</Prefer32Bit><Product>ProcessKeeper.InstanceFixture</Product><AssemblyTitle>ProcessKeeper singleton fixture | compat</AssemblyTitle><Version>1.7.0</Version><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all"/>
+    <PackageReference Include="System.Text.Json" Version="8.0.6"/>
+    <ProjectReference Include="../ProcessKeeper.Legacy.Core/ProcessKeeper.Legacy.Core.csproj"/>
+    <Compile Include="../ProcessKeeper.Instance.Tests/Program.cs" Link="Program.cs"/>
+    <Compile Include="../ProcessKeeper.App/SingleInstanceCoordinator.cs" Link="SingleInstanceCoordinator.cs"/>
+    <Compile Include="../ProcessKeeper.Legacy.App/Compatibility.cs" Link="Compatibility.cs"/>
+  </ItemGroup>
+</Project>

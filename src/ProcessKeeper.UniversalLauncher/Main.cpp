@@ -1,4 +1,5 @@
 #include "LaunchContext.h"
+#include "InstanceRedirect.h"
 #include <shellapi.h>
 #include <sddl.h>
 #include <thread>
@@ -45,7 +46,7 @@ struct App {
     std::thread worker;
     Page page = Page::Preparing;
     std::wstring detail, url, result;
-    bool working = false, closing = false, succeeded = false;
+    bool working = false, closing = false, succeeded = false, retained = false;
     std::atomic_bool childStarted{false};
     bool forceLegacy = false;
     int language = 0;
@@ -307,6 +308,7 @@ void StartApplication(App& app) {
     app.host = pk::DetectHost(); const auto route = pk::ChoosePackageRoute(app.host, app.packageTarget, app.forceLegacy);
     app.detail.clear();
     if (route == pk::Route::Unsupported || route == pk::Route::MissingFramework) {
+        try { if (pk::RetainVisibleCompatibleInstance(app.host)) { app.retained = true; CloseWithMotion(app); return; } } catch (...) { }
         app.page = route == pk::Route::Unsupported ? Page::Unsupported : Page::MissingFramework; Render(app); ShowWindow(app.window, SW_SHOW); return;
     }
 #ifdef PK_UI_FIXTURE
@@ -317,8 +319,13 @@ void StartApplication(App& app) {
     Render(app); ShowWindow(app.window, SW_SHOW);
     app.worker = std::thread([&app, route] {
         try {
+            pk::InstanceLaunchGate launchGate(&app.canceled);
+            // Authenticate and prepare the candidate before it can request a live owner's close.
             auto payload = pk::PreparePayload(route, &app.canceled);
             if (app.canceled) throw pk::Failure(L"Startup canceled.");
+            if (pk::ResolvePreferredInstance(route, pk::ProcessCreated(GetCurrentProcess()), &app.canceled)) {
+                app.retained = true; PostMessageW(app.window, Completed, 0, 0); return;
+            }
             const auto executable = payload.directory + L"\\ProcessKeeper.exe";
             auto command = L"\"" + executable + L"\"";
             STARTUPINFOW startup{ sizeof(startup) }; PROCESS_INFORMATION process{};
@@ -337,13 +344,14 @@ void StartApplication(App& app) {
                 if (app.canceled) throw pk::Failure(L"Startup canceled.");
                 if (WaitForSingleObject(app.child.get(), 0) == WAIT_OBJECT_0) {
                     DWORD code = 0; if (!GetExitCodeProcess(app.child.get(), &code)) pk::Fail(L"Cannot read the application exit status.");
+                    if (code == 3 && pk::ConfirmInstanceRedirect(contextId, process.dwProcessId, route, pk::ProcessCreated(app.child.get()))) { app.retained = true; break; }
                     throw pk::Failure(L"The application exited before a visible window was confirmed.\r\n" + pk::ErrorText(code));
                 }
                 WindowCheck check{ process.dwProcessId }; EnumWindows(FindApplicationWindow, reinterpret_cast<LPARAM>(&check));
                 if (check.found) { app.succeeded = true; break; }
                 Sleep(250);
             }
-            if (!app.succeeded) throw pk::Failure(L"The process is running, but no visible application window was confirmed within 60 seconds.");
+            if (!app.succeeded && !app.retained) throw pk::Failure(L"The process is running, but no visible application window was confirmed within 60 seconds.");
         } catch (const pk::Failure& error) { app.result = error.message; }
         catch (...) { app.result = L"An unexpected startup error occurred."; }
         PostMessageW(app.window, Completed, 0, 0);
@@ -422,6 +430,12 @@ LRESULT CALLBACK Procedure(HWND window, UINT message, WPARAM wparam, LPARAM lpar
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT: SetBkColor(reinterpret_cast<HDC>(wparam), app.background); SetTextColor(reinterpret_cast<HDC>(wparam), app.foreground); return reinterpret_cast<LRESULT>(BackgroundBrush(app));
     case WM_TIMER:
+#ifndef PK_UI_FIXTURE
+        if (wparam == 5 && !app.working && !app.closing && !app.revealing && !app.elevated.valid() &&
+            (app.page == Page::Permission || app.page == Page::Failed || app.page == Page::MissingFramework || app.page == Page::Unsupported)) {
+            try { if (pk::RetainVisibleCompatibleInstance(app.host)) { app.retained = true; CloseWithMotion(app); } } catch (...) { }
+        }
+#endif
         if (wparam == 1 && app.elevated.valid() && WaitForSingleObject(app.elevated.get(), 0) == WAIT_OBJECT_0) DestroyWindow(window);
         if (wparam == LoadingTimer && !IsIconic(window) && IsWindowVisible(window)) { ++app.animationFrames; InvalidateRect(app.ring, nullptr, FALSE); }
         if (wparam == RevealTimer) {
@@ -449,7 +463,7 @@ LRESULT CALLBACK Procedure(HWND window, UINT message, WPARAM wparam, LPARAM lpar
     case Completed:
         if (app.worker.joinable()) app.worker.join(); app.working = false;
         if (app.closing) CloseWithMotion(app);
-        else if (app.succeeded) CloseWithMotion(app);
+        else if (app.succeeded || app.retained) CloseWithMotion(app);
         else { app.page = Page::Failed; app.detail = app.result; Render(app); }
         return 0;
 #ifdef PK_UI_FIXTURE
@@ -510,14 +524,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* arguments, int) {
         Render(app); ShowWindow(window, SW_SHOW); SetTimer(window, 2, options.find(L"exit-") != std::wstring::npos ? 100 : 15000, nullptr);
 #else
         app.packageTarget = pk::EmbeddedPackageTarget();
+        SetTimer(window, 5, 1000, nullptr); // Idle help windows retire only after observing a real compatible UI.
         if (*arguments) { app.page = Page::Failed; app.detail = L"This launcher does not accept command-line parameters."; Render(app); ShowWindow(window, SW_SHOW); }
         else if (pk::ChoosePackageRoute(app.host, app.packageTarget) == pk::Route::Unsupported) StartApplication(app);
         else if (!pk::IsAdministrator()) RequestElevation(app);
         else StartApplication(app);
 #endif
         MSG message{}; while (GetMessageW(&message, nullptr, 0, 0) > 0) { if (!IsDialogMessageW(window, &message)) { TranslateMessage(&message); DispatchMessageW(&message); } }
+        if (app.retained) return 3;
         if (app.succeeded) return 0;
-        if (app.elevated.valid()) { DWORD code = 2; if (GetExitCodeProcess(app.elevated.get(), &code) && code != STILL_ACTIVE) return code == 0 ? 0 : code == 1 ? 1 : 2; return 2; }
+        if (app.elevated.valid()) { DWORD code = 2; if (GetExitCodeProcess(app.elevated.get(), &code) && code != STILL_ACTIVE) return code == 0 ? 0 : code == 1 ? 1 : code == 3 ? 3 : 2; return 2; }
 #ifdef PK_UI_FIXTURE
         if (options.find(L"exit-unconfirmed") != std::wstring::npos) return 2;
 #endif

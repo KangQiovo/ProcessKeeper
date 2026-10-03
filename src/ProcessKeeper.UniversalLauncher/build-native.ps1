@@ -46,8 +46,11 @@ $env:PATH = (Split-Path $linker) + ';' + $env:PATH
 Push-Location $nativeBuild
 try {
     $common = @('/nologo','/std:c++17','/EHsc','/W4','/WX','/MT','/O1','/utf-8','/DUNICODE','/D_UNICODE','/D_WIN32_WINNT=0x0601','/DWINVER=0x0601')
-    $sources = @('Platform.cpp','Security.cpp','SecurityTests.cpp','Payload.cpp','PayloadTests.cpp','LaunchContext.cpp','CacheCleanup.cpp','InstalledRegistration.cpp','SetupGuard.cpp','DesktopShortcut.cpp','UpdateTransaction.cpp','UpdateTests.cpp','PlatformTests.cpp') | ForEach-Object { Join-Path $nativeRoot $_ }
-    & $compiler @common '/DPK_FIXTURE_BUILD' @sources '/Fe:PlatformTests.exe' '/link' '/SUBSYSTEM:CONSOLE,6.01' 'advapi32.lib' 'shell32.lib' 'user32.lib' 'ole32.lib' 'uuid.lib'
+    $resourceCompiler = Join-Path $sdkRoot "bin/$sdkVersion/x86/rc.exe"
+    & $resourceCompiler /nologo /fo instance-tests.res (Join-Path $nativeRoot 'instance-tests.rc')
+    if ($LASTEXITCODE -ne 0) { throw 'Native instance fixture resource compilation failed.' }
+    $sources = @('Platform.cpp','Security.cpp','SecurityTests.cpp','Payload.cpp','PayloadTests.cpp','LaunchContext.cpp','InstanceRedirect.cpp','InstanceTests.cpp','CacheCleanup.cpp','InstalledRegistration.cpp','SetupGuard.cpp','DesktopShortcut.cpp','UpdateTransaction.cpp','UpdateTests.cpp','PlatformTests.cpp') | ForEach-Object { Join-Path $nativeRoot $_ }
+    & $compiler @common '/DPK_FIXTURE_BUILD' @sources 'instance-tests.res' '/Fe:PlatformTests.exe' '/link' '/SUBSYSTEM:CONSOLE,6.01' 'advapi32.lib' 'shell32.lib' 'user32.lib' 'ole32.lib' 'uuid.lib' 'version.lib'
     if ($LASTEXITCODE -ne 0) { throw 'Native route test build failed.' }
     $fixtureArguments = @()
     if ($FixtureCabinet -or $FixtureManifest -or $FixtureDirectory) {
@@ -71,11 +74,11 @@ try {
         $resourceCompiler = Join-Path $sdkRoot "bin/$sdkVersion/x86/rc.exe"
         & $resourceCompiler /nologo /I $nativeRoot /fo launcher.res $ResourceScript
         if ($LASTEXITCODE -ne 0) { throw 'Native resource compilation failed.' }
-        $launcherNames = @('Platform.cpp','Security.cpp','Payload.cpp','LaunchContext.cpp','CacheCleanup.cpp','Main.cpp')
+        $launcherNames = @('Platform.cpp','Security.cpp','Payload.cpp','LaunchContext.cpp','InstanceRedirect.cpp','CacheCleanup.cpp','Main.cpp')
         if ($UpdaterOnly) { $launcherNames = @('Platform.cpp','Security.cpp','Payload.cpp','LaunchContext.cpp','CacheCleanup.cpp','InstalledRegistration.cpp','DesktopShortcut.cpp','UpdateTransaction.cpp','UpdaterMain.cpp') }
         $launcherSources = $launcherNames | ForEach-Object { Join-Path $nativeRoot $_ }
         $defines = @(); if ($UiFixture) { $defines += '/DPK_UI_FIXTURE' }
-        & $compiler @common @defines @launcherSources 'launcher.res' "/Fe:$OutputPath" '/link' '/SUBSYSTEM:WINDOWS,6.01' '/MANIFEST:NO' '/DYNAMICBASE' '/NXCOMPAT' 'advapi32.lib' 'shell32.lib' 'user32.lib' 'gdi32.lib' 'ole32.lib' 'uuid.lib'
+        & $compiler @common @defines @launcherSources 'launcher.res' "/Fe:$OutputPath" '/link' '/SUBSYSTEM:WINDOWS,6.01' '/MANIFEST:NO' '/DYNAMICBASE' '/NXCOMPAT' 'advapi32.lib' 'shell32.lib' 'user32.lib' 'gdi32.lib' 'ole32.lib' 'uuid.lib' 'version.lib'
         if ($LASTEXITCODE -ne 0) { throw 'Native launcher build failed.' }
         & (Join-Path $msvcRoot 'bin/Hostx64/x86/dumpbin.exe') /headers /imports $OutputPath | Set-Content -LiteralPath "$OutputPath.pe.txt"
     }

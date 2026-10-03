@@ -35,6 +35,8 @@ Unknown ownership and conflicting publishers remain separate. Grouping is displa
 
 ## Updates
 
+All installed and portable flavors coordinate as one application for the current Windows user/session. Verified compatible versions are ranked before UI suitability; at the same version, supported native WinUI is preferred over WPF. Equivalent launches retain the latest-start rule. A rejected launch activates the retained application; a replacement waits for the previous process to exit after cooperative closure. An incompatible package cannot displace a suitable running application.
+
 The update dialog displays the release's actual Markdown notes and assets. From 1.7.0 onward, automatic installation selects an eligible package for the current flavor and architecture. Downloads use a progress window with pause/resume and source switching; navigation and repeated checks do not discard an active download in the current app session. Recovery after closing the application is not guaranteed.
 
 After download, the package stays ready until you click Update and restart and confirm. There is no automatic countdown or exit. Replacement and desktop-shortcut updates use the verified handoff. The previous package backup is removed only after the new application reports ready; unrelated EXEs are not cleaned up. Missing hashes, incompatible assets and network failures are shown honestly.

@@ -9,7 +9,9 @@ public partial class App : Application
 {
     private Window? _window;
     private SingleInstanceCoordinator? _instances;
-    private bool _starting, _superseded;
+    private bool _starting, _shuttingDown;
+    private volatile bool _superseded;
+    private readonly CancellationTokenSource _startupLifetime = new();
     private readonly CancellationTokenSource _avatarLifetime = new();
     private bool _avatarStarted;
     internal static Task<byte[]?> SharedAuthorAvatarTask { get; private set; } = Task.FromResult<byte[]?>(null);
@@ -39,24 +41,21 @@ public partial class App : Application
         try
         {
             _instances?.Dispose();
-            _instances = new SingleInstanceCoordinator(() => dispatcher.TryEnqueue(async () =>
+            _instances = await Task.Run(() => new SingleInstanceCoordinator(() =>
             {
                 _superseded = true;
-                _avatarLifetime.Cancel();
-                if (_window is MainWindow current)
-                {
-                    // An already-running language/close transition may own the input guard.
-                    // Still wait for its writer before ending this superseded process.
-                    if (!await current.PrepareWindowTransitionAsync())
-                        try { await current.FlushPerformanceAsync(); } catch { current.TryDiscardFailedPerformanceSave(); }
-                }
-                _window?.Close();
-                _instances?.Dispose();
-                Exit();
-            }));
-            var result = await _instances.AcquireAsync();
-            if (result == InstanceAcquireResult.Superseded || _superseded) { Exit(); return; }
-            if (result == InstanceAcquireResult.Blocked) { ShowInstanceBlocked(); return; }
+                _startupLifetime.Cancel();
+                dispatcher.TryEnqueue(async () => await ShutdownForReplacementAsync());
+            }), _startupLifetime.Token);
+            var coordinator = _instances;
+            var result = await Task.Run(() => coordinator.AcquireAsync(_startupLifetime.Token));
+            if (result != InstanceAcquireResult.Acquired || !CanCreateWindow)
+            {
+                await Task.Run(coordinator.NotifyWinner);
+                coordinator.Dispose();
+                if (result == InstanceAcquireResult.Blocked) Environment.ExitCode = 2;
+                Exit(); return;
+            }
             if (!_avatarStarted)
             {
                 _avatarStarted = true;
@@ -69,13 +68,15 @@ public partial class App : Application
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
             _instances?.Dispose();
-            ShowInstanceBlocked();
+            Environment.ExitCode = 2; Exit();
         }
+        catch (OperationCanceledException) { Environment.ExitCode = 3; _instances?.Dispose(); Exit(); }
         finally { _starting = false; }
     }
 
     private void OpenInitialWindow()
     {
+        if (!CanCreateWindow) return;
         var administrator = IsAdministrator();
         var onboarding = new OnboardingStore();
         string? warning = null;
@@ -88,12 +89,12 @@ public partial class App : Application
             startup.IntroductionCompleted += () =>
             {
                 // Access is checked again before any MainWindow field or collector is constructed.
-                if (!IsAdministrator()) return;
+                if (!ReferenceEquals(_window, startup) || !CanCreateWindow || !IsAdministrator()) return;
                 OpenMainWindow(startup.LanguagePreference);
                 startup.Close();
             };
             TrackWindow(startup);
-            startup.Activate();
+            if (CanCreateWindow) startup.Activate();
         }
     }
 
@@ -105,7 +106,7 @@ public partial class App : Application
 
     private void OpenMainWindow(string? initialLanguagePreference = null)
     {
-        if (!IsAdministrator()) return;
+        if (!CanCreateWindow || !IsAdministrator()) return;
         var main = new MainWindow(initialLanguagePreference, SharedAuthorAvatarTask);
         main.IntroductionRequested += async () =>
         {
@@ -126,7 +127,7 @@ public partial class App : Application
             }
         };
         TrackWindow(main);
-        main.Activate();
+        if (CanCreateWindow) main.Activate();
     }
 
     private void TrackWindow(Window window)
@@ -136,13 +137,15 @@ public partial class App : Application
         {
             if (!ReferenceEquals(_window, window)) return;
             _avatarLifetime.Cancel();
+            _startupLifetime.Cancel();
             _instances?.Dispose();
+            Exit();
         };
     }
 
     private void OpenIntroductionReview(MainWindow main)
     {
-        if (!ReferenceEquals(_window, main) || _superseded || !IsAdministrator()) return;
+        if (!ReferenceEquals(_window, main) || !CanCreateWindow || !IsAdministrator()) return;
         var position = main.AppWindow.Position;
         var size = main.AppWindow.Size;
         var theme = (main.Content as FrameworkElement)?.RequestedTheme ?? ElementTheme.Default;
@@ -150,7 +153,7 @@ public partial class App : Application
             ElevationBrokerClient.RequestElevationAsync, review: true, theme: theme);
         startup.IntroductionCompleted += () =>
         {
-            if (!ReferenceEquals(_window, startup) || _superseded || !IsAdministrator()) return;
+            if (!ReferenceEquals(_window, startup) || !CanCreateWindow || !IsAdministrator()) return;
             OpenMainWindow(startup.LanguagePreference);
             if (_window is MainWindow replacement)
             {
@@ -161,50 +164,23 @@ public partial class App : Application
         };
         TrackWindow(startup);
         startup.AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(position.X, position.Y, size.Width, size.Height));
-        startup.Activate();
+        if (CanCreateWindow) startup.Activate();
         main.Close();
     }
 
-    private void ShowInstanceBlocked()
+    private bool CanCreateWindow => !_superseded && !_shuttingDown && _instances?.IsOwner == true;
+
+    private async Task ShutdownForReplacementAsync()
     {
-        var previous = _window;
-        var window = new Window { Title = L.T("Process Keeper") };
-        var panel = new StackPanel { Spacing = 20, MaxWidth = 680, HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(32) };
-        panel.Children.Add(new FontIcon { Glyph = "\uE8A7", FontSize = 48, HorizontalAlignment = HorizontalAlignment.Left });
-        panel.Children.Add(new TextBlock { Text = L.T("正在切换Process Keeper实例"), FontSize = 32, TextWrapping = TextWrapping.Wrap });
-        var message = new TextBlock { Text = L.T("旧窗口尚未退出，或无法读取实例状态。为避免重复操作，当前还没有进入管理页面。请关闭旧窗口后重试。"),
-            TextWrapping = TextWrapping.Wrap, FontSize = 16 };
-        panel.Children.Add(message);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-        var retry = new Button { Content = L.T("重试") };
-        retry.Click += async (_, _) => { retry.IsEnabled = false; await StartLatestInstanceAsync(); retry.IsEnabled = true; };
-        actions.Children.Add(retry);
-        if (!IsAdministrator() && ElevationBrokerClient.IsAvailable)
+        if (_shuttingDown) return;
+        _shuttingDown = true; _superseded = true;
+        _startupLifetime.Cancel(); _avatarLifetime.Cancel();
+        try
         {
-            var elevate = new Button { Content = L.T("以管理员身份继续") };
-            elevate.Click += async (_, _) =>
-            {
-                elevate.IsEnabled = false;
-                try
-                {
-                    var result = await ElevationBrokerClient.RequestElevationAsync(CancellationToken.None);
-                    if (result == ElevationRequestResult.Started) window.Close();
-                    else message.Text = L.T("未完成管理员授权。可以重试，或先手动关闭旧版本的Process Keeper。");
-                }
-                catch { message.Text = L.T("未能完成管理员授权，请重新打开原始单文件「ProcessKeeper.exe」。"); }
-                finally { elevate.IsEnabled = true; }
-            };
-            actions.Children.Add(elevate);
+            if (_instances is { } coordinator) await Task.Run(coordinator.NotifyWinner);
+            if (_window is MainWindow main) await main.CloseForReplacementAsync();
+            else _window?.Close();
         }
-        var close = new Button { Content = L.T("退出") };
-        close.Click += (_, _) => window.Close();
-        actions.Children.Add(close);
-        panel.Children.Add(actions);
-        window.Content = new Grid { Children = { panel }, Background = (Microsoft.UI.Xaml.Media.Brush)Resources["ApplicationPageBackgroundThemeBrush"] };
-        window.AppWindow.Resize(new Windows.Graphics.SizeInt32(1000, 700));
-        TrackWindow(window);
-        window.Activate();
-        previous?.Close();
+        finally { _instances?.Dispose(); Exit(); }
     }
 }

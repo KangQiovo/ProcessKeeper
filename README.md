@@ -165,6 +165,8 @@ Read the [compatibility matrix and known limitations](docs/COMPATIBILITY.md). Re
 
 ## Packaging, settings and updates
 
+All portable and installed editions share one instance namespace for the current Windows user and session. A newer compatible version takes priority; at the same version, eligible native WinUI takes priority over the WPF compatibility interface. Equivalent candidates retain the latest-launch rule. A losing launch activates the retained window and exits. Replacements request cooperative closure and wait for the previous process to exit before opening the successor.
+
 Version 1.7.0 publishes **seven packages**: three portable editions, three corresponding installers with uninstallers, and a universal portable EXE.
 
 | Download | Choose for |

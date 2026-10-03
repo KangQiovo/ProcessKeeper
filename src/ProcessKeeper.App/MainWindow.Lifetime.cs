@@ -9,6 +9,22 @@ public sealed partial class MainWindow
     private bool _savingBeforeTransition;
     private bool _closeApproved;
     private bool _closingMotion;
+    private bool _replacementPreparing;
+    private bool _closingIntent;
+
+    internal async Task CloseForReplacementAsync()
+    {
+        if (_replacementPreparing || _closed) return;
+        _replacementPreparing = true; _timer.Stop(); CancelInstalledWork();
+        Root.IsHitTestVisible = false;
+        if (_updatesView is not null) await _updatesView.CloseAndWaitAsync();
+        if (_downloadView is not null) await _downloadView.CancelAndWaitAsync();
+        if (_memoryView is not null) await _memoryView.StopAndWaitAsync();
+        try { await FlushPerformanceAsync(); }
+        catch { TryDiscardFailedPerformanceSave(); }
+        _closeApproved = true; _replacementPreparing = false; _motionLifetime.Cancel();
+        if (!_closed) Close();
+    }
 
     private void InitializeClosePersistence()
     {
@@ -18,15 +34,21 @@ public sealed partial class MainWindow
 
     private async void CloseAfterPerformanceSave(AppWindow sender, AppWindowClosingEventArgs args)
     {
+        if (_replacementPreparing) { args.Cancel = true; return; }
         if (_closeApproved) return;
         if (_savingBeforeTransition || _closingMotion) { args.Cancel = true; return; }
         args.Cancel = true;
+        _closingIntent = true; _updatesView?.SuspendForClosing();
         _savingBeforeTransition = true;
         var toolsReady = false;
-        try { toolsReady = await PrepareToolsForCloseAsync(); }
+        try
+        {
+            toolsReady = await PrepareToolsForCloseAsync();
+            if (toolsReady && _updatesView is not null) await _updatesView.CancelAndWaitAsync();
+        }
         catch (Exception error) { if (!_closed) ShowNotice(L.T("无法退出"), error.Message, InfoBarSeverity.Error); }
         finally { _savingBeforeTransition = false; }
-        if (!toolsReady) return;
+        if (!toolsReady) { ResumeCanceledClose(); return; }
         if (await PrepareWindowTransitionAsync()) { await CloseWithMotionAsync(); return; }
         if (_closed) return;
         _savingBeforeTransition = true;
@@ -45,7 +67,9 @@ public sealed partial class MainWindow
         catch (Exception error) { if (!_closed) ShowNotice(L.T("保存失败"), error.Message, InfoBarSeverity.Error); }
         finally { _savingBeforeTransition = false; }
         if (discard && !_closed) await CloseWithMotionAsync();
+        else if (!_closed) ResumeCanceledClose();
     }
+    private void ResumeCanceledClose() { _closingIntent = false; _updatesView?.ResumeAfterCloseCancellation(); }
 
     private async Task CloseWithMotionAsync()
     {

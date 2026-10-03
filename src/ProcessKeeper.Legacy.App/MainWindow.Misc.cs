@@ -35,7 +35,7 @@ public partial class MainWindow
         Tab("下载器").Children.Add(_downloadView);
         AddPerformanceView(Tab("性能显示")); MiscHost.Content = tabs;
     }
-    private bool CanStartTool() => !_closed && !_busy && !_toolDialogOpen && !_updateDialogOpen && !_updateDownloading && !_shortcutBusy && _uninstallView?.IsBusy != true;
+    private bool CanStartTool() => !_closed && !_replacementRequested && !_savingBeforeClose && !_busy && !_toolDialogOpen && !_updateDialogOpen && !_updateDownloading && !_shortcutBusy && _uninstallView?.IsBusy != true;
     private async Task<bool> ConfirmToolAsync(string title, string message)
     {
         if (_closed || _toolDialogOpen) return false;

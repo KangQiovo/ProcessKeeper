@@ -17,6 +17,7 @@ dotnet run --project src/ProcessKeeper.Search.Tests/ProcessKeeper.Search.Tests.c
 dotnet run --project src/ProcessKeeper.Autorun.Tests/ProcessKeeper.Autorun.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Update.Tests/ProcessKeeper.Update.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Architecture.Tests/ProcessKeeper.Architecture.Tests.csproj -c Release
+dotnet run --project src/ProcessKeeper.Instance.Tests/ProcessKeeper.Instance.Tests.csproj -c Release
 dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
 dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net8.0-windows10.0.19041.0
@@ -35,6 +36,7 @@ dotnet run --project src/ProcessKeeper.Display.Tests/ProcessKeeper.Display.Tests
 dotnet run --project src/ProcessKeeper.Uninstall.Tests/ProcessKeeper.Uninstall.Tests.csproj -c Release --framework net462
 dotnet run --project src/ProcessKeeper.Performance.Tests/ProcessKeeper.Performance.Tests.csproj -c Release --framework net462
 dotnet run --project src/ProcessKeeper.CatalogUpdate.Tests/ProcessKeeper.CatalogUpdate.Tests.csproj -c Release --framework net462
+dotnet run --project src/ProcessKeeper.Legacy.Instance.Tests/ProcessKeeper.Legacy.Instance.Tests.csproj -c Release
 ```
 
 The Legacy test executable must run on Windows with a compatible .NET Framework runtime. Building it alone is not an execution result. It uses shared fixtures, isolated files and read-only process identity checks. Its optional `--read-only-live` argument inventories actual startup sources without modifying them; omit that option for routine regression runs.
@@ -54,6 +56,8 @@ The update suite uses fake HTTP and isolated download files; it does not install
 See the dedicated [AVD](../src/ProcessKeeper.Avd.Tests/README.md), [launcher](../src/ProcessKeeper.Launcher.Tests/README.md), [search](../src/ProcessKeeper.Search.Tests/README.md) and [Legacy Core](../src/ProcessKeeper.Legacy.Core/README.md) notes.
 
 ## 1.7.0 regression boundaries
+
+Single-instance checks must span different package paths, versions and UI routes in one user/session. Verify that the winner's identity comes from its live process and protected launcher receipt, a losing launch cannot open a delayed onboarding/main window, and releasing a window or lease does not permit a successor before the previous process exits. A retained-instance exit is not update readiness. Use only isolated, owned fixture processes; do not close a user's real applications for this check.
 
 The installed-application suite includes duplicate registrations, version/architecture suffixes, another drive, blank and conflicting publishers, shared command hosts, retained executable-role evidence, exact startup entries and individual whitelist states. Uninstall tests retain every registration while grouping related versions. Grouping must preserve source identities: a shorter list alone is not a pass.
 

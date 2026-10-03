@@ -9,6 +9,8 @@
 void RunSecurityTests(const std::function<void(bool, const wchar_t*)>& check);
 void RunPayloadTests(const std::function<void(bool, const wchar_t*)>& check);
 void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check);
+void RunInstanceTests(const std::function<void(bool, const wchar_t*)>& check);
+bool RunInstanceFixtureCommand(int argc, wchar_t** argv, int& result);
 
 int wmain(int argc, wchar_t** argv) {
     using namespace pk;
@@ -18,6 +20,7 @@ int wmain(int argc, wchar_t** argv) {
         ++count; WriteDiagnostic(std::wstring(L"PASS ") + name + L"\n");
     };
     try {
+        int fixtureResult = 0; if (RunInstanceFixtureCommand(argc, argv, fixtureResult)) return fixtureResult;
         if (argc == 4 && wcscmp(argv[1], L"--fixture-marker") == 0) {
             const auto path = FullPath(argv[2]) + L"\\execute.txt"; Sleep(20);
             { std::ofstream file(path + L".pending", std::ios::binary); file << "PKEXECUTE1\n" << std::stoul(argv[3]) << "\n"; file.flush(); if (!file.good()) return 1; }
@@ -106,6 +109,7 @@ int wmain(int argc, wchar_t** argv) {
         RunSecurityTests(check);
         RunPayloadTests(check);
         RunUpdateTests(check);
+        RunInstanceTests(check);
         if (argc == 4) {
             std::ifstream cabinet(argv[1], std::ios::binary), manifestInput(argv[2], std::ios::binary);
             std::vector<BYTE> archive((std::istreambuf_iterator<char>(cabinet)), std::istreambuf_iterator<char>());

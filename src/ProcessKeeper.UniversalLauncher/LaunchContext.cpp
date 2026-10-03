@@ -118,6 +118,7 @@ void WriteLaunchContext(const SourceLock& source, const PreparedPayload& payload
     const auto executable = payload.directory + L"\\ProcessKeeper.exe", helper = payload.directory + L"\\ProcessKeeper.Updater.exe";
     auto image = OpenProtectedFile(executable), updater = OpenProtectedFile(helper);
     source.Verify();
+    WriteProtectedLines(directory + L"\\instance-request.txt", {L"PKREQUEST1", std::to_wstring(GetCurrentProcessId()), std::to_wstring(ProcessCreated(GetCurrentProcess()))});
     WriteProtectedLines(directory + L"\\context.txt", {L"PKLC1", id, EncodeContextText(source.path()), source.sha256(), ProductVersion,
         EncodeContextText(executable), Hex(HashFile(image.get())), EncodeContextText(helper), Hex(HashFile(updater.get())),
         std::to_wstring(pid), std::to_wstring(ProcessCreated(process)), EncodeContextText(UserSid()),

@@ -9,15 +9,21 @@ public partial class MainWindow
     private bool _closingForReplacement;
     private bool _closeApproved;
     private bool _closingMotion;
+    private bool _replacementRequested, _replacementPreparing;
 
     private async void CloseAfterPerformanceSave(object? sender, CancelEventArgs args)
     {
+        if (_replacementPreparing) { args.Cancel = true; return; }
         if (_closingForReplacement || _closeApproved) return;
         if (_savingBeforeClose || _closingMotion) { args.Cancel = true; return; }
         args.Cancel = true;
         _savingBeforeClose = true;
         var toolsReady = false;
-        try { toolsReady = await PrepareToolsForCloseAsync(); }
+        try
+        {
+            toolsReady = await PrepareToolsForCloseAsync();
+            if (toolsReady) await CancelUpdatesAndWaitAsync();
+        }
         catch (Exception error) { if (!_closed) Notice(error.Message); }
         finally { _savingBeforeClose = false; }
         if (!toolsReady) return;
@@ -57,7 +63,11 @@ public partial class MainWindow
 
     internal async Task CloseForReplacementAsync()
     {
+        if (_replacementRequested) return;
+        _replacementRequested = _replacementPreparing = true;
+        _life.Cancel(); _refresh.Stop(); _updatePromptTimer.Stop(); _pendingUpdate = null;
         Root.IsEnabled = false;
+        await CancelUpdatesAndWaitAsync();
         if (_downloadView is not null) await _downloadView.CancelAndWaitAsync();
         if (_memoryView is not null) await _memoryView.StopAndWaitAsync();
         try { await FlushPerformanceAsync(); }
@@ -65,6 +75,7 @@ public partial class MainWindow
         // Replacement is an existing explicit policy: a failed optional settings save
         // must not leave an older instance blocking the newest one behind a dialog.
         _closingForReplacement = true;
+        _replacementPreparing = false;
         _motionLifetime.Cancel();
         if (!_closed) Close();
     }
