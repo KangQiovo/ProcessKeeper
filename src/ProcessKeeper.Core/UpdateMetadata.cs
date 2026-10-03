@@ -7,7 +7,7 @@ namespace ProcessKeeper.Core;
 
 public sealed partial class UpdateService
 {
-    private static UpdateRelease ParseRelease(JsonElement item)
+    private UpdateRelease ParseRelease(JsonElement item)
     {
         const string repository = UpdatePolicy.Repository;
         var tag = Text(item, "tag_name", 256);
@@ -27,14 +27,19 @@ public sealed partial class UpdateService
                     throw Error("metadata", "GitHub 发布信息格式无效。");
                 var expectedDownload = "https://github.com/" + repository + "/releases/download/" + Uri.EscapeDataString(tag) + "/" + Uri.EscapeDataString(name);
                 if (!ExactUrl(download, expectedDownload)) throw Error("metadata", "更新文件链接与固定官方仓库不一致，已拒绝发布信息。");
+                var target = UpdatePackagePolicy.Identify(name, version);
                 var restriction = version.Length == 0 ? L.T("发布标签不是有效的 SemVer，不能自动安装。") :
                     !PortableVersion(version) ? L.T("发布版本超出 Windows EXE 版本字段范围，不能自动安装。") :
                     !PortableAssetName(name) ? L.T("仅支持 ProcessKeeper 通用 EXE 更新文件。") :
+                    !UpdatePackagePolicy.Supports(target, _runtime) ? L.T("此更新文件不支持当前系统、界面版本或处理器架构。") :
                     size <= 0 || size > MaximumDownloadBytes ? L.T("更新文件大小必须在 1 字节至 512 MiB 之间。") :
                     Text(value, "state", 40) != "uploaded" ? L.T("更新文件尚未上传完成。") :
                     !ValidDigest(digest) ? L.T("官方未提供 SHA-256 摘要，不能自动安装。") : "";
-                assets.Add(new UpdateAsset(id, name, size, download, digest, restriction.Length == 0, restriction));
+                assets.Add(new UpdateAsset(id, name, size, download, digest, restriction.Length == 0, restriction, target));
             }
+        if (_runtime.PackageFlavor == UpdatePackageTarget.Unsupported && assets.Any(asset => asset.CanAutoInstall && asset.PackageTarget != UpdatePackageTarget.Universal))
+            for (int index = 0; index < assets.Count; ++index)
+                if (assets[index].PackageTarget == UpdatePackageTarget.Universal) assets[index] = assets[index] with { CanAutoInstall = false, Restriction = L.T("更新文件类型与当前应用包不一致。") };
         var body = Text(item, "body", 128 * 1024);
         if (body.Length == 128 * 1024) body += "\n" + L.T("发布说明过长，已截断；完整内容请查看官方发布页面。");
         return new UpdateRelease(repository, tag, version, Text(item, "name", 512), published, body, html, True(item, "prerelease"), assets.AsReadOnly());

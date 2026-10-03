@@ -158,7 +158,7 @@ public static class ProcessIdentity
     }
 
     public static IReadOnlyList<ApplicationGroup> Group(IEnumerable<ProcessRecord> processes) =>
-        processes.GroupBy(p => p.ApplicationKey, StringComparer.OrdinalIgnoreCase).Select(group =>
+        ApplicationPresentationGroups.MergeRunning(processes.GroupBy(p => p.ApplicationKey, StringComparer.OrdinalIgnoreCase).Select(group =>
         {
             var members = group.OrderByDescending(p => p.HasVisibleWindow).ThenBy(p => p.StartTimeUtcTicks).ThenBy(p => p.Id).ToArray();
             var representative = members.FirstOrDefault(p => p.Company.Length > 0) ?? members[0];
@@ -169,7 +169,7 @@ public static class ProcessIdentity
                 IdentityEvidence = string.Join("\n", members.Select(p => p.IdentityEvidence).Distinct(StringComparer.Ordinal).Take(4)),
                 Processes = members
             };
-        }).OrderBy(g => g.Category).ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        }).OrderBy(g => g.Category).ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).ToArray());
 
     public static bool IsUnderDirectory(string path, string directory) =>
         !string.IsNullOrWhiteSpace(path) && !string.IsNullOrWhiteSpace(directory) &&

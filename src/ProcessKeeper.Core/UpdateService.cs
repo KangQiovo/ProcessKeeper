@@ -17,13 +17,18 @@ public sealed partial class UpdateService : IDisposable
     private static readonly SemaphoreSlim Operations = new(1, 1);
     private readonly HttpClient _http;
     private readonly Func<string, FileStream> _createDownloadFile;
+    private readonly Func<string, FileStream> _openResumeFile;
+    private readonly UpdateRuntimeIdentity _runtime;
     private bool _disposed;
-    public UpdateService(HttpMessageHandler? handler = null, Func<string, FileStream>? createDownloadFile = null)
+    public UpdateService(HttpMessageHandler? handler = null, Func<string, FileStream>? createDownloadFile = null,
+        Func<string, FileStream>? openResumeFile = null, UpdateRuntimeIdentity? runtime = null)
     {
         handler ??= new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.None, UseCookies = false };
         _http = new HttpClient(handler, true) { Timeout = Timeout.InfiniteTimeSpan };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.6.0");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.7.0");
         _createDownloadFile = createDownloadFile ?? UpdateTrustedFiles.Create;
+        _openResumeFile = openResumeFile ?? UpdateTrustedFiles.OpenResume;
+        _runtime = runtime ?? UpdatePackagePolicy.Current();
     }
     public void Dispose() { _disposed = true; _http.Dispose(); }
     public async Task<UpdateCheckResult> CheckAsync(UpdatePreferences preferences, string currentVersion, CancellationToken cancellationToken = default)

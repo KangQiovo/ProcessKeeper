@@ -111,7 +111,8 @@ public sealed partial class MainWindow
         _mergedInstalledBase = _installedApplications; _mergedInstalledRegistrations = registrations;
         _mergedManualInstalled = _manualInstalled.Values.ToArray();
         var source = _installedApplications.Concat(_mergedManualInstalled).GroupBy(app => app.Id, StringComparer.OrdinalIgnoreCase).Select(group => group.Last()).ToArray();
-        return _mergedInstalledResult = InstalledApplicationCatalog.IncludeVerifiedApplications(source, registrations);
+        return _mergedInstalledResult = ApplicationPresentationGroups.MergeInstalled(
+            InstalledApplicationCatalog.IncludeVerifiedApplications(source, registrations));
     }
 
     private void OnUninstallInventoryChanged()
@@ -254,7 +255,7 @@ public sealed partial class MainWindow
                 Name = display.FindGame(app)?.Name is { Length: > 0 } gameName ? gameName : app.Name, IsExpanded = explicitExpansion || (componentMatch && !collapsedSearch.Contains(app.Id)),
                 Summary = L.F($"{(app.Publisher.Length > 0 ? app.Publisher : L.T("发布者未提供"))} | {app.Executables.Count} 个可执行组件 | {running.Length} 个关联进程"),
                 Status = app.Executables.Count == 0 ? L.T("未读取到可执行组件；按已识别的程序身份保留") : !hasSnapshot ? L.T("尚无进程快照 | 可以提前加入白名单") : hidden > 0 ? L.F($"{hidden} 个系统 / 服务进程已隐藏") : running.Length == 0 ? L.T("当前快照未匹配到运行进程 | 可以提前加入白名单") : L.T("运行状态来自进程快照"),
-                Details = L.F($"程序：{app.Name}\n发布者声明：{app.Publisher}\n安装位置：{app.InstallLocation}\n识别依据：{app.IdentityEvidence}\n程序身份：{app.ApplicationKey}\n\n这里只列出扫描范围内可读取的可执行文件，不保证覆盖全部组件。运行进程仅按完整文件路径精确关联，不会将相同程序身份的 PID 重复分配给不同文件。"),
+                Details = InstalledApplicationDetails(app),
                 IconPath = display.ResolveIconPath(app, executableIdentity), IsKept = kept,
                 CanKeep = !kept && canKeep && (app.Executables.Count > 0 || app.ApplicationKey.Length > 0)
             };
@@ -275,7 +276,8 @@ public sealed partial class MainWindow
                 next.Add(new InstalledRow
                 {
                     RowKey = InstalledExecutableRowKey(app.Id, executable.Path), ApplicationId = app.Id, ExecutablePath = executable.Path, Kind = InstalledRowKind.Executable,
-                    Name = executable.Name, Summary = executable.Description.Length > 0 ? executable.Description : L.T("可执行文件"),
+                    Name = executable.Name, Summary = (executable.Description.Length > 0 ? executable.Description : L.T("可执行文件")) +
+                        (app.Installations.Count > 1 ? " | " + Path.GetDirectoryName(executable.Path) : ""),
                     Status = !hasSnapshot ? L.T("尚无进程快照（扫描时文件存在，未试运行）") : processes.Length > 0 ? L.F($"正在运行 | {processes.Length} 个进程") + (hiddenProcesses > 0 ? L.F($"（{hiddenProcesses} 个系统 / 服务已隐藏）") : "") : L.T("未运行（当前快照未匹配，文件未试运行）"),
                     Details = L.F($"可执行文件：{executable.Name}\n说明：{executable.Description}\n完整路径：{executable.Path}\n程序身份：{executable.ApplicationKey}\n\n发现文件不代表它正在运行。下方 PID 仅在当前快照中存在相同完整路径时显示。单独保留组件会添加完整路径规则。"),
                     IconPath = executable.Path, IsKept = componentKept, CanKeep = !componentKept && canKeep,
@@ -299,6 +301,12 @@ public sealed partial class MainWindow
             }
         }
         return (GroupInstalledRows(next, applications, display, groupPlatforms, collapsedPlatforms ?? [], query), applications.Length);
+    }
+
+    private static string InstalledApplicationDetails(InstalledApplication app)
+    {
+        var members = app.Installations.Count > 0 ? app.Installations : new[] { app };
+        return string.Join("\n\n", members.Select(member => L.F($"程序：{member.Name}\n发布者声明：{member.Publisher}\n安装位置：{member.InstallLocation}\n识别依据：{member.IdentityEvidence}\n程序身份：{member.ApplicationKey}\n\n这里只列出扫描范围内可读取的可执行文件，不保证覆盖全部组件。运行进程仅按完整文件路径精确关联，不会将相同程序身份的 PID 重复分配给不同文件。")));
     }
 
     private async Task ApplyInstalledRowsAsync(List<InstalledRow> next, int applicationCount, ProcessSnapshot snapshot, CancellationToken cancellationToken)

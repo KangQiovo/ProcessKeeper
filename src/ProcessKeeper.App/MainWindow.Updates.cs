@@ -20,6 +20,18 @@ public sealed partial class MainWindow
             Check = (settings, version, token) => _updateService.CheckAsync(settings, version, token),
             Probe = (settings, release, asset, progress, token) => _updateService.ProbeAsync(settings, release, asset, progress, token),
             Download = (settings, release, asset, stage, progress, token) => _updateService.DownloadAsync(settings, release, asset, stage, progress, token),
+            CreateSession = (release, asset, stage) => _updateService.CreateDownloadSession(release, asset, stage),
+            ResumeDownload = (settings, session, progress, token) => _updateService.DownloadResumableAsync(settings, session, progress, token),
+            DiscardSession = session => _updateService.DiscardDownloadSession(session),
+            ConfirmExternalLink = async url =>
+            {
+                var dialog = new Windows.UI.Popups.MessageDialog(L.T("将在默认浏览器打开以下网址：") + "\n" + url, L.T("打开项目主页？"));
+                dialog.Commands.Add(new Windows.UI.Popups.UICommand(L.T("打开"), null, "open"));
+                dialog.Commands.Add(new Windows.UI.Popups.UICommand(L.T("取消"), null, "cancel"));
+                dialog.DefaultCommandIndex = dialog.CancelCommandIndex = 1;
+                WinRT.Interop.InitializeWithWindow.Initialize(dialog, WinRT.Interop.WindowNative.GetWindowHandle(this));
+                return (await dialog.ShowAsync()).Id as string == "open";
+            },
             CreateStage = () => UpdateInstaller.CreateDownloadStage(Context()),
             DiscardStage = stage => UpdateInstaller.DiscardDownloadStage(Context(), stage),
             Install = InstallApplicationUpdateAsync,
@@ -37,7 +49,7 @@ public sealed partial class MainWindow
         _updatesView = new UpdatesView(backend)
         {
             Present = ShowDialog,
-            CanPresent = () => !_closed && !_working && !_dialogOpen && !_windowOperationRunning && _autorunsView?.IsChanging != true,
+            CanPresent = () => !_closed && !_working && !HasPendingTool && !_dialogOpen && !_windowOperationRunning && _autorunsView?.IsChanging != true,
             Log = Log
         };
         _updatesView.BusyChanged += busy => { if (!_closed) { LanguageChoice.IsEnabled = !busy; ReopenIntroductionButton.IsEnabled = !busy; } };
@@ -54,8 +66,8 @@ public sealed partial class MainWindow
 
     private async Task InstallApplicationUpdateAsync(UpdateDownloadResult download, CancellationToken token)
     {
-        if (_closed || _working || _dialogOpen || _windowOperationRunning || _autorunsView?.IsChanging == true)
-            throw new InvalidOperationException(L.T("请等待当前操作完成"));
+        if (_closed || _working || HasPendingTool || _dialogOpen || _windowOperationRunning || _autorunsView?.IsChanging == true)
+            throw new UpdateInstallDeferredException();
         var context = _launcherContext ?? throw new InvalidOperationException(L.T("当前文件不支持应用内更新，请从原始单文件 EXE 启动。"));
         _working = true; Navigation.IsEnabled = AppsList.IsEnabled = false;
         PreparedUpdate? prepared = null; var handedOff = false;
@@ -64,6 +76,8 @@ public sealed partial class MainWindow
             await FlushPerformanceAsync();
             prepared = await Task.Run(() => UpdateInstaller.Prepare(context, download, token), token);
             token.ThrowIfCancellationRequested();
+            if (_closed || HasPendingTool || _dialogOpen || _windowOperationRunning || _autorunsView?.IsChanging == true)
+                throw new UpdateInstallDeferredException();
             var result = await Task.Run(() => UpdateInstaller.Start(prepared));
             if (!result.Success) throw new IOException(result.Message);
             handedOff = true;

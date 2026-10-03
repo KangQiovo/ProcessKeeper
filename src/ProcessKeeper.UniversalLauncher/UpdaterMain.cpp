@@ -1,5 +1,6 @@
 #include "UpdateTransaction.h"
 #include "DesktopShortcut.h"
+#include "CacheCleanup.h"
 #include <shellapi.h>
 #include <objbase.h>
 #include "HelperText.h"
@@ -13,7 +14,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t*, int) {
         int count = 0; auto arguments = CommandLineToArgvW(GetCommandLineW(), &count);
         if (!arguments || count != 4) { if (arguments) LocalFree(arguments); throw pk::Failure(L"Invalid trusted update request."); }
         const std::wstring action(arguments[1]), contextId(arguments[2]), request(arguments[3]); LocalFree(arguments);
-        if ((action != L"--install" && action != L"--shortcut") || !pk::ValidContextId(contextId) || !pk::ValidContextId(request)) throw pk::Failure(L"Invalid trusted update request.");
+        if ((action != L"--install" && action != L"--shortcut" && action != L"--clear-cache") || !pk::ValidContextId(contextId) || !pk::ValidContextId(request)) throw pk::Failure(L"Invalid trusted update request.");
         const auto context = pk::ReadLaunchContext(contextId); pk::SourceLock own;
         auto ownFile = pk::OpenProtectedFile(own.path());
         if (own.path() != context.helper || pk::Hex(pk::HashFile(ownFile.get())) != context.helperHash) throw pk::Failure(L"This helper does not belong to the trusted launcher context.");
@@ -23,6 +24,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t*, int) {
             try { pk::EnsureDesktopShortcut(context, request); } catch (...) { CoUninitialize(); throw; }
             CoUninitialize(); return 0;
         }
+        if (action == L"--clear-cache") { pk::ClearPendingPayloadCache(context, request); return 0; }
         statusPath = context.directory + L"\\job-" + request + L"\\status.txt";
         const auto result = pk::InstallUpdate(context, request);
         if (!result.installed || result.message.find(L"not confirmed") != std::wstring::npos) {

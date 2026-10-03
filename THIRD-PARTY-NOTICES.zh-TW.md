@@ -41,3 +41,11 @@ WPF UI 聲明包含 VirtualizingWrapPanel、Fluent UI System Icons、WPF、WinUI
 ## 行為參考
 
 [PCL](https://github.com/Meloong-Git/PCL) 與 [PCL Community](https://github.com/PCL-Community/PCL-CE) 用於研究記憶體及下載機制。功能獨立實作，未包含其原始碼、程式或私有模組；本專案 MIT 不改變它們的授權。詳見[雜項說明](docs/UTILITIES.zh-TW.md)。
+
+## Markdig
+
+[Markdig 0.41.3](https://github.com/xoofx/markdig/releases/tag/0.41.3) 用於兩種介面的更新日誌 Markdown 解析，以原生控制項顯示。採 BSD-2-Clause；依 NuGet 套件記錄的提交保留[上游授權原文](licenses/Markdig.0.41.3-LICENSE.txt)。相容版沿用現有的 System.Memory 相依元件。
+
+## NSIS
+
+[NSIS 3.13](https://nsis.sourceforge.io/) 用於編譯安裝程式及原生解除安裝程式。正式包使用 zlib 壓縮；編譯工具不隨應用分發。已從官方 ZIP 原樣保留[版權與授權彙整](licenses/NSIS.3.13-LICENSE.txt)，各元件保留各自條款。

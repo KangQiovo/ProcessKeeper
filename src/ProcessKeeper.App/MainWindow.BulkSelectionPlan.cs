@@ -35,8 +35,7 @@ internal static class BulkSelectionPlan
                     hideMicrosoft && display.IsMicrosoft(app) ||
                     !ApplicationSearch.MatchesApplication(app, query) && !MetadataMatch(display.FindGame(app), display.FindGamePlatform(app)) ||
                     app.Key.Length == 0 || app.Key.StartsWith("unknown:", StringComparison.OrdinalIgnoreCase)) continue;
-                applicationKeys.Add(app.Key);
-                Add(new WhitelistRule { Name = app.Name, Kind = RuleKind.Application, Value = app.Key });
+                foreach (var rule in ApplicationPresentationGroups.GetRunningRules(app)) { applicationKeys.Add(rule.Value); Add(rule); }
             }
         }
         else if (page == 1)

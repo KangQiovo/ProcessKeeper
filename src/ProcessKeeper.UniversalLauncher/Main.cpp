@@ -22,6 +22,7 @@ enum class Page { Permission, MissingFramework, Unsupported, Preparing, Failed }
 struct App {
     pk::SourceLock source;
     pk::Host host;
+    pk::PackageTarget packageTarget = pk::PackageTarget::Universal;
     pk::Handle elevated, child;
     HWND window = nullptr, heading = nullptr, body = nullptr, buttons[5]{};
     HWND brand = nullptr, icon = nullptr, ring = nullptr;
@@ -251,14 +252,14 @@ void Render(App& app) {
     } else {
         title = app.Text(L"Process Keeper could not start", L"Process Keeper 未能启动", L"Process Keeper 未能啟動");
         text = app.Text(L"Windows reported the following problem. No application window has been confirmed.", L"Windows 返回了以下问题，尚未确认应用窗口已显示。", L"Windows 回報了以下問題，尚未確認應用程式視窗已顯示。");
-        app.url = pk::IsModernRoute(pk::ChooseRoute(app.host, app.forceLegacy)) ? L"https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/self-contained-deploy/deploy-self-contained-apps" :
+        app.url = pk::IsModernRoute(pk::ChoosePackageRoute(app.host, app.packageTarget, app.forceLegacy)) ? L"https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/self-contained-deploy/deploy-self-contained-apps" :
             L"https://learn.microsoft.com/dotnet/framework/install/guide-for-developers";
         show(Primary, app.Text(L"Help", L"微软帮助", L"微軟說明"));
         show(Copy, app.Text(L"Copy link", L"复制链接", L"複製連結"));
         if (!app.child.valid() || WaitForSingleObject(app.child.get(), 0) == WAIT_OBJECT_0)
             show(Retry, app.Text(L"Try again", L"重试", L"重試"));
         const bool childRunning = app.child.valid() && WaitForSingleObject(app.child.get(), 0) != WAIT_OBJECT_0;
-        if (pk::CanOfferLegacy(pk::ChooseRoute(app.host), app.forceLegacy, childRunning))
+        if ((app.packageTarget == pk::PackageTarget::Universal || app.packageTarget == pk::PackageTarget::Windows10x64) && pk::CanOfferLegacy(pk::ChooseRoute(app.host), app.forceLegacy, childRunning))
             show(Compatible, app.Text(L"Legacy UI", L"兼容界面", L"相容介面"));
     }
     if (!app.detail.empty()) text += L"\r\n\r\n" + app.detail;
@@ -303,7 +304,7 @@ BOOL CALLBACK FindApplicationWindow(HWND window, LPARAM parameter) {
 }
 void StartApplication(App& app) {
     if (app.working) return;
-    app.host = pk::DetectHost(); const auto route = pk::ChooseRoute(app.host, app.forceLegacy);
+    app.host = pk::DetectHost(); const auto route = pk::ChoosePackageRoute(app.host, app.packageTarget, app.forceLegacy);
     app.detail.clear();
     if (route == pk::Route::Unsupported || route == pk::Route::MissingFramework) {
         app.page = route == pk::Route::Unsupported ? Page::Unsupported : Page::MissingFramework; Render(app); ShowWindow(app.window, SW_SHOW); return;
@@ -440,7 +441,7 @@ LRESULT CALLBACK Procedure(HWND window, UINT message, WPARAM wparam, LPARAM lpar
         case Copy: CopyLink(app); return 0;
         case Retry: StartApplication(app); return 0;
         case Compatible:
-            if (!app.working && app.page == Page::Failed && pk::CanOfferLegacy(pk::ChooseRoute(app.host), app.forceLegacy, app.child.valid() && WaitForSingleObject(app.child.get(), 0) != WAIT_OBJECT_0)) { app.forceLegacy = true; StartApplication(app); }
+            if ((app.packageTarget == pk::PackageTarget::Universal || app.packageTarget == pk::PackageTarget::Windows10x64) && !app.working && app.page == Page::Failed && pk::CanOfferLegacy(pk::ChooseRoute(app.host), app.forceLegacy, app.child.valid() && WaitForSingleObject(app.child.get(), 0) != WAIT_OBJECT_0)) { app.forceLegacy = true; StartApplication(app); }
             return 0;
         case Exit: SendMessageW(window, WM_CLOSE, 0, 0); return 0;
         }
@@ -508,8 +509,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* arguments, int) {
         if (options.find(L"exit-success") != std::wstring::npos) app.succeeded = true;
         Render(app); ShowWindow(window, SW_SHOW); SetTimer(window, 2, options.find(L"exit-") != std::wstring::npos ? 100 : 15000, nullptr);
 #else
+        app.packageTarget = pk::EmbeddedPackageTarget();
         if (*arguments) { app.page = Page::Failed; app.detail = L"This launcher does not accept command-line parameters."; Render(app); ShowWindow(window, SW_SHOW); }
-        else if (pk::ChooseRoute(app.host) == pk::Route::Unsupported) StartApplication(app);
+        else if (pk::ChoosePackageRoute(app.host, app.packageTarget) == pk::Route::Unsupported) StartApplication(app);
         else if (!pk::IsAdministrator()) RequestElevation(app);
         else StartApplication(app);
 #endif

@@ -6,16 +6,18 @@
 
 | Environment | Route | Prerequisite |
 | --- | --- | --- |
-| Windows 10 build 19041+ x64 / Windows 11 x64 | Modern WinUI 3, .NET 8 | Included runtime in a universal package |
+| Windows 10 build 19041+ x64 / Windows 11 x64 | Modern WinUI 3, .NET 8 | Included runtime in the x64 package |
 | Windows 10 build 19041+ ARM64 / Windows 11 ARM64 | Native ARM64 WinUI 3, .NET 8 | Included runtime; x86 bootstrapper uses Windows emulation |
 | Windows 7 SP1 x86/x64, Windows 8.1 x86/x64, earlier/x86 Windows 10 | x86 WPF / WPF UI, .NET Framework | Framework 4.6.2 or a compatible newer 4.x runtime |
 | Windows 7 without SP1, Windows 8 initial release, XP, Vista, ARM32 | Requirements page only | No supported management route |
 
-The native launcher targets x86 Windows 7 and uses a static C/C++ runtime. It selects a supported route without trying to load .NET 8 on Windows 7. Missing dependencies lead to official download/help pages, not automatic installer execution. If the modern process has exited after a failed launch, a user-selected compatibility fallback is offered; it does not start a second live management instance.
+The native launcher is x86/Win7-compatible and uses a static C/C++ runtime. Win7 compatibility packages support both x86 and x64. The Win10 x86/x64 package includes modern x64 and compatibility payloads; x86 uses WPF, while eligible x64 uses WinUI. ARM64 has its own native WinUI package. The universal package includes all three routes. Each target also has a matching installer with an uninstaller. Missing components lead to official help/download pages without automatic execution.
 
 These are implementation targets. **Windows 7, Windows 8.1, Windows 10 and ARM64 devices have not been validated on actual machines or VMs for this project.** Existing x86 execution tests ran on a modern Windows host. No minimum RAM, GPU or old-CPU performance claim has been established.
 
 On ARM64, the package selects the native ARM64 modern payload; the x86 compatibility fallback is not offered. The x64-specific AVD environment reader is disabled on ARM64. Cross-compilation and native route tests on x64 are not ARM device validation.
+
+**For 1.6.x in-app upgrades, select ProcessKeeper-v1.7.0.exe (Universal).** The old updater accepts PK14 and rejects PK17 split editions or installers safely. To switch to a smaller edition or an installed copy, download its corresponding EXE manually. From 1.7.0, updates select the same portable package flavor; setup files are never passed to the automatic update helper.
 
 ## Feature differences
 

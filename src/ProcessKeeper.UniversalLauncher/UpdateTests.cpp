@@ -1,6 +1,10 @@
 #include "UpdateTransaction.h"
 #include "DesktopShortcut.h"
+#include "CacheCleanup.h"
+#include "InstalledRegistration.h"
+#include "SetupGuard.h"
 #include <objbase.h>
+#include <shlobj.h>
 #include <fstream>
 #include "HelperText.h"
 
@@ -10,6 +14,17 @@ std::wstring DigestFile(const std::wstring& path) {
     if (!file.valid()) pk::Fail(L"Cannot read a fixture file."); return pk::Hex(pk::HashFile(file.get()));
 }
 void Bytes(const std::wstring& path, const char* text) { std::ofstream file(path, std::ios::binary); file << text; file.flush(); if (!file.good()) throw pk::Failure(L"Cannot write a fixture file."); }
+std::wstring ShortcutIcon(const std::wstring& path, const wchar_t* replacement = nullptr) {
+    IShellLinkW* link = nullptr; IPersistFile* persisted = nullptr;
+    if (FAILED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&link)))) throw pk::Failure(L"Cannot open a shortcut fixture.");
+    try {
+        if (FAILED(link->QueryInterface(IID_PPV_ARGS(&persisted))) || FAILED(persisted->Load(path.c_str(), STGM_READ))) throw pk::Failure(L"Cannot read a shortcut fixture.");
+        wchar_t icon[32768]{}; int index = 0;
+        if (replacement && (FAILED(link->SetIconLocation(replacement, 0)) || FAILED(persisted->Save(path.c_str(), TRUE)))) throw pk::Failure(L"Cannot set a fixture icon.");
+        if (FAILED(link->GetIconLocation(icon, 32768, &index))) throw pk::Failure(L"Cannot inspect a fixture icon.");
+        auto result = std::wstring(icon); persisted->Release(); link->Release(); return result;
+    } catch (...) { if (persisted) persisted->Release(); link->Release(); throw; }
+}
 }
 void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
     using namespace pk;
@@ -38,6 +53,11 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         EncodeContextText(self.path()), self.sha256(), EncodeContextText(self.path()), self.sha256(), std::to_wstring(GetCurrentProcessId()),
         std::to_wstring(ProcessCreated(GetCurrentProcess())), EncodeContextText(UserSid())};
     const auto context = ParseLaunchContext(fields, session, self.path().substr(0, self.path().find_last_of(L'\\')));
+    auto flavored = fields; flavored.push_back(L"Windows10x64");
+    check(ParseLaunchContext(flavored, session, context.directory).target == PackageTarget::Windows10x64 && context.target == PackageTarget::Universal,
+        L"trusted contexts bind new package flavor while old context records remain Universal");
+    flavored.back() = L"Unknown";
+    check(rejects([&] { ParseLaunchContext(flavored, session, context.directory); }), L"unrecognized trusted package flavor cannot select an update");
     const auto jobId = NewContextId();
     const std::wstring currentVersion = ProductVersion;
     const auto patchOffset = currentVersion.find_last_of(L'.') + 1;
@@ -88,7 +108,7 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         check(!writer.valid(), L"new original is read locked across verified launch");
         return UpdateLaunchResult::Success;
     });
-    check(result.installed && launched && DigestFile(path(L"old.exe")) == newHash && DigestFile(result.backup) == oldHash, L"successful transaction replaces exact original and retains byte-identical backup");
+    check(result.installed && launched && DigestFile(path(L"old.exe")) == newHash && result.backup.empty(), L"confirmed successful transaction removes only its byte-verified original backup");
     Bytes(path(L"rollback.exe"), "old original");
     result = ReplaceUpdateFixture(path(L"rollback.exe"), oldHash, path(L"next.exe"), newHash, NewContextId(), [](const std::wstring&) { return UpdateLaunchResult::Failed; });
     check(!result.installed && result.restored && DigestFile(path(L"rollback.exe")) == oldHash, L"startup failure restores the original byte-for-byte");
@@ -117,7 +137,7 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         return code == 0 ? UpdateLaunchResult::Success : UpdateLaunchResult::Failed;
     };
     result = ReplaceUpdateFixture(path(L"binary-old.exe"), binaryOld, path(L"binary-next.exe"), binaryNew, NewContextId(), [&](const std::wstring& file) { return launch(file, 0); });
-    check(result.installed && binaryOld != binaryNew && DigestFile(result.backup) == binaryOld, L"actual isolated no-op candidate process launches after exact binary replacement");
+    check(result.installed && binaryOld != binaryNew && result.backup.empty(), L"actual isolated accepted candidate cleans its exact original backup after startup");
     check(CopyFileW(self.path().c_str(), path(L"binary-rollback.exe").c_str(), TRUE) != FALSE, L"failed-start fixture creates an independent original binary");
     result = ReplaceUpdateFixture(path(L"binary-rollback.exe"), binaryOld, path(L"binary-next.exe"), binaryNew, NewContextId(), [&](const std::wstring& file) { return launch(file, 1); });
     check(result.restored && !result.installed && DigestFile(path(L"binary-rollback.exe")) == binaryOld, L"actual failed no-op candidate exit triggers byte-exact original binary rollback");
@@ -128,5 +148,96 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
     const auto shortcutHash = DigestFile(desktop + L"\\Process Keeper.lnk");
     check(EnsureShortcutFixture(path(L"old.exe"), desktop) == L"exists" && DigestFile(desktop + L"\\Process Keeper.lnk") == shortcutHash, L"identical original-target shortcut is retained unchanged");
     check(EnsureShortcutFixture(path(L"next.exe"), desktop) == L"conflict" && DigestFile(desktop + L"\\Process Keeper.lnk") == shortcutHash, L"unrelated same-name shortcut is never overwritten");
+    check(RefreshShortcutFixture(path(L"next.exe"), desktop) == L"conflict" && DigestFile(desktop + L"\\Process Keeper.lnk") == shortcutHash, L"update refresh preserves a same-name shortcut belonging to another original");
+    const auto link = desktop + L"\\Process Keeper.lnk";
+    ShortcutIcon(link, path(L"next.exe").c_str());
+    check(RefreshShortcutFixture(path(L"old.exe"), desktop) == L"refreshed" && ShortcutIcon(link) == path(L"old.exe"), L"confirmed update rewrites its exact owned shortcut with the installed EXE icon");
+    WIN32_FIND_DATAW leftover{}; auto search = FindFirstFileW((desktop + L"\\*.pk-link-*").c_str(), &leftover);
+    check(search == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_NOT_FOUND, L"owned shortcut refresh removes only its own temporary link and backup");
+    if (search != INVALID_HANDLE_VALUE) FindClose(search);
+    const auto emptyDesktop = path(L"empty-desktop"); CreateDirectoryW(emptyDesktop.c_str(), nullptr);
+    check(RefreshShortcutFixture(path(L"old.exe"), emptyDesktop) == L"absent" && GetFileAttributesW((emptyDesktop + L"\\Process Keeper.lnk").c_str()) == INVALID_FILE_ATTRIBUTES, L"update does not re-enable a desktop shortcut the user did not create");
+    const auto installed = path(L"ProcessKeeper.exe"), installDirectory = base;
+    InstallationRecord registration; registration.contract = 1; registration.markerContract = L"1"; registration.markerRepository = L"KangQiovo/ProcessKeeper"; registration.markerTarget = L"Windows10x64";
+    registration.text = {{L"DisplayName", L"Process Keeper"}, {L"Publisher", L"KangQi"}, {L"ProcessKeeperRepository", L"KangQiovo/ProcessKeeper"},
+        {L"ProcessKeeperPackageTarget", L"Windows10x64"}, {L"InstallLocation", installDirectory}, {L"UninstallString", L"\"" + installDirectory + L"\\Uninstall.exe\""},
+        {L"DisplayIcon", L"\"" + installed + L"\",0"}, {L"URLInfoAbout", L"https://github.com/KangQiovo/ProcessKeeper"}};
+    check(MatchesInstallation(registration, installed, PackageTarget::Windows10x64), L"installed version refresh requires exact fixed registry and sibling marker ownership");
+    auto mismatched = registration; mismatched.text[L"UninstallString"] += L" /other";
+    check(!MatchesInstallation(mismatched, installed, PackageTarget::Windows10x64), L"another uninstaller command cannot authorize installed metadata changes");
+    mismatched = registration; mismatched.markerTarget = L"Windows10arm64";
+    check(!MatchesInstallation(mismatched, installed, PackageTarget::Windows10x64) && !MatchesInstallation(registration, path(L"renamed.exe"), PackageTarget::Windows10x64),
+        L"different package marker or portable filename never modifies an installed registration");
+    for (unsigned scenario = 0; scenario < 5; ++scenario) {
+        const auto cache = path((L"cache-" + std::to_wstring(scenario)).c_str()); CreateDirectoryW(cache.c_str(), nullptr);
+        const auto identity = std::wstring(64, L'a'), root = cache + L"\\" + identity + L"-modern", modern = root + L"\\modern";
+        CreateDirectoryW(root.c_str(), nullptr); CreateDirectoryW(modern.c_str(), nullptr);
+        const auto app = modern + L"\\ProcessKeeper.exe", helper = modern + L"\\ProcessKeeper.Updater.exe";
+        Bytes(app, "owned cache app"); Bytes(helper, "owned cache helper");
+        Manifest old; old.identity = identity;
+        old.files.emplace(L"modern/ProcessKeeper.exe", PayloadFile{L"modern/ProcessKeeper.exe", DigestFile(app), 15});
+        old.files.emplace(L"modern/ProcessKeeper.Updater.exe", PayloadFile{L"modern/ProcessKeeper.Updater.exe", DigestFile(helper), 18});
+        const auto foreign = cache + L"\\unrelated-user-file.exe"; Bytes(foreign, "preserve sibling");
+        SchedulePayloadCleanupFixture(cache, old, Route::ModernX64);
+        const auto receipt = cache + L"\\cleanup-" + identity + L"-modern.txt";
+        Handle busy;
+        if (scenario == 1) busy = Handle(CreateFileW(helper.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr));
+        if (scenario == 2) Bytes(helper, "changed cache leaf");
+        if (scenario == 3) Bytes(modern + L"\\unowned.exe", "unowned file");
+        RunPendingPayloadCleanupFixture(cache, scenario == 4 ? identity : std::wstring(64, L'b'));
+        if (scenario > 0) {
+            check(GetFileAttributesW(app.c_str()) != INVALID_FILE_ATTRIBUTES && GetFileAttributesW(receipt.c_str()) != INVALID_FILE_ATTRIBUTES,
+                L"busy changed unowned or active cache is retained before any owned leaf is removed");
+            busy.reset(); if (scenario == 2) Bytes(helper, "owned cache helper");
+            if (scenario == 3) DeleteFileW((modern + L"\\unowned.exe").c_str());
+            RunPendingPayloadCleanupFixture(cache, std::wstring(64, L'b'));
+        }
+        check(GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES && GetFileAttributesW(receipt.c_str()) == INVALID_FILE_ATTRIBUTES &&
+            GetFileAttributesW(foreign.c_str()) != INVALID_FILE_ATTRIBUTES, L"deferred cleanup deletes only one fully verified old payload tree and its owned receipt");
+    }
+    wchar_t fixtureTemp[MAX_PATH]{}; if (!GetTempPathW(MAX_PATH, fixtureTemp)) Fail(L"Cannot locate the E-only guard fixture directory.");
+    const auto guardCache = FullPath(std::wstring(fixtureTemp) + L"setup-guard-" + NewContextId().substr(0, 8)), sidRoot = guardCache + L"\\" + UserSid(), guardSessions = sidRoot + L"\\sessions";
+    check(guardCache.rfind(L"E:\\", 0) == 0, L"setup guard fixture temp path is explicitly on E");
+    CreateDirectoryW(guardCache.c_str(), nullptr); CreateDirectoryW(sidRoot.c_str(), nullptr); CreateDirectoryW(guardSessions.c_str(), nullptr);
+    const auto payloadRoot = sidRoot + L"\\" + std::wstring(64, L'a') + L"-legacy", payloadFolder = payloadRoot + L"\\legacy";
+    CreateDirectoryW(payloadRoot.c_str(), nullptr); CreateDirectoryW(payloadFolder.c_str(), nullptr);
+    const auto guardApp = payloadFolder + L"\\ProcessKeeper.exe", guardHelper = payloadFolder + L"\\ProcessKeeper.Updater.exe";
+    check(CopyFileW(self.path().c_str(), guardApp.c_str(), TRUE) && CopyFileW(self.path().c_str(), guardHelper.c_str(), TRUE), L"setup guard executable fixtures are isolated copies of the inert native test binary");
+    // The word Updater triggers Windows' legacy installer heuristic for an unmanifested
+    // x86 fixture. Explicit asInvoker keeps this inert child non-elevated.
+    const std::string fixtureManifest = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\"><trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v3\"><security><requestedPrivileges><requestedExecutionLevel level=\"asInvoker\" uiAccess=\"false\"/></requestedPrivileges></security></trustInfo></assembly>";
+    auto resources = BeginUpdateResourceW(guardHelper.c_str(), FALSE);
+    if (!resources || !UpdateResourceW(resources, RT_MANIFEST, MAKEINTRESOURCEW(1), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), const_cast<char*>(fixtureManifest.data()), static_cast<DWORD>(fixtureManifest.size())) || !EndUpdateResourceW(resources, FALSE)) Fail(L"Cannot keep the inert helper fixture non-elevated.");
+    const auto guardId = NewContextId(), guardDirectory = guardSessions + L"\\" + guardId;
+    CreateDirectoryW(guardDirectory.c_str(), nullptr);
+    auto spawnGuard = [&](const std::wstring& image) {
+        auto command = L"\"" + image + L"\" --fixture-child 1200 0"; STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION process{};
+        if (!CreateProcessW(image.c_str(), &command[0], nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process)) Fail(L"Cannot start read-only guard fixture.");
+        return process;
+    };
+    auto guarded = spawnGuard(guardApp); Handle guardedProcess(guarded.hProcess), guardedThread(guarded.hThread);
+    auto guardFields = fields; guardFields[1] = guardId; guardFields[2] = EncodeContextText(installed); guardFields[4] = L"1.6.0";
+    guardFields[5] = EncodeContextText(guardApp); guardFields[7] = EncodeContextText(guardHelper); guardFields[9] = std::to_wstring(guarded.dwProcessId); guardFields[10] = std::to_wstring(ProcessCreated(guardedProcess.get()));
+    auto saveGuard = [&] { std::ofstream output(guardDirectory + L"\\context.txt", std::ios::binary); for (const auto& line : guardFields) { for (auto character : line) output.put(static_cast<char>(character)); output.put('\n'); } };
+    saveGuard();
+    check(CheckInstalledSessionFixture(guardCache, installed) == 1, L"setup guard detects actual cached managed session even after the original wrapper would exit");
+    check(CheckInstalledSessionFixture(guardCache, path(L"different.exe")) == 0, L"independently verified sessions for another original do not block installation");
+    const auto actualCreated = guardFields[10]; guardFields[10] = std::to_wstring(ProcessCreated(guardedProcess.get()) + 1); saveGuard();
+    check(CheckInstalledSessionFixture(guardCache, installed) == 0, L"a stale reused-PID creation identity cannot impersonate an active installed UI");
+    guardFields[10] = actualCreated; saveGuard();
+    check(WaitForSingleObject(guardedProcess.get(), 5000) == WAIT_OBJECT_0, L"read-only setup guard never terminates its owned inert UI fixture");
+    guarded = spawnGuard(guardHelper); Handle helperProcess(guarded.hProcess), helperThread(guarded.hThread);
+    const auto helperJob = guardDirectory + L"\\job-" + NewContextId(); CreateDirectoryW(helperJob.c_str(), nullptr);
+    { std::ofstream output(helperJob + L"\\ready.txt", std::ios::binary); output << "PKREADY1\n" << guarded.dwProcessId << "\n"; }
+    check(CheckInstalledSessionFixture(guardCache, installed) == 1, L"setup guard detects the exact ready-marked background helper after its UI exits");
+    check(WaitForSingleObject(helperProcess.get(), 5000) == WAIT_OBJECT_0 && CheckInstalledSessionFixture(guardCache, installed) == 0,
+        L"completed helper records remain safe to inspect and do not permanently block upgrades");
+    guardFields[2] = L"malformed"; saveGuard();
+    check(CheckInstalledSessionFixture(guardCache, installed) == 2, L"malformed protected original identity fails closed rather than authorizing uninstall");
+    check(CheckPortableFile(guardApp, DigestFile(guardApp)) == 0 && CheckPortableFile(guardApp, std::wstring(64, L'0')) == 2,
+        L"setup staged portable validation binds exact inert PE bytes to the expected SHA256");
+    const auto hardLink = path(L"guard-hardlink.exe");
+    check(CreateHardLinkW(hardLink.c_str(), guardApp.c_str(), nullptr) && CheckPortableFile(guardApp, DigestFile(guardApp)) == 2,
+        L"setup refuses a staged executable with another hard-link alias");
     CoUninitialize();
 }

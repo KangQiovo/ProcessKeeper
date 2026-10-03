@@ -113,10 +113,12 @@ public partial class MainWindow
                 token.ThrowIfCancellationRequested(); var id = "installed:" + app.Id;
                 var kept = InstalledApplicationIsKept(app, rules);
                 var mainIdentity = executableIdentity.ResolveMain(app);
-                Add(new LegacyRow { Id = id, Name = app.Name, Summary = app.Publisher + " | " + app.Executables.Count + " " + L.T("可执行文件"), Path = mainIdentity.Status == InstalledMainIdentityStatus.Resolved ? mainIdentity.ExecutablePath : app.InstallLocation, IconPath = display.ResolveIconPath(app, executableIdentity), Detail = app.InstallLocation + "\n" + app.IdentityEvidence, Model = app, Expanded = Open(id), HasAction = true, CanAct = !_busy && _rulesReadable, IsActionChecked = kept, ActionLabel = kept ? L.T("已保留") : L.T("保留") });
+                Add(new LegacyRow { Id = id, Name = app.Name, Summary = app.Publisher + " | " + app.Executables.Count + " " + L.T("可执行文件"), Path = mainIdentity.Status == InstalledMainIdentityStatus.Resolved ? mainIdentity.ExecutablePath : app.InstallLocation, IconPath = display.ResolveIconPath(app, executableIdentity), Detail = InstalledApplicationEvidence(app), Model = app, Expanded = Open(id), HasAction = true, CanAct = !_busy && _rulesReadable, IsActionChecked = kept, ActionLabel = kept ? L.T("已保留") : L.T("保留") });
                 if (Open(id)) foreach (var executable in executableIdentity.OrderExecutables(app))
                 {
-                    Add(ExecutableRow(executable, app.Name, id, executableIdentity.Classify(app, executable)));
+                    var component = ExecutableRow(executable, app.Name, id, executableIdentity.Classify(app, executable));
+                    if (app.Installations.Count > 1) component.Summary += " | " + Path.GetDirectoryName(executable.Path);
+                    Add(component);
                     foreach (var process in search.ProcessesFor(executable)) Add(ProcessRow(process, app.Name, app.ApplicationKey, snapshot, id));
                 }
             }
@@ -124,15 +126,18 @@ public partial class MainWindow
         else if (page == 2)
         {
             var matcher = new RuleProcessMatcher(snapshot); var offline = query.Length == 0 ? new HashSet<string>() : new RuleSearchIndex(installed).MatchingRuleIds(rules, query);
-            foreach (var rule in rules)
+            foreach (var family in ApplicationPresentationGroups.GroupRules(rules, installed, snapshot))
+            {
+            var start = rows.Count; var grouped = family.Rules.Count > 1;
+            foreach (var rule in family.Rules)
             {
                 token.ThrowIfCancellationRequested();
                 var matches = matcher.Match(rule).Where(match => systems || !match.Process.IsSystem && match.Process.Category != RunCategory.System).ToArray();
                 if (!ApplicationSearch.MatchesRule(rule, WhitelistStore.GetDisplayName(rule), matches, query) && !offline.Contains(rule.Id)) continue;
                 var id = "rule:" + rule.Id;
                 var rulePath = matches.FirstOrDefault()?.Process.Path ?? (rule.Kind == RuleKind.ExecutablePath || rule.Kind == RuleKind.Directory ? rule.Value : "");
-                Add(new LegacyRow { Id = id, Name = WhitelistStore.GetDisplayName(rule), Summary = (rule.Enabled ? L.T("已启用") : L.T("已禁用")) + " | " + rule.Value, Path = rulePath, IconPath = display.ResolveGameIconPath(rulePath), Detail = rule.Kind + " | " + matches.Length + " " + L.T("进程"), Model = rule, Expanded = Open(id), HasAction = true, CanAct = !_busy && _rulesReadable, IsActionChecked = rule.Enabled, ActionLabel = rule.Enabled ? L.T("禁用此项") : L.T("启用此项") });
-                if (Open(id))
+                Add(new LegacyRow { Id = id, ParentId = grouped ? family.Key : "", IsChild = grouped, Name = WhitelistStore.GetDisplayName(rule), Summary = (rule.Enabled ? L.T("已启用") : L.T("已禁用")) + " | " + rule.Value, Path = rulePath, IconPath = display.ResolveGameIconPath(rulePath), Detail = rule.Kind + " | " + matches.Length + " " + L.T("进程"), Model = rule, Expanded = Open(id), HasAction = true, CanAct = !_busy && _rulesReadable, IsActionChecked = rule.Enabled, ActionLabel = rule.Enabled ? L.T("禁用此项") : L.T("启用此项") });
+                if (grouped ? Open(family.Key) : Open(id))
                 {
                     var children = 0;
                     var paths = new HashSet<string>(matches.Select(match => match.Process.Path), StringComparer.OrdinalIgnoreCase);
@@ -140,7 +145,8 @@ public partial class MainWindow
                     foreach (var match in matches)
                     {
                         if (children++ >= MaximumRuleChildren) { truncated = true; break; }
-                        Add(ProcessRow(match.Process, match.Process.ApplicationName, match.Process.ApplicationKey, snapshot, id));
+                        var child = ProcessRow(match.Process, match.Process.ApplicationName, match.Process.ApplicationKey, snapshot, id);
+                        child.ParentId = id; child.PresentationDepth = grouped ? 1 : 0; Add(child);
                     }
                     var visited = 0;
                     foreach (var app in installed)
@@ -152,27 +158,25 @@ public partial class MainWindow
                             if (paths.Contains(executable.Path) || !MatchesOffline(rule, app, executable)) continue;
                             if (children++ >= MaximumRuleChildren) { truncated = true; break; }
                             paths.Add(executable.Path);
-                            Add(ExecutableRow(executable, app.Name, id));
+                            var child = ExecutableRow(executable, app.Name, id); child.ParentId = id; child.PresentationDepth = grouped ? 1 : 0; Add(child);
                         }
                     }
                     if (truncated) Add(new LegacyRow { Id = id + "|limit", Name = L.T("此规则包含更多项目，请缩小规则范围以查看。"), IsChild = true });
                 }
             }
+            if (grouped && rows.Count > start)
+            {
+                var first = rows[start]; var open = Open(family.Key);
+                if (!open) rows.RemoveRange(start, rows.Count - start);
+                rows.Insert(start, new LegacyRow { Id = family.Key, Name = family.Name, Summary = L.F($"{family.Rules.Count} 条规则"),
+                    Detail = L.T("单击展开各项规则"), Model = family, Expanded = open, Path = first.Path, IconPath = first.IconPath });
+            }
+            }
         }
         else
         {
-            var index = new AutorunSearchIndex(snapshot, installed);
-            foreach (var entry in autoruns.Entries.OrderBy(entry => entry.Name, StringComparer.CurrentCultureIgnoreCase))
-            {
-                token.ThrowIfCancellationRequested();
-                if (!AutorunPresentation.Matches(entry, autorunComplex, category)) continue;
-                if (sort == 1 && entry.Enabled != true || sort == 2 && entry.Enabled != false || sort == 3 && entry.Enabled.HasValue || sort == 4 && !entry.CanChange || (!index.Matches(entry, query) && !MatchesPlatformQuery(query, display.FindGame(entry), display.FindGamePlatform(entry)))) continue;
-                var id = "autorun:" + entry.Id; var processes = index.Processes(entry);
-                var protectedEntry = entry.Enabled == true && IsAutorunWhitelisted(entry);
-                var owners = processes.Select(p => p.ApplicationName).Concat(index.Applications(entry)).Where(name => name.Length > 0).Distinct();
-                Add(new LegacyRow { Id = id, Name = entry.Name, Summary = (protectedEntry ? L.T("白名单保护") + " | " : "") + SourceName(entry.SourceKind) + (entry.Ownership == AutorunOwnership.Windows ? " | " + L.T("系统项") : "") + " | " + (entry.Enabled == true ? L.T("已启用") : entry.Enabled == false ? L.T("已禁用") : L.T("状态未知")) + " | " + string.Join(", ", owners), Detail = entry.Location + "\n" + entry.Command + "\n" + entry.ReadOnlyReason, Path = entry.TargetPath, Model = entry, Expanded = Open(id), HasAction = true, CanAct = !_busy && !protectedEntry, IsActionChecked = entry.Enabled == true, ActionLabel = !entry.CanChange || !entry.Enabled.HasValue ? L.T("查看原因") : entry.Enabled == true ? L.T("禁用此项") : L.T("启用此项") });
-                if (Open(id)) foreach (var process in processes) Add(ProcessRow(process, process.ApplicationName, process.ApplicationKey, snapshot, id));
-            }
+            foreach (var row in AutorunRows(query, category, sort, expanded, collapsed, snapshot, installed,
+                autoruns, autorunComplex, display, token)) Add(row);
         }
         }
         catch (RowLimitReachedException)

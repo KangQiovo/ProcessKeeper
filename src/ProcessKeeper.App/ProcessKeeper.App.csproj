@@ -20,12 +20,13 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\ProcessKeeper.ico</ApplicationIcon>
     <AssemblyName>ProcessKeeper</AssemblyName>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets\ProcessKeeper.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\ProcessKeeper.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Markdig" Version="0.41.3" />
     <ProjectReference Include="..\ProcessKeeper.Core\ProcessKeeper.Core.csproj" />
   </ItemGroup>
 </Project>

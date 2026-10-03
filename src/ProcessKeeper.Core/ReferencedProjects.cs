@@ -26,6 +26,8 @@ public static class ReferencedProjects
         new ReferencedProject("zlib", L.T("随 .NET 运行时提供的压缩与归档支持。"), "https://github.com/madler/zlib"),
         new ReferencedProject("Simple Icons", L.T("GitHub 与 B 站平台图标。"), "https://github.com/simple-icons/simple-icons"),
         new ReferencedProject("Lawnicons", L.T("酷安平台图标。"), "https://github.com/LawnchairLauncher/lawnicons"),
+        new ReferencedProject("Markdig", L.T("更新日志的 Markdown 解析；使用原生控件显示。"), "https://github.com/xoofx/markdig"),
+        new ReferencedProject("NSIS", L.T("安装包、程序登记与卸载器。"), "https://nsis.sourceforge.io/"),
         new ReferencedProject("Plain Craft Launcher", L.T("内存优化与下载功能的行为参考；独立实现，未包含其源代码。"), "https://github.com/Meloong-Git/PCL"),
         new ReferencedProject("PCL Community", L.T("工具页面交互的行为参考；独立实现，未包含其源代码。"), "https://github.com/PCL-Community/PCL-CE")
     };

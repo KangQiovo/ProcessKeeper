@@ -120,7 +120,8 @@ void WriteLaunchContext(const SourceLock& source, const PreparedPayload& payload
     source.Verify();
     WriteProtectedLines(directory + L"\\context.txt", {L"PKLC1", id, EncodeContextText(source.path()), source.sha256(), ProductVersion,
         EncodeContextText(executable), Hex(HashFile(image.get())), EncodeContextText(helper), Hex(HashFile(updater.get())),
-        std::to_wstring(pid), std::to_wstring(ProcessCreated(process)), EncodeContextText(UserSid())});
+        std::to_wstring(pid), std::to_wstring(ProcessCreated(process)), EncodeContextText(UserSid()),
+        payload.target == PackageTarget::Windows7Compat ? L"Windows7Compat" : payload.target == PackageTarget::Windows10x64 ? L"Windows10x64" : payload.target == PackageTarget::Windows10arm64 ? L"Windows10arm64" : L"Universal"});
 }
 LaunchContext ReadLaunchContext(const std::wstring& id) {
     if (!ValidContextId(id)) throw Failure(L"Invalid launch context identifier.");
@@ -130,7 +131,13 @@ LaunchContext ReadLaunchContext(const std::wstring& id) {
 LaunchContext ParseLaunchContext(const std::vector<std::wstring>& fields, const std::wstring& id, const std::wstring& directory) {
     if (!ValidContextId(id)) throw Failure(L"Invalid launch context identifier.");
     LaunchContext result; result.id = id; result.directory = directory;
-    if (fields.size() != 12 || fields[0] != L"PKLC1" || fields[1] != id || DecodeContextText(fields[11]) != UserSid()) throw Failure(L"Invalid launch context.");
+    if ((fields.size() != 12 && fields.size() != 13) || fields[0] != L"PKLC1" || fields[1] != id || DecodeContextText(fields[11]) != UserSid()) throw Failure(L"Invalid launch context.");
+    if (fields.size() == 13) {
+        if (fields[12] == L"Windows7Compat") result.target = PackageTarget::Windows7Compat;
+        else if (fields[12] == L"Windows10x64") result.target = PackageTarget::Windows10x64;
+        else if (fields[12] == L"Windows10arm64") result.target = PackageTarget::Windows10arm64;
+        else if (fields[12] != L"Universal") throw Failure(L"Unknown trusted package flavor.");
+    }
     result.original = FullPath(DecodeContextText(fields[2])); result.originalHash = fields[3]; result.version = fields[4];
     result.payload = FullPath(DecodeContextText(fields[5])); result.payloadHash = fields[6]; result.helper = FullPath(DecodeContextText(fields[7])); result.helperHash = fields[8];
     if (fields[9].empty() || fields[10].empty() || fields[9].find_first_not_of(L"0123456789") != std::wstring::npos || fields[10].find_first_not_of(L"0123456789") != std::wstring::npos)
@@ -149,7 +156,7 @@ Handle ContextProcess(const LaunchContext& context, bool fixture) {
     if (Hex(HashFile(image.get())) != context.payloadHash) throw Failure(L"The application identity changed.");
     return process;
 }
-void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersion, bool fixture) {
+void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersion, bool fixture, const PackageTarget* expectedTarget = nullptr) {
     const auto semanticVersion = ParseVersion(expectedVersion);
     auto locked = fixture ? Handle(CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr)) : OpenProtectedFile(path);
     if (!locked.valid()) Fail(L"Cannot verify the update package."); VerifyHandlePath(locked.get(), path, false);
@@ -170,9 +177,15 @@ void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersio
         const auto manifestResource = resource(101), archive = resource(102);
         if (manifestResource.second > 16 * 1024 * 1024) throw Failure(L"Invalid update manifest size.");
         const auto manifest = ParseManifest(std::string(static_cast<const char*>(manifestResource.first), manifestResource.second));
-        if (Hex(HashBytes(archive.first, archive.second)) != manifest.archiveHash || !manifest.files.count(L"modern/ProcessKeeper.Updater.exe") || !manifest.files.count(L"legacy/ProcessKeeper.Updater.exe") ||
-            !manifest.files.count(L"modern/arm64/ProcessKeeper.exe") || !manifest.files.count(L"modern/arm64/ProcessKeeper.Updater.exe"))
+        if (expectedTarget && manifest.target != *expectedTarget) throw Failure(L"The update package flavor differs from the trusted current application.");
+        if (Hex(HashBytes(archive.first, archive.second)) != manifest.archiveHash || manifest.target == PackageTarget::Universal &&
+            (!manifest.files.count(L"modern/ProcessKeeper.Updater.exe") || !manifest.files.count(L"legacy/ProcessKeeper.Updater.exe") ||
+            !manifest.files.count(L"modern/arm64/ProcessKeeper.exe") || !manifest.files.count(L"modern/arm64/ProcessKeeper.Updater.exe")))
             throw Failure(L"The update payload integrity check failed.");
+        if (!fixture) {
+            const auto route = ChoosePackageRoute(DetectHost(), manifest.target);
+            if (route == Route::Unsupported || route == Route::MissingFramework) throw Failure(L"The update package does not support this operating system or processor architecture.");
+        }
         const auto versionResource = FindResourceW(module, MAKEINTRESOURCEW(1), RT_VERSION);
         const auto raw = versionResource ? LockResource(LoadResource(module, versionResource)) : nullptr;
         if (!raw) throw Failure(L"The update product version is missing.");
@@ -191,7 +204,7 @@ void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersio
 }
 }
 Handle OpenContextProcess(const LaunchContext& context) { return ContextProcess(context, false); }
-void ValidateUpdateBundle(const std::wstring& path, const std::wstring& version) { ValidateBundle(path, version, false); }
+void ValidateUpdateBundle(const std::wstring& path, const std::wstring& version, const PackageTarget* expectedTarget) { ValidateBundle(path, version, false, expectedTarget); }
 #ifdef PK_FIXTURE_BUILD
 Handle OpenContextProcessFixture(const LaunchContext& context) { return ContextProcess(context, true); }
 void ValidateUpdateBundleFixture(const std::wstring& path, const std::wstring& version) { ValidateBundle(path, version, true); }

@@ -132,7 +132,11 @@ public sealed partial class MainWindow : Window
     }
 
     private ProtectionDecision Decision(ProcessRecord process) => _policy.Evaluate(process, _snapshot, RunningRules);
-    private bool DirectlyWhitelisted(ApplicationGroup app) => _rules.Any(r => r.Enabled && r.Kind == RuleKind.Application && r.Value.Equals(app.Key, StringComparison.OrdinalIgnoreCase));
+    private bool DirectlyWhitelisted(ApplicationGroup app)
+    {
+        var identities = ApplicationPresentationGroups.GetRunningRules(app);
+        return identities.Count > 0 && identities.All(identity => _rules.Any(rule => rule.Enabled && rule.Kind == identity.Kind && rule.Value.Equals(identity.Value, StringComparison.OrdinalIgnoreCase)));
+    }
     private ApplicationGroup? SelectedApp
     {
         get
@@ -384,8 +388,8 @@ public sealed partial class MainWindow : Window
         foreach (var process in app.Processes)
         {
             var parent = _snapshot.Processes.FirstOrDefault(p => p.Id == process.ParentId);
-            if (parent is not null && parent.ApplicationKey != app.Key && IsValidParent(process, parent)) relations.Add(L.F($"{parent.ApplicationName} / {parent.Name}（{parent.Id}）→ {process.Name}（{process.Id}）：启动来源"));
-            foreach (var child in _snapshot.Processes.Where(p => p.ParentId == process.Id && p.ApplicationKey != app.Key && IsValidParent(p, process))) relations.Add(L.F($"{process.Name}（{process.Id}）→ {child.ApplicationName} / {child.Name}（{child.Id}）：启动了其他程序"));
+            if (parent is not null && !byId.ContainsKey(parent.Id) && IsValidParent(process, parent)) relations.Add(L.F($"{parent.ApplicationName} / {parent.Name}（{parent.Id}）→ {process.Name}（{process.Id}）：启动来源"));
+            foreach (var child in _snapshot.Processes.Where(p => p.ParentId == process.Id && !byId.ContainsKey(p.Id) && IsValidParent(p, process))) relations.Add(L.F($"{process.Name}（{process.Id}）→ {child.ApplicationName} / {child.Name}（{child.Id}）：启动了其他程序"));
         }
         foreach (var text in relations.Take(30)) relation.AppendLine("| " + text);
         if (relations.Count == 0) relation.AppendLine(L.T("当前快照没有可核实的跨程序启动关系。父进程可能已经退出。"));
@@ -434,8 +438,10 @@ public sealed partial class MainWindow : Window
     }
     private void ToggleApp(ApplicationGroup app, bool enabled)
     {
-        var next = _rules.Where(r => !(r.Kind == RuleKind.Application && r.Value.Equals(app.Key, StringComparison.OrdinalIgnoreCase))).ToList();
-        if (enabled) next.Add(new WhitelistRule { Name = app.Name, Kind = RuleKind.Application, Value = app.Key, Enabled = true });
+        var identities = ApplicationPresentationGroups.GetRunningRules(app);
+        var keys = identities.Select(rule => rule.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var next = _rules.Where(r => !(r.Kind == RuleKind.Application && keys.Contains(r.Value))).ToList();
+        if (enabled) next.AddRange(identities);
         CommitRules(next, L.F($"{(enabled ? L.T("加入") : L.T("移出"))}程序白名单：{app.Name}"));
     }
     private void WhitelistChecked(object sender, RoutedEventArgs e)

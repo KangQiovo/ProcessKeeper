@@ -84,7 +84,8 @@ public sealed partial class AutorunsView : UserControl
             _inventory = inventory;
             InventoryChanged?.Invoke(this, EventArgs.Empty);
             _loaded = true;
-            _expanded.IntersectWith(inventory.Entries.Select(e => e.Id));
+            _expanded.IntersectWith(inventory.Entries.Select(e => e.Id).Concat(
+                ApplicationPresentationGroups.GroupAutoruns(inventory.Entries, _installed, _processes).Select(group => group.Key)));
             Render();
         }
         catch (OperationCanceledException) { if (!_closed) Status.Text = L.T("扫描已取消，保留上次结果。"); }
@@ -146,10 +147,8 @@ public sealed partial class AutorunsView : UserControl
                 var rows = await Task.Run(() =>
                 {
                     var index = new AutorunSearchIndex(snapshot, installed);
-                    var items = entries.Where(e => (!hideMicrosoft || !display.IsMicrosoft(e)) && AutorunPresentation.Matches(e, complex, source) && StateMatches(e, state) &&
-                        (index.Matches(e, query) || MatchesPlatformQuery(e, query, display)))
-                        .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(e => e.Id, StringComparer.Ordinal)
-                        .Select(e => CreateRow(e, index, expanded.Contains(e.Id), query, collapsedSearch.Contains(e.Id))).ToArray();
+                    var items = ApplicationRows(ApplicationPresentationGroups.GroupAutoruns(entries, installed, snapshot),
+                        index, query, source, state, complex, display, hideMicrosoft, expanded, collapsedSearch);
                     return ExpandProcessRows(GroupRows(items, display, groupPlatforms, collapsedPlatforms, query));
                 }, _lifetime.Token);
                 if (_closed || !_active) return;
@@ -168,13 +167,16 @@ public sealed partial class AutorunsView : UserControl
                         if (!string.Equals(row.IconPath, next.IconPath, StringComparison.OrdinalIgnoreCase))
                         { row.Icon = null; row.NotifyIcon(); }
                         row.Entry = next.Entry;
+                        row.ApplicationEntries = next.ApplicationEntries; row.ApplicationGroupKey = next.ApplicationGroupKey;
+                        row.ApplicationIconPath = next.ApplicationIconPath; row.IsApplicationGroup = next.IsApplicationGroup;
+                        row.ApplicationEntryCount = next.ApplicationEntryCount;
                         row.Process = next.Process; row.Processes = next.Processes;
                         row.Summary = next.Summary; row.ProcessSummary = next.ProcessSummary;
                         row.DetailText = next.DetailText; row.IsExpanded = next.IsExpanded;
                         row.IsPresentationGroup = next.IsPresentationGroup; row.PresentationDepth = next.PresentationDepth; row.PresentationPlatformId = next.PresentationPlatformId;
                     }
                     else { row = next; _rows.Insert(i, row); }
-                    row.IsWhitelistProtected = IsWhitelistProtected(row.Entry);
+                    row.IsWhitelistProtected = !row.IsApplicationGroup && !row.IsPresentationGroup && IsWhitelistProtected(row.Entry);
                     if (row.IsWhitelistProtected && row.Entry.Enabled == true) row.Summary = L.T("白名单保护") + " | " + row.Summary;
                     row.Busy = _changing;
                     row.Notify();
@@ -240,7 +242,9 @@ public sealed partial class AutorunsView : UserControl
     private void UpdateStatus()
     {
         if (_scanning) return;
-        Status.Text = _loaded ? L.F($"显示 {_rows.Count(row => !row.IsPresentationGroup && !row.IsProcess)} / {_inventory.Entries.Count} 项 | {_inventory.CapturedAt.LocalDateTime:HH:mm:ss}") : L.T("尚未完成扫描");
+        var entryCount = _rows.Where(row => row.IsApplicationGroup).Sum(row => row.ApplicationEntryCount) +
+            _rows.Count(row => !row.IsPresentationGroup && !row.IsApplicationGroup && !row.IsProcess && row.ApplicationGroupKey.Length == 0);
+        Status.Text = _loaded ? L.F($"显示 {entryCount} / {_inventory.Entries.Count} 项 | {_inventory.CapturedAt.LocalDateTime:HH:mm:ss}") : L.T("尚未完成扫描");
         if (_inventory.Warnings.Count > 0 || _inventory.Truncated) Status.Text += L.T(" | 部分来源未完整读取");
     }
 
@@ -344,7 +348,9 @@ public sealed partial class AutorunsView : UserControl
         open.Click += (_, _) => _openLocation?.Invoke(path);
         menu.Items.Add(open);
         var copy = new MenuFlyoutItem { Text = L.T("复制启动信息"), Icon = new SymbolIcon(Symbol.Copy) };
-        copy.Click += (_, _) => { try { var data = new DataPackage(); data.SetText(row.Name + "\n" + (row.DetailText.Length > 0 ? row.DetailText : BuildDetails(row.Entry, [], []))); Clipboard.SetContent(data); } catch (Exception ex) { _notice?.Invoke(L.T("复制失败"), ex.Message, InfoBarSeverity.Warning); } };
+        copy.Click += (_, _) => { try { var data = new DataPackage(); data.SetText(row.Name + "\n" + (row.IsApplicationGroup
+            ? string.Join("\n\n", row.ApplicationEntries.Select(entry => BuildDetails(entry, [], [])))
+            : row.DetailText.Length > 0 ? row.DetailText : BuildDetails(row.Entry, [], []))); Clipboard.SetContent(data); } catch (Exception ex) { _notice?.Invoke(L.T("复制失败"), ex.Message, InfoBarSeverity.Warning); } };
         menu.Items.Add(copy);
         if (args.TryGetPosition(anchor, out var position)) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position }); else menu.ShowAt(anchor);
     }

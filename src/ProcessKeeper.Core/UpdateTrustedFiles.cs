@@ -81,6 +81,23 @@ internal static class UpdateTrustedFiles
         }
         catch { handle.Dispose(); throw; }
     }
+
+    internal static FileStream OpenResume(string path)
+    {
+        ValidatePath(path);
+        var handle = CreateFile(path, 0xc0000000 | 0x20000, 0, nint.Zero, 3, 0x00200000, nint.Zero);
+        if (handle.IsInvalid) { handle.Dispose(); throw new IOException("Cannot open the owned update partial file."); }
+        try
+        {
+            if (!GetFileInformationByHandle(handle, out var info) || (info.Attributes & 0x410) != 0) throw new IOException("Linked update partial file refused.");
+            var final = new System.Text.StringBuilder(32768);
+            var length = GetFinalPathNameByHandle(handle, final, 32768, 0);
+            if (length == 0 || length >= 32768 || !SamePath(final.ToString().Replace(@"\\?\", ""), path)) throw new IOException("Update partial path changed.");
+            var stream = new FileStream(handle, FileAccess.ReadWrite);
+            try { ValidateAcl(stream.GetAccessControl(), false); return stream; } catch { stream.Dispose(); throw; }
+        }
+        catch { handle.Dispose(); throw; }
+    }
     internal static void RequireHash(Stream stream, string hash)
     {
         if (!ValidHash(hash)) throw new IOException("Invalid update SHA-256.");

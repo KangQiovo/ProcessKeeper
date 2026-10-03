@@ -29,6 +29,9 @@ internal static class Program
         Directory.CreateDirectory(Root);
         Versions(); Preferences(); await FixedRepository();
         InstallerIdentityVerification.Run(Check);
+        AppCacheCleanupVerification.Run(Check);
+        await UpdatePackageVerification.Run(Check);
+        await UpdateResumeVerification.Run(Check);
         await Metadata(); await Sources(); await Downloads(); await Boundaries(); await AdditionalBoundaries();
         Console.WriteLine($"PASS: {_checks} update assertions | fake HTTP only | no executable launched | fixtures: {Root}");
     }

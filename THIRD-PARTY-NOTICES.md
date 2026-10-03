@@ -41,3 +41,11 @@ Keep applicable notices with any redistributed dependency. This source publicati
 ## Behavioral references
 
 [PCL](https://github.com/Meloong-Git/PCL) and [PCL Community](https://github.com/PCL-Community/PCL-CE) were researched for memory and download behavior. The functions are independently implemented; no launcher source, binary or private module is included. This project's MIT license does not relicense those projects. See [Utilities](docs/UTILITIES.md).
+
+## Markdig
+
+[Markdig 0.41.3](https://github.com/xoofx/markdig/releases/tag/0.41.3) parses release-note Markdown for both interfaces, rendered with native controls. BSD-2-Clause applies; the [original upstream license](licenses/Markdig.0.41.3-LICENSE.txt) is retained from the commit recorded by the NuGet package. The compatibility build reuses its existing System.Memory dependency.
+
+## NSIS
+
+[NSIS 3.13](https://nsis.sourceforge.io/) builds the installer and native uninstaller. Release packages use zlib compression; the compiler is not redistributed with the app. The official ZIP supplies the retained [copyright and license summary](licenses/NSIS.3.13-LICENSE.txt); individual components keep their own terms.

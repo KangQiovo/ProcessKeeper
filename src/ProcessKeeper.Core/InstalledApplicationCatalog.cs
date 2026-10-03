@@ -173,6 +173,9 @@ public sealed class InstalledApplicationCatalog
     public static IReadOnlyList<WhitelistRule> GetAppRules(InstalledApplication application)
     {
         ArgumentNullException.ThrowIfNull(application);
+        if (application.Installations.Count > 0)
+            return Array.AsReadOnly(application.Installations.SelectMany(GetAppRules)
+                .DistinctBy(rule => ((int)rule.Kind) + ":" + rule.Value.ToUpperInvariant()).ToArray());
         var rules = new List<WhitelistRule>();
         void Add(string key, string path, string name)
         {

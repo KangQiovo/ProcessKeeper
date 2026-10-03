@@ -6,11 +6,10 @@ public sealed record UninstallApplicationGroup(string Key, string Name, IReadOnl
 /// <summary>Presentation categories describe registration metadata, never trust or malware status.</summary>
 public static class UninstallDisplay
 {
-    /// <summary>Groups display names only. Every child retains its original execution identity.</summary>
+    /// <summary>Groups application presentation evidence. Every child retains its original execution identity.</summary>
     public static IReadOnlyList<UninstallApplicationGroup> Group(IEnumerable<UninstallEntry> entries)
     {
-        var groups = new List<(string Key, string Name, List<UninstallEntry> Entries)>();
-        var byName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var source = new List<UninstallEntry>();
         var seen = new Dictionary<string, List<UninstallEntry>>(StringComparer.Ordinal);
         foreach (var entry in entries)
         {
@@ -21,17 +20,86 @@ public static class UninstallDisplay
                     && previous.Publisher == entry.Publisher && previous.Version == entry.Version)) continue;
                 sameId.Add(entry);
             }
-            string key = DisplayNameKey(entry);
-            if (key.Length > 0 && byName.TryGetValue(key, out int index)) groups[index].Entries.Add(entry);
-            else
+            source.Add(entry);
+        }
+        var names = source.Select(entry => DisplayNameKey(entry).Length == 0 ? "" : ApplicationPresentationGroups.NormalizeName(entry.Name, entry.Version)).ToArray();
+        var publishers = source.Select(entry => ApplicationPresentationGroups.PublisherKey(entry.Publisher)).ToArray();
+        var parents = Enumerable.Range(0, source.Count).ToArray();
+        var parentPublishers = publishers.ToArray();
+        var ambiguous = new bool[source.Count];
+        int Find(int index)
+        {
+            while (parents[index] != index) { parents[index] = parents[parents[index]]; index = parents[index]; }
+            return index;
+        }
+        void Join(int first, int second)
+        {
+            first = Find(first); second = Find(second);
+            if (first == second || parentPublishers[first].Length > 0 && parentPublishers[second].Length > 0 &&
+                !parentPublishers[first].Equals(parentPublishers[second], StringComparison.Ordinal) ||
+                ambiguous[first] && parentPublishers[second].Length > 0 || ambiguous[second] && parentPublishers[first].Length > 0) return;
+            parents[second] = first;
+            if (parentPublishers[first].Length == 0) parentPublishers[first] = parentPublishers[second];
+            ambiguous[first] |= ambiguous[second];
+        }
+        var byName = new Dictionary<string, int>(StringComparer.Ordinal);
+        var evidence = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        var keys = new string[source.Count][];
+        for (int index = 0; index < source.Count; index++)
+        {
+            keys[index] = names[index].Length == 0 ? Array.Empty<string>() : ApplicationKeys(source[index]);
+            if (names[index].Length == 0) continue;
+            string nameKey = names[index] + "\0" + publishers[index];
+            if (byName.TryGetValue(nameKey, out int previous)) Join(previous, index); else byName.Add(nameKey, index);
+            foreach (var key in keys[index])
             {
-                if (key.Length > 0) byName.Add(key, groups.Count);
-                string groupKey = key.Length > 0 ? "name:" + key.ToUpperInvariant()
-                    : "registration:" + AutorunIdentity.Hash(entry.Id + "|" + entry.Registration + "|" + entry.Fingerprint);
-                groups.Add((groupKey, entry.Name, new List<UninstallEntry> { entry }));
+                if (!evidence.TryGetValue(key, out var candidates)) evidence.Add(key, candidates = new List<int>());
+                candidates.Add(index);
             }
         }
-        return groups.Select(group => new UninstallApplicationGroup(group.Key, group.Name, Array.AsReadOnly(group.Entries.ToArray()))).ToArray();
+        var evidencePublishers = evidence.ToDictionary(pair => pair.Key,
+            pair => pair.Value.Select(index => publishers[index]).Where(value => value.Length > 0).Distinct(StringComparer.Ordinal).Take(2).ToArray(), StringComparer.Ordinal);
+        var blankEvidence = new Dictionary<int, HashSet<string>>();
+        for (int index = 0; index < source.Count; index++)
+        {
+            int parent = Find(index);
+            if (parentPublishers[parent].Length > 0) continue;
+            if (!blankEvidence.TryGetValue(parent, out var candidates)) blankEvidence.Add(parent, candidates = new HashSet<string>(StringComparer.Ordinal));
+            foreach (var key in keys[index]) foreach (var publisher in evidencePublishers[key]) candidates.Add(publisher);
+        }
+        foreach (var candidate in blankEvidence) ambiguous[candidate.Key] = candidate.Value.Count > 1;
+        foreach (var candidates in evidence.Values)
+        {
+            var knownPublishers = candidates.Select(index => publishers[index]).Where(value => value.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
+            foreach (var bucket in candidates.GroupBy(index => publishers[index].Length == 0 && knownPublishers.Length == 1 ? knownPublishers[0] : publishers[index], StringComparer.Ordinal))
+            {
+                int first = bucket.First();
+                foreach (int next in bucket.Skip(1)) Join(first, next);
+            }
+        }
+        return Enumerable.Range(0, source.Count).GroupBy(Find).Select(group =>
+        {
+            var indices = group.ToArray();
+            var first = source[indices[0]];
+            var commonEvidence = keys[indices[0]].Where(key => indices.All(index => keys[index].Contains(key, StringComparer.Ordinal)))
+                .OrderBy(key => key.StartsWith("known:", StringComparison.Ordinal) ? 0 : 1).ThenBy(key => key, StringComparer.Ordinal).FirstOrDefault();
+            string name = indices.Select(index => names[index]).Where(value => value.Length > 0).OrderBy(value => value, StringComparer.Ordinal).FirstOrDefault() ?? "";
+            string key = commonEvidence is not null ? commonEvidence + "|publisher:" + parentPublishers[Find(indices[0])]
+                : name.Length > 0 ? "name:" + name + "|publisher:" + parentPublishers[Find(indices[0])]
+                : "registration:" + AutorunIdentity.Hash(first.Id + "|" + first.Registration + "|" + first.Fingerprint);
+            return new UninstallApplicationGroup(key, ApplicationPresentationGroups.DisplayName(first.Name, first.Version), Array.AsReadOnly(indices.Select(index => source[index]).ToArray()));
+        }).ToArray();
+    }
+
+    private static string[] ApplicationKeys(UninstallEntry entry)
+    {
+        var paths = entry.ApplicationPaths.Select(path => LocalPath(path, true)).Where(path => path is not null && !ApplicationPresentationGroups.IsSharedHost(path))
+            .Cast<string>().Distinct(StringComparer.OrdinalIgnoreCase).Take(2).ToArray();
+        // An associated main executable is evidence; the shared installer or a common installation folder is not.
+        if (paths.Length != 1) return Array.Empty<string>();
+        var identity = ProcessIdentity.Classify(new ProcessRecord { Name = Path.GetFileName(paths[0]), Path = paths[0] }).ApplicationKey;
+        return identity.StartsWith("known:", StringComparison.Ordinal)
+            ? new[] { identity, "main:" + paths[0].ToUpperInvariant() } : new[] { "main:" + paths[0].ToUpperInvariant() };
     }
 
     public static bool MatchesFilter(UninstallEntry entry, bool advanced, int filter, ApplicationDisplayCatalog? display = null)

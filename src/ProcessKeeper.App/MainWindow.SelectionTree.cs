@@ -34,7 +34,7 @@ public sealed partial class MainWindow
             var platform = _groupGamePlatforms ? _displayCatalog.FindGamePlatform(app) : null;
             var parent = platform is null ? null : PlatformRowPrefix + platform.Id;
             if (parent is not null) nodes.Add(new(parent));
-            nodes.Add(new(app.Key, parent, false));
+            nodes.Add(new(app.Key, parent));
             foreach (var process in app.Processes) nodes.Add(new($"{app.Key}|{process.Id}:{process.StartTimeUtcTicks}", app.Key));
         }
         return nodes;
@@ -50,10 +50,10 @@ public sealed partial class MainWindow
             var platform = _groupGamePlatforms ? _displayCatalog.FindGamePlatform(app) : null;
             var parent = platform is null ? null : PlatformRowPrefix + platform.Id;
             if (parent is not null) nodes.Add(new(parent));
-            var key = "app:" + app.Id; nodes.Add(new(key, parent, false));
+            var key = "app:" + app.Id; nodes.Add(new(key, parent));
             foreach (var executable in app.Executables)
             {
-                var component = InstalledExecutableRowKey(app.Id, executable.Path); nodes.Add(new(component, key, false));
+                var component = InstalledExecutableRowKey(app.Id, executable.Path); nodes.Add(new(component, key));
                 foreach (var process in byPath.GetValueOrDefault(executable.Path) ?? [])
                     nodes.Add(new($"pid:{app.Id}:{process.Id}:{process.StartTimeUtcTicks}", component));
             }
@@ -68,10 +68,15 @@ public sealed partial class MainWindow
     private IReadOnlyList<NativeSelectionNode> RuleSelectionNodes()
     {
         var nodes = new List<NativeSelectionNode>(); var matcher = new RuleProcessMatcher(_snapshot);
-        foreach (var rule in _rules)
+        foreach (var group in ApplicationPresentationGroups.GroupRules(_rules, AllInstalledApplications(), _snapshot))
         {
-            var key = "rule:" + rule.Id; nodes.Add(new(key, HasSelector: false));
-            foreach (var match in matcher.Match(rule)) nodes.Add(new($"rule:{rule.Id}|pid:{match.Process.Id}:{match.Process.StartTimeUtcTicks}", key));
+            var parent = group.Rules.Count > 1 ? group.Key : null;
+            if (parent is not null) nodes.Add(new(parent));
+            foreach (var rule in group.Rules)
+            {
+                var key = "rule:" + rule.Id; nodes.Add(new(key, parent));
+                foreach (var match in matcher.Match(rule)) nodes.Add(new($"rule:{rule.Id}|pid:{match.Process.Id}:{match.Process.StartTimeUtcTicks}", key));
+            }
         }
         return nodes;
     }

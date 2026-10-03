@@ -1,0 +1,16 @@
+[
+  { "source": "打开", "en": "Open" },
+  { "source": "安装包、程序登记与卸载器。", "en": "Installers, program registration and uninstallers." },
+  { "source": "清理应用缓存", "en": "Clear app cache" },
+  { "source": "清理应用缓存？", "en": "Clear app cache?" },
+  { "source": "清理缓存", "en": "Clear cache" },
+  { "source": "正在清理…", "en": "Cleaning…" },
+  { "source": "清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。", "en": "Remove verified old-version cache files. Keep files in use, update downloads, whitelist profiles and settings." },
+  { "source": "缓存清理完成", "en": "Cache cleanup complete" },
+  { "source": "缓存清理未完成", "en": "Cache cleanup incomplete" },
+  { "source": "缓存清理结果无效。", "en": "Invalid cache cleanup result." },
+  { "source": "无法启动已验证的缓存清理助手。", "en": "Cannot start the verified cache cleanup helper." },
+  { "source": "缓存清理尚未完成，使用中的文件会保留。", "en": "Cache cleanup has not finished. Files in use are retained." },
+  { "source": "没有可清理的已验证旧版本缓存。", "en": "No verified old-version cache files need cleanup." },
+  { "source": "已清理 {0} 个缓存文件 | {1:0.00} MiB | 保留 {2} 组缓存。", "en": "Removed {0} cache files | {1:0.00} MiB | Retained {2} cache groups." }
+]

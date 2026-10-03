@@ -42,7 +42,8 @@ internal sealed class LegacyTreeSelection
         var children = byId.Keys.ToDictionary(key => key, _ => new List<string>(), StringComparer.Ordinal);
         foreach (var row in byId.Values)
         {
-            string? parent = row.IsChild ? parents.FirstOrDefault(item => row.Id.StartsWith(item.Id + "|", StringComparison.Ordinal))?.Id :
+            string? parent = row.ParentId.Length > 0 && row.ParentId != row.Id && byId.ContainsKey(row.ParentId) ? row.ParentId :
+                row.IsChild ? parents.FirstOrDefault(item => row.Id.StartsWith(item.Id + "|", StringComparison.Ordinal))?.Id :
                 !row.IsPresentationGroup && row.PresentationPlatformId.Length > 0 ? "presentation-platform:" + row.PresentationPlatformId : null;
             if (parent is not null && children.TryGetValue(parent, out var descendants)) descendants.Add(row.Id);
         }

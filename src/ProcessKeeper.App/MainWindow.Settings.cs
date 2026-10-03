@@ -131,6 +131,24 @@ public sealed partial class MainWindow
         catch (Exception ex) { ShowNotice(L.T("列表设置未保存"), ex.Message, InfoBarSeverity.Warning); }
     }
 
+    private async void ClearAppCache(object sender, RoutedEventArgs args)
+    {
+        if (_closed || _dialogOpen || _working || HasPendingTool || _windowOperationRunning || _autorunsView?.IsChanging == true || _uninstallView?.IsBusy == true || _updatesView?.IsBusy == true) return;
+        if (!LauncherContextReader.TryGetCurrent(out var context, out var error))
+        { ShowNotice(L.T("缓存清理未完成"), error, InfoBarSeverity.Warning); return; }
+        if (await ShowDialog(NewDialog(L.T("清理应用缓存？"), new TextBlock
+            { Text = L.T("清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。"), TextWrapping = TextWrapping.Wrap, MaxWidth = 480 }, L.T("清理缓存"))) != ContentDialogResult.Primary || _closed) return;
+        if (_working || HasPendingTool || _windowOperationRunning || _autorunsView?.IsChanging == true || _uninstallView?.IsBusy == true || _updatesView?.IsBusy == true) return;
+        _working = true; ClearCacheButton.IsEnabled = false; ClearCacheButton.Content = L.T("正在清理…");
+        try
+        {
+            var result = await Task.Run(() => AppCacheCleanupService.Clear(context!));
+            if (!_closed) ShowNotice(L.T(result.Success ? "缓存清理完成" : "缓存清理未完成"), result.Message, result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }
+        finally
+        { _working = false; if (!_closed) { ClearCacheButton.IsEnabled = true; ClearCacheButton.Content = L.T("清理应用缓存"); } }
+    }
+
     private void OpenConfigurationFolder(object sender, RoutedEventArgs args)
     {
         try

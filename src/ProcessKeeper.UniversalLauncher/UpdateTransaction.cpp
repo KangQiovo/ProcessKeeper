@@ -1,4 +1,7 @@
 #include "UpdateTransaction.h"
+#include "DesktopShortcut.h"
+#include "CacheCleanup.h"
+#include "InstalledRegistration.h"
 #include <algorithm>
 #include <array>
 #include <sddl.h>
@@ -24,9 +27,17 @@ bool WaitMarker(const std::wstring& directory, const std::wstring& fileName, con
     }
     return present();
 }
-Handle OpenExact(const std::wstring& path, DWORD access) {
-    Handle result(CreateFileW(path.c_str(), access, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
-    if (!result.valid()) Fail(L"Cannot lock the original application file."); VerifyHandlePath(result.get(), path, false); return result;
+Handle OpenExact(const std::wstring& path, DWORD access, bool waitForRelease = false) {
+    for (unsigned attempt = 0;; ++attempt) {
+        Handle result(CreateFileW(path.c_str(), access, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
+        if (result.valid()) { VerifyHandlePath(result.get(), path, false); return result; }
+        const auto error = GetLastError();
+        if (!waitForRelease || attempt >= 40 || (error != ERROR_SHARING_VIOLATION && error != ERROR_LOCK_VIOLATION)) {
+            SetLastError(error); Fail(L"Cannot lock the original application file.");
+        }
+        // A scanner or the exiting wrapper may briefly retain a handle. Never kill it.
+        Sleep(250);
+    }
 }
 void RequireHash(HANDLE file, const std::wstring& expected) { if (Hex(HashFile(file)) != expected) throw Failure(L"The verified application file changed. No unrelated file will be replaced."); }
 void RenameExact(HANDLE file, const std::wstring& path) {
@@ -42,7 +53,7 @@ UpdateTransactionResult Replace(const std::wstring& original, const std::wstring
     const std::wstring& newHash, const std::wstring& id, const std::function<UpdateLaunchResult(const std::wstring&)>& launch, bool fixture) {
     if (!ValidContextId(id)) throw Failure(L"Invalid update transaction identifier.");
     auto parents = LockParents(original, false); auto newParents = LockParents(candidate, !fixture);
-    auto oldFile = OpenExact(original, GENERIC_READ | DELETE); RequireHash(oldFile.get(), oldHash);
+    auto oldFile = OpenExact(original, GENERIC_READ | DELETE, !fixture); RequireHash(oldFile.get(), oldHash);
     auto newFile = fixture ? OpenExact(candidate, GENERIC_READ) : OpenProtectedFile(candidate); RequireHash(newFile.get(), newHash);
     const auto temporary = original + L".pk-new-" + id, backup = original + L".pk-backup-" + id + L".exe";
     Handle staged;
@@ -71,7 +82,17 @@ UpdateTransactionResult Replace(const std::wstring& original, const std::wstring
         // Reopen and verify again after this transition; never execute a swapped leaf.
         staged.reset(); auto runningFile = OpenExact(original, GENERIC_READ); RequireHash(runningFile.get(), newHash);
         const auto started = launch(original);
-        if (started == UpdateLaunchResult::Success) { result.installed = true; result.message = L"Update installed and a real application window was confirmed."; return result; }
+        if (started == UpdateLaunchResult::Success) {
+            result.installed = true; result.confirmed = true; result.message = L"Update installed and a real application window was confirmed.";
+            try {
+                // This remains the original locked handle: never sweep nearby versioned EXEs.
+                VerifyHandlePath(oldFile.get(), backup, false); RequireHash(oldFile.get(), oldHash);
+                FILE_DISPOSITION_INFO disposal{TRUE};
+                if (!SetFileInformationByHandle(oldFile.get(), FileDispositionInfo, &disposal, sizeof(disposal))) Fail(L"Cannot remove the verified old EXE backup.");
+                oldFile.reset(); result.backup.clear();
+            } catch (const Failure&) { result.message += L" The verified old EXE backup was retained: " + backup; }
+            return result;
+        }
         if (started == UpdateLaunchResult::Unconfirmed) { result.installed = true; result.message = L"Update written, but startup was not confirmed. No process was killed. The original EXE backup is retained: " + backup; return result; }
         runningFile.reset();
         throw Failure(L"The updated application failed before opening a window.");
@@ -114,7 +135,7 @@ UpdateTransactionResult InstallUpdate(const LaunchContext& context, const std::w
     auto sourceParents = LockParents(context.original, false);
     auto original = OpenExact(context.original, GENERIC_READ); RequireHash(original.get(), context.originalHash);
     const auto candidate = directory + L"\\update.exe";
-    auto next = OpenProtectedFile(candidate); RequireHash(next.get(), job[3]); ValidateUpdateBundle(candidate, job[4]);
+    auto next = OpenProtectedFile(candidate); RequireHash(next.get(), job[3]); ValidateUpdateBundle(candidate, job[4], &context.target);
     const auto mutexName = L"Local\\ProcessKeeper.Update." + context.originalHash;
     Handle mutex(CreateMutexW(nullptr, TRUE, mutexName.c_str()));
     if (!mutex.valid() || GetLastError() == ERROR_ALREADY_EXISTS) throw Failure(L"Another update is already pending.");
@@ -125,8 +146,24 @@ UpdateTransactionResult InstallUpdate(const LaunchContext& context, const std::w
     const auto authorized = WaitMarker(directory, L"execute.txt", L"PKEXECUTE1", caller.get(), GetCurrentProcessId(), 200, ReadProtectedLines);
     if (!authorized) throw Failure(L"Update handoff was not completed. The original EXE was not changed.");
     if (WaitForSingleObject(caller.get(), 120000) != WAIT_OBJECT_0) throw Failure(L"The app did not exit. No process was killed and the original EXE was not changed.");
+    PayloadCleanupPlan cleanup;
+    try { cleanup = CapturePayloadCleanup(context); } catch (const Failure&) { /* Updating may proceed while unverifiable old cache is retained. */ }
     RequireHash(original.get(), context.originalHash); original.reset(); next.reset();
     auto result = Replace(context.original, context.originalHash, candidate, job[3], id, LaunchUpdated, false);
+    if (result.installed && result.confirmed) {
+        try {
+            const auto registration = RefreshInstalledRegistration(context.original, job[3], job[4], context.target);
+            if (registration == L"conflict") result.message += L" An unrelated or unverified installed-app registration was preserved.";
+        } catch (const Failure&) { result.message += L" The installed EXE is valid, but its installed-app version could not be refreshed."; }
+        try {
+            if (!cleanup.receipt.empty()) { SchedulePayloadCleanup(cleanup); result.message += L" Its exact old payload cache is scheduled for verification and cleanup on a later launch after the old helper exits."; }
+            else result.message += L" The old payload cache could not be verified and was retained.";
+        } catch (const Failure&) { result.message += L" The old payload cache was retained because cleanup could not be scheduled."; }
+        try {
+            const auto shortcut = RefreshDesktopShortcut(context.original);
+            if (shortcut == L"conflict") result.message += L" An unrelated desktop shortcut was preserved.";
+        } catch (const Failure&) { result.message += L" The installed EXE is valid, but its owned desktop shortcut could not be refreshed."; }
+    }
     try {
         auto completed = OpenExact(candidate, GENERIC_READ | READ_CONTROL | DELETE); VerifySecurity(completed.get(), false, true); RequireHash(completed.get(), job[3]);
         FILE_DISPOSITION_INFO disposal{TRUE};

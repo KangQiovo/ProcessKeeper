@@ -11,6 +11,7 @@ public sealed class LauncherContext
     public string OriginalPath { get; }
     public string OriginalSha256 { get; }
     public string OriginalVersion { get; }
+    public UpdatePackageTarget PackageTarget { get; }
     internal string Id { get; }
     internal string DirectoryPath { get; }
     internal string HelperPath { get; }
@@ -20,6 +21,12 @@ public sealed class LauncherContext
         Id = fields[1]; DirectoryPath = directory;
         OriginalPath = Decode(fields[2]); OriginalSha256 = fields[3]; OriginalVersion = fields[4];
         HelperPath = Decode(fields[7]); HelperSha256 = fields[8];
+        PackageTarget = fields.Length == 12 ? UpdatePackageTarget.Universal : fields[12] switch
+        {
+            "Universal" => UpdatePackageTarget.Universal, "Windows7Compat" => UpdatePackageTarget.Windows7Compat,
+            "Windows10x64" => UpdatePackageTarget.Windows10x64, "Windows10arm64" => UpdatePackageTarget.Windows10arm64,
+            _ => throw new InvalidDataException("Unknown trusted package flavor.")
+        };
     }
     internal static string Decode(string text)
     {
@@ -49,7 +56,7 @@ public static class LauncherContextReader
                 fields = reader.ReadToEnd().Replace("\r", "").TrimEnd('\n').Split('\n');
             using var process = Process.GetCurrentProcess();
             using var identity = WindowsIdentity.GetCurrent();
-            if (fields.Length != 12 || fields[0] != "PKLC1" || fields[1] != id ||
+            if ((fields.Length != 12 && fields.Length != 13) || fields[0] != "PKLC1" || fields[1] != id ||
                 fields[9] != process.Id.ToString(CultureInfo.InvariantCulture) ||
                 fields[10] != process.StartTime.ToUniversalTime().ToFileTimeUtc().ToString(CultureInfo.InvariantCulture) ||
                 LauncherContext.Decode(fields[11]) != identity.User?.Value)
@@ -71,7 +78,7 @@ public static class LauncherContextReader
     }
     internal static void RequireCurrent(LauncherContext context)
     {
-        if (!TryGetCurrent(out var live, out var error) || live!.Id != context.Id || live.OriginalSha256 != context.OriginalSha256 ||
+        if (!TryGetCurrent(out var live, out var error) || live!.Id != context.Id || live.OriginalSha256 != context.OriginalSha256 || live.PackageTarget != context.PackageTarget ||
             !UpdateTrustedFiles.SamePath(live.OriginalPath, context.OriginalPath)) throw new IOException(error.Length > 0 ? error : "Launcher context changed.");
     }
 }

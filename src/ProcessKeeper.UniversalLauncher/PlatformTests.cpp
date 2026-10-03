@@ -83,6 +83,19 @@ int wmain(int argc, wchar_t** argv) {
         host = {};
         check(ChooseRoute(host) == Route::Unsupported, L"failed OS discovery cannot launch a payload");
         const auto actual = DetectHost();
+        const Host modernX64{10, 0, 19041, 0, IMAGE_FILE_MACHINE_AMD64, 394802};
+        check(ChoosePackageRoute(modernX64, PackageTarget::Windows10x64) == Route::ModernX64 && ChoosePackageRoute(modernX64, PackageTarget::Windows7Compat) == Route::Legacy,
+            L"modern x64 and explicit compatibility packages retain their declared interface route");
+        check(ChoosePackageRoute(modernX64, PackageTarget::Windows10arm64) == Route::Unsupported, L"an ARM64 package is rejected on an x64 host before loading a payload");
+        Host oldX64 = modernX64; oldX64.build = 18363;
+        check(ChoosePackageRoute(oldX64, PackageTarget::Windows10x64) == Route::Legacy && ChoosePackageRoute(oldX64, PackageTarget::Windows7Compat) == Route::Legacy,
+            L"dual x86 x64 package selects real compatibility UI on older Intel AMD hosts");
+        auto modernX86 = modernX64; modernX86.machine = IMAGE_FILE_MACHINE_I386;
+        check(ChoosePackageRoute(modernX86, PackageTarget::Windows10x64) == Route::Legacy && ChoosePackageRoute(modernX64, PackageTarget::Windows10x64, true) == Route::Legacy,
+            L"dual Windows package supports x86 and an explicit verified compatibility fallback");
+        Host arm64 = modernX64; arm64.machine = IMAGE_FILE_MACHINE_ARM64;
+        check(ChoosePackageRoute(arm64, PackageTarget::Windows10arm64) == Route::ModernArm64 && ChoosePackageRoute(arm64, PackageTarget::Windows7Compat) == Route::Unsupported,
+            L"native ARM64 package never enters an unverified compatibility route");
         check(actual.major >= 6 && actual.machine != 0, L"native x86 executable reads its real host architecture and OS");
         for (const auto name : {L"DOTNET_STARTUP_HOOKS", L"dotnet_additional_deps", L"Dotnet_Shared_Store", L"COR_ENABLE_PROFILING", L"cor_profiler_path_32", L"CORECLR_PROFILER", L"COMPLUS_version", L"DEVPATH", L"__COMPAT_LAYER"})
             check(IsRuntimeOverride(name), L"runtime injection and probing overrides are filtered case-insensitively");

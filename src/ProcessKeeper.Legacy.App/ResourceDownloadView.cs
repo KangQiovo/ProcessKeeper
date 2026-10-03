@@ -12,7 +12,7 @@ public sealed class ResourceDownloadView : UserControl, IDisposable
 {
     private readonly TextBox _url = new() { HorizontalAlignment = HorizontalAlignment.Stretch },
         _folder = new() { IsReadOnly = true, HorizontalAlignment = HorizontalAlignment.Stretch }, _name = new() { HorizontalAlignment = HorizontalAlignment.Stretch },
-        _agent = new() { Text = "ProcessKeeper/1.6.0", HorizontalAlignment = HorizontalAlignment.Stretch }, _sha = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
+        _agent = new() { Text = "ProcessKeeper/1.7.0", HorizontalAlignment = HorizontalAlignment.Stretch }, _sha = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox _source = new() { HorizontalAlignment = HorizontalAlignment.Stretch },
         _connections = new() { ItemsSource = Enumerable.Range(1, 32).ToArray(), SelectedIndex = 15, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly Button _start = new() { Content = L.T("开始下载") }, _pause = new() { Content = L.T("暂停"), IsEnabled = false },

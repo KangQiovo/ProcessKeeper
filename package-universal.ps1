@@ -1,8 +1,9 @@
 #requires -Version 7.0
 param(
-    [Parameter(Mandatory)][string]$ModernDirectory,
-    [Parameter(Mandatory)][string]$Arm64Directory,
-    [Parameter(Mandatory)][string]$LegacyDirectory,
+    [string]$ModernDirectory,
+    [string]$Arm64Directory,
+    [string]$LegacyDirectory,
+    [ValidateSet('Universal','Windows7Compat','Windows10x64','Windows10arm64')][string]$PackageTarget = 'Universal',
     [Parameter(Mandatory)][string]$OutputPath,
     [string]$IntermediateDirectory = (Join-Path $PSScriptRoot 'artifacts/packages'),
     [string]$PowerShellPath,
@@ -115,22 +116,40 @@ if ($projectVersions.Count -ne 1) { throw 'Missing or ambiguous product version.
 $expectedVersion = $projectVersions[0].InnerText
 $buildInfo = Read-BuildMetadata $buildInfoPath $expectedChannel $expectedVersion
 $resourceVersion = ($buildInfo.Version.Split('.') + '0') -join ','
-$roots = [ordered]@{ modern = (Assert-PlainDirectory $ModernDirectory); 'modern/arm64' = (Assert-PlainDirectory $Arm64Directory); legacy = (Assert-PlainDirectory $LegacyDirectory) }
+$roots = [ordered]@{}
+if ($PackageTarget -in @('Universal','Windows10x64')) {
+    if (!$ModernDirectory) { throw 'The selected package requires -ModernDirectory.' }
+    $roots.modern = Assert-PlainDirectory $ModernDirectory
+}
+if ($PackageTarget -in @('Universal','Windows10arm64')) {
+    if (!$Arm64Directory) { throw 'The selected package requires -Arm64Directory.' }
+    $roots['modern/arm64'] = Assert-PlainDirectory $Arm64Directory
+}
+if ($PackageTarget -in @('Universal','Windows7Compat','Windows10x64')) {
+    if (!$LegacyDirectory) { throw 'The selected package requires -LegacyDirectory.' }
+    $roots.legacy = Assert-PlainDirectory $LegacyDirectory
+}
 foreach ($first in $roots.Values) { foreach ($second in $roots.Values) {
     if ($first -ne $second -and $first.StartsWith($second.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Published architecture roots must not contain one another.' }
 } }
-if (@($roots.Values | Sort-Object -Unique).Count -ne 3) { throw 'Each architecture must have an independent published directory.' }
+if (@($roots.Values | Sort-Object -Unique).Count -ne $roots.Count) { throw 'Each architecture must have an independent published directory.' }
 foreach ($root in $roots.Values) { if ($outputFile.StartsWith($root.TrimEnd('\') + '\',[StringComparison]::OrdinalIgnoreCase)) { throw 'The outer EXE must be written outside all published payload directories.' } }
-Assert-CoreBuildStamp (Join-Path $roots.modern 'ProcessKeeper.Core.dll') $buildInfo
-Assert-CoreBuildStamp (Join-Path $roots['modern/arm64'] 'ProcessKeeper.Core.dll') $buildInfo
-Assert-CoreBuildStamp (Join-Path $roots.legacy 'ProcessKeeper.Legacy.Core.dll') $buildInfo
-if ((Read-Machine (Join-Path $roots.modern 'ProcessKeeper.exe')) -ne 0x8664) { throw 'The modern payload must be x64.' }
-foreach ($entry in @('ProcessKeeper.exe','coreclr.dll','hostfxr.dll','hostpolicy.dll','Microsoft.UI.Xaml.dll')) {
-    if ((Read-Machine (Join-Path $roots['modern/arm64'] $entry)) -ne 0xAA64) { throw "The ARM64 payload must include its own native runtime: $entry" }
+if ($roots.Contains('modern')) {
+    Assert-CoreBuildStamp (Join-Path $roots.modern 'ProcessKeeper.Core.dll') $buildInfo
+    if ((Read-Machine (Join-Path $roots.modern 'ProcessKeeper.exe')) -ne 0x8664) { throw 'The modern payload must be x64.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $roots.modern 'Microsoft.UI.Xaml.dll'))) { throw 'The modern payload must include its self-contained WinUI runtime.' }
 }
-if ((Read-Machine (Join-Path $roots.legacy 'ProcessKeeper.exe')) -ne 0x14c) { throw 'The compatibility payload must be an x86/AnyCPU PE.' }
-if (-not (Test-Path -LiteralPath (Join-Path $roots.modern 'Microsoft.UI.Xaml.dll'))) { throw 'The modern payload must include its self-contained WinUI runtime.' }
-if (-not (Test-Path -LiteralPath (Join-Path $roots.legacy 'ProcessKeeper.exe.config'))) { throw 'The compatibility payload runtime configuration is missing.' }
+if ($roots.Contains('modern/arm64')) {
+    Assert-CoreBuildStamp (Join-Path $roots['modern/arm64'] 'ProcessKeeper.Core.dll') $buildInfo
+    foreach ($entry in @('ProcessKeeper.exe','coreclr.dll','hostfxr.dll','hostpolicy.dll','Microsoft.UI.Xaml.dll')) {
+        if ((Read-Machine (Join-Path $roots['modern/arm64'] $entry)) -ne 0xAA64) { throw "The ARM64 payload must include its own native runtime: $entry" }
+    }
+}
+if ($roots.Contains('legacy')) {
+    Assert-CoreBuildStamp (Join-Path $roots.legacy 'ProcessKeeper.Legacy.Core.dll') $buildInfo
+    if ((Read-Machine (Join-Path $roots.legacy 'ProcessKeeper.exe')) -ne 0x14c) { throw 'The compatibility payload must be an x86/AnyCPU PE.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $roots.legacy 'ProcessKeeper.exe.config'))) { throw 'The compatibility payload runtime configuration is missing.' }
+}
 $intermediateRoot = [IO.Path]::GetFullPath($IntermediateDirectory)
 foreach ($root in $roots.Values) { if ($intermediateRoot.StartsWith($root.TrimEnd('\') + '\',[StringComparison]::OrdinalIgnoreCase) -or $intermediateRoot.Equals($root,[StringComparison]::OrdinalIgnoreCase)) { throw 'Packaging intermediates must stay outside both published payload roots.' } }
 $packageWork = Join-Path $intermediateRoot ('universal-package-' + [Guid]::NewGuid().ToString('N'))
@@ -170,7 +189,7 @@ foreach ($variant in $roots.Keys) {
     }
     $packageFiles.Add([pscustomobject]@{File=(Get-Item -LiteralPath (Join-Path $PSScriptRoot 'LICENSE')); Relative='LICENSE'; Extra=$true})
     foreach ($file in Get-ChildItem -LiteralPath $PSScriptRoot -Filter 'README*.md' -File) { $packageFiles.Add([pscustomobject]@{File=$file; Relative=$file.Name; Extra=$true}) }
-    foreach ($file in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'docs') -File | Where-Object { $_.Name -match '^(?:COMPATIBILITY|UTILITIES|CLOUD-PROFILES).*\.md$' }) { $packageFiles.Add([pscustomobject]@{File=$file; Relative=('docs/' + $file.Name); Extra=$true}) }
+    foreach ($file in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'docs') -File | Where-Object { $_.Name -match '^(?:COMPATIBILITY|UTILITIES|CLOUD-PROFILES|RELEASE-1\.7\.0).*\.md$' }) { $packageFiles.Add([pscustomobject]@{File=$file; Relative=('docs/' + $file.Name); Extra=$true}) }
     foreach ($default in @('default-rules.json','default-settings.json')) {
         $packageFiles.Add([pscustomobject]@{File=(Get-Item -LiteralPath (Join-Path $PSScriptRoot "rules/$default")); Relative="rules/$default"; Extra=$true})
     }
@@ -212,7 +231,8 @@ finally { Pop-Location }
 $cabinet = Join-Path $cabinetDirectory 'payload.cab'
 $cabinetHash = (Get-FileHash -LiteralPath $cabinet -Algorithm SHA256).Hash.ToLowerInvariant()
 $manifest = Join-Path $packageWork 'payload.manifest'
-$manifestText = "PK14`t$cabinetHash`n" + (($records | ForEach-Object { "$($_.Relative)`t$($_.Length)`t$($_.Hash)" }) -join "`n") + "`n"
+$manifestHeader = if ($PackageTarget -eq 'Universal') { "PK14`t$cabinetHash" } else { "PK17`t$cabinetHash`t$PackageTarget" }
+$manifestText = $manifestHeader + "`n" + (($records | ForEach-Object { "$($_.Relative)`t$($_.Length)`t$($_.Hash)" }) -join "`n") + "`n"
 [IO.File]::WriteAllText($manifest,$manifestText,[Text.UTF8Encoding]::new($false))
 $resource = Join-Path $packageWork 'launcher.rc'
 $icon = Join-Path $PSScriptRoot 'src/ProcessKeeper.App/Assets/ProcessKeeper.ico'
@@ -258,6 +278,8 @@ if ($currentBuildInfo.BuiltAtUtc -cne $buildInfo.BuiltAtUtc -or $currentBuildInf
 $currentSourceInputs = Get-ProcessKeeperSourceInputs $PSScriptRoot
 if ($currentSourceInputs.SHA256 -cne $sourceInputs.SHA256) { throw 'Source inputs changed during packaging; this candidate must not be delivered.' }
 $report = [ordered]@{ Version=$buildInfo.Version; ReleaseChannel=$buildInfo.ReleaseChannel; BuildDate=$buildInfo.BuiltAtUtc8; BuiltAtUtc=$buildInfo.BuiltAtUtc; Output=$outputFile; SHA256=(Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash; FileCount=$records.Count; UncompressedBytes=$totalLength; PackageWork=$packageWork; Modern='x64 Windows 10 build 19041 or later'; Arm64='Native ARM64 Windows 10 build 19041 or later | x86 outer launcher and updater under emulation'; TestedOnActualArm64=$false; Compatibility='Intel/AMD Windows 7 SP1, Windows 8.1, Windows 10/11 | .NET Framework 4.6.2 or later'; TestedOnActualWindows7=$false }
+$report.PackageTarget = $PackageTarget
+$report.PayloadRoots = @($roots.Keys)
 $report['SourceInputs'] = $sourceInputs
 $report | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath "$outputFile.package.json" -Encoding utf8NoBOM
 [pscustomobject]$report | Select-Object Version,ReleaseChannel,BuildDate,BuiltAtUtc,Output,SHA256,FileCount,PackageWork | ConvertTo-Json

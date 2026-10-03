@@ -59,7 +59,10 @@ public partial class MainWindow
             var rules = page == 0 ? RunningRules : page == 1 && !_whitelistScope.Installed ? Array.Empty<WhitelistRule>() : _rules;
             var display = _displayCatalog;
             var expanded = new HashSet<string>(snapshot.Applications.Select(app => "app:" + app.Key)
-                .Concat(installed.Select(app => "installed:" + app.Id)).Concat(rules.Select(rule => "rule:" + rule.Id)).Concat(autoruns.Entries.Select(entry => "autorun:" + entry.Id)), StringComparer.Ordinal);
+                .Concat(installed.Select(app => "installed:" + app.Id)).Concat(rules.Select(rule => "rule:" + rule.Id))
+                .Concat(autoruns.Entries.Select(entry => "autorun:" + entry.Id))
+                .Concat(ApplicationPresentationGroups.GroupAutoruns(autoruns.Entries, installed, snapshot).Select(group => group.Key)), StringComparer.Ordinal);
+            expanded.UnionWith(ApplicationPresentationGroups.GroupRules(rules, installed, snapshot).Select(group => group.Key));
             var group = _view.GroupGamePlatforms;
             var uninstall = _uninstallView?.InventoryEntries.ToArray() ?? Array.Empty<UninstallEntry>(); var version = _renderVersion;
             var membership = await Task.Run(() => LegacyTreeSelection.Membership(ApplyPresentation(CreateRows(page, "", 0, 0, "", true, expanded, snapshot, installed, rules, autoruns, _life.Token, new HashSet<string>(), true, display, uninstall), page, "", display, group, false, new HashSet<string>())), _life.Token);

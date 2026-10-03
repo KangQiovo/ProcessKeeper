@@ -10,17 +10,17 @@ internal static class WindowSizePolicy
 {
     internal readonly record struct Limits(int MinimumWidth, int MinimumHeight, int MaximumWidth, int MaximumHeight);
 
-    internal static Limits Calculate(RectInt32 workArea, uint dpi)
+    internal static Limits Calculate(RectInt32 workArea, uint dpi, int minimumWidth = 900, int minimumHeight = 600)
     {
         var scale = dpi > 0 ? dpi / 96d : 1d;
         var margin = (int)Math.Round(16 * scale);
         var maximumWidth = Math.Max(1, workArea.Width - Math.Min(margin, Math.Max(0, workArea.Width - 1)));
         var maximumHeight = Math.Max(1, workArea.Height - Math.Min(margin, Math.Max(0, workArea.Height - 1)));
-        return new Limits(Math.Min((int)Math.Round(900 * scale), maximumWidth),
-            Math.Min((int)Math.Round(600 * scale), maximumHeight), maximumWidth, maximumHeight);
+        return new Limits(Math.Min((int)Math.Round(minimumWidth * scale), maximumWidth),
+            Math.Min((int)Math.Round(minimumHeight * scale), maximumHeight), maximumWidth, maximumHeight);
     }
 
-    internal static void Attach(Window window)
+    internal static void Attach(Window window, int minimumWidth = 900, int minimumHeight = 600)
     {
         var appWindow = window.AppWindow;
         var handle = WinRT.Interop.WindowNative.GetWindowHandle(window);
@@ -33,7 +33,7 @@ internal static class WindowSizePolicy
             {
                 var area = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Nearest)?.WorkArea;
                 if (area is not { Width: > 0, Height: > 0 } workArea) return;
-                var limits = Calculate(workArea, GetDpiForWindow(handle));
+                var limits = Calculate(workArea, GetDpiForWindow(handle), minimumWidth, minimumHeight);
                 // AppWindow dimensions are physical pixels; scale the logical minimum once.
                 if (presenter.PreferredMinimumWidth != limits.MinimumWidth) presenter.PreferredMinimumWidth = limits.MinimumWidth;
                 if (presenter.PreferredMinimumHeight != limits.MinimumHeight) presenter.PreferredMinimumHeight = limits.MinimumHeight;

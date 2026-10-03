@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 namespace ProcessKeeper.Core;
 
 public sealed record ResourceDownloadRequest(string Url, string Directory, string FileName,
-    string UserAgent = "ProcessKeeper/1.6.0", int Connections = 16, string SourceId = "official", string ExpectedSha256 = "", bool AllowThirdParty = false);
+    string UserAgent = "ProcessKeeper/1.7.0", int Connections = 16, string SourceId = "official", string ExpectedSha256 = "", bool AllowThirdParty = false);
 public sealed record ResourceDownloadProgress(long Bytes, long? Total, double BytesPerSecond, string Source, string State,
     int ActiveConnections = 0, int Segments = 0, string FallbackReason = "");
 public sealed record ResourceDownloadResult(string Path, long Bytes, string Sha256, string Source);

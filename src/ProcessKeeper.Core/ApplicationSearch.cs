@@ -39,8 +39,7 @@ public sealed class RuleSearchIndex
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var app in _applications)
         {
-            var applicationMatches = ApplicationSearch.Contains(app.Name, query) ||
-                ApplicationSearch.Contains(app.Publisher, query) || ApplicationSearch.Contains(app.InstallLocation, query);
+            var applicationMatches = InstalledApplicationSearch.MatchesApplication(app, query);
             if (applicationMatches && app.ApplicationKey.Length > 0)
                 keys.Add(app.ApplicationKey);
             foreach (var executable in app.Executables)

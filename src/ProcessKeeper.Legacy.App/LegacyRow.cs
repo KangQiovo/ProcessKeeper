@@ -6,6 +6,7 @@ public sealed class LegacyRow : INotifyPropertyChanged
 {
     private readonly PresentationChanges _changes = new();
     public string Id { get; set; } = "";
+    public string ParentId { get; set; } = "";
     public string Name { get; set; } = "";
     public string Summary { get; set; } = "";
     public string Detail { get; set; } = "";
@@ -50,6 +51,7 @@ public sealed class LegacyRow : INotifyPropertyChanged
     public void Apply(LegacyRow next)
     {
         if (!string.Equals(Path, next.Path, StringComparison.OrdinalIgnoreCase) || !string.Equals(IconPath, next.IconPath, StringComparison.OrdinalIgnoreCase)) Icon = null;
+        ParentId = next.ParentId;
         Name = next.Name; Summary = next.Summary; Detail = next.Detail; Path = next.Path; IconPath = next.IconPath;
         ActionLabel = next.ActionLabel; HasAction = next.HasAction; CanAct = next.CanAct; IsChild = next.IsChild;
         IsActionChecked = next.IsActionChecked;

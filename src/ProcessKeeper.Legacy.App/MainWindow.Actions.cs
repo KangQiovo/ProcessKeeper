@@ -84,7 +84,7 @@ public partial class MainWindow
         if (!_rulesReadable) return;
         IReadOnlyList<WhitelistRule> incoming;
         if (row.Model is InstalledApplication installed) incoming = InstalledApplicationCatalog.GetAppRules(installed);
-        else if (row.Model is ApplicationGroup app) incoming = new[] { new WhitelistRule { Name = app.Name, Kind = RuleKind.Application, Value = app.Key } };
+        else if (row.Model is ApplicationGroup app) incoming = ApplicationPresentationGroups.GetRunningRules(app);
         else if (row.Model is ProcessRecord process) incoming = new[] { new WhitelistRule { Name = process.Name, Kind = RuleKind.ExecutablePath, Value = process.Path } };
         else return;
         if (incoming.Count == 0) { Notice(L.T("没有可加入白名单的可执行文件。")); return; }

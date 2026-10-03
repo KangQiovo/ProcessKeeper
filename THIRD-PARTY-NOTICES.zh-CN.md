@@ -56,3 +56,11 @@ PolySharp 1.16.0 的源码生成使用 [MIT 许可](licenses/PolySharp.1.16.0-LI
 ## 行为参考
 
 [PCL](https://github.com/Meloong-Git/PCL) 和 [PCL Community](https://github.com/PCL-Community/PCL-CE) 用于研究内存及下载机制。功能独立实现，没有包含其源码、程序或私有模块；本项目的 MIT 不改变它们的许可。详见[杂项说明](docs/UTILITIES.zh-CN.md)。
+
+## Markdig
+
+[Markdig 0.41.3](https://github.com/xoofx/markdig/releases/tag/0.41.3) 用于两个界面的更新日志 Markdown 解析，使用原生控件显示。采用 BSD-2-Clause；按 NuGet 包中记录的提交保留[上游许可原文](licenses/Markdig.0.41.3-LICENSE.txt)。兼容版沿用现有的 System.Memory 依赖。
+
+## NSIS
+
+[NSIS 3.13](https://nsis.sourceforge.io/) 用于编译安装器和原生卸载器。正式包使用 zlib 压缩；编译工具不随应用分发。已从官方发行 ZIP 原样保留[版权及许可汇总](licenses/NSIS.3.13-LICENSE.txt)，各组件保留其各自条款。

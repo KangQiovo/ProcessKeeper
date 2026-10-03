@@ -183,7 +183,7 @@ public sealed class CloudWhitelistProfiles : IDisposable
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
             request.Headers.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
-            request.Headers.TryAddWithoutValidation("User-Agent", "ProcessKeeper/1.6.0");
+            request.Headers.TryAddWithoutValidation("User-Agent", "ProcessKeeper/1.7.0");
             using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
             if (response.RequestMessage?.RequestUri is { } final && final != uri)
                 throw Failure(CloudProfileFailure.RedirectBlocked, "云端白名单重定向目标不受支持。" );

@@ -9,7 +9,7 @@ public sealed record InstalledExecutable
     public string ApplicationKey { get; init; } = "";
 }
 
-/// <summary>Read-only installation evidence. Different installation roots and package versions remain separate.</summary>
+/// <summary>Original installation evidence. Presentation families retain each installation root and package record.</summary>
 public sealed record InstalledApplication
 {
     public string Id { get; init; } = "";
@@ -21,4 +21,6 @@ public sealed record InstalledApplication
     /// <summary>Explicit registered, manifest, shortcut or user-selected entries; never inferred from list order.</summary>
     public IReadOnlyList<string> EntryPaths { get; init; } = [];
     public IReadOnlyList<InstalledExecutable> Executables { get; init; } = [];
+    /// <summary>Original installation records retained by a presentation family; empty for an original record.</summary>
+    public IReadOnlyList<InstalledApplication> Installations { get; init; } = [];
 }

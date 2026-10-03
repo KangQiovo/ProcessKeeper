@@ -92,6 +92,16 @@ Route ChooseRoute(const Host& host, bool forceLegacy) {
     return host.framework >= 394802 ? Route::Legacy : Route::MissingFramework;
 }
 bool IsModernRoute(Route route) { return route == Route::ModernX64 || route == Route::ModernArm64; }
+Route ChoosePackageRoute(const Host& host, PackageTarget target, bool forceLegacy) {
+    if (target == PackageTarget::Universal) return ChooseRoute(host, forceLegacy);
+    if (target == PackageTarget::Windows7Compat) return ChooseRoute(host, true);
+    if (target == PackageTarget::Windows10x64) {
+        if (host.machine != IMAGE_FILE_MACHINE_I386 && host.machine != IMAGE_FILE_MACHINE_AMD64) return Route::Unsupported;
+        return ChooseRoute(host, forceLegacy);
+    }
+    if (forceLegacy || !(host.major > 10 || host.major == 10 && host.build >= 19041)) return Route::Unsupported;
+    return host.machine == IMAGE_FILE_MACHINE_ARM64 ? Route::ModernArm64 : Route::Unsupported;
+}
 bool CanOfferLegacy(Route detected, bool forceLegacy, bool childRunning) { return detected == Route::ModernX64 && !forceLegacy && !childRunning; }
 bool IsApplicationWindowIdentity(const std::wstring& className, const std::wstring& title) {
     return title == L"Process Keeper" && (className == L"WinUIDesktopWin32WindowClass" || className.rfind(L"HwndWrapper[", 0) == 0 && className.back() == L']');

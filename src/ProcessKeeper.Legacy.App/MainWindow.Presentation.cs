@@ -73,9 +73,11 @@ public partial class MainWindow
             segments[segments.Count - 1].Add(row);
         }
         bool IsMicrosoft(object? model) => model switch
-        { ApplicationGroup app => display.IsMicrosoft(app), InstalledApplication app => display.IsMicrosoft(app), AutorunEntry entry => display.IsMicrosoft(entry), _ => false };
+        { ApplicationGroup app => display.IsMicrosoft(app), InstalledApplication app => display.IsMicrosoft(app), AutorunEntry entry => display.IsMicrosoft(entry),
+            AutorunApplicationGroup app => app.Entries.Count > 0 && app.Entries.All(display.IsMicrosoft), _ => false };
         GamePlatform? Platform(object? model) => model switch
-        { ApplicationGroup app => display.FindGamePlatform(app), InstalledApplication app => display.FindGamePlatform(app), AutorunEntry entry => display.FindGamePlatform(entry), _ => null };
+        { ApplicationGroup app => display.FindGamePlatform(app), InstalledApplication app => display.FindGamePlatform(app), AutorunEntry entry => display.FindGamePlatform(entry),
+            AutorunApplicationGroup app => CommonAutorunPlatform(app, display), _ => null };
         var shown = segments.Where(s => !hide || !IsMicrosoft(s[0].Model)).Select(s => (Rows: s, Platform: group ? Platform(s[0].Model) : null)).ToArray();
         foreach (var item in shown)
         {
@@ -91,9 +93,14 @@ public partial class MainWindow
                 Detail = L.T("仅整理显示；关闭与白名单操作仍只针对原应用。"),
                 IsPresentationGroup = true, PresentationPlatformId = first.Id, Expanded = open });
             if (open) foreach (var segment in platform) foreach (var row in segment.Rows)
-            { row.PresentationDepth = 1; row.PresentationPlatformId = first.Id; result.Add(row); }
+            { row.PresentationDepth++; row.PresentationPlatformId = first.Id; result.Add(row); }
         }
         foreach (var segment in shown.Where(s => s.Platform is null)) result.AddRange(segment.Rows);
         return result;
+    }
+    private static GamePlatform? CommonAutorunPlatform(AutorunApplicationGroup group, ApplicationDisplayCatalog display)
+    {
+        var platforms = group.Entries.Select(display.FindGamePlatform).ToArray();
+        return platforms.Length > 0 && platforms.All(platform => platform is not null && platform.Id == platforms[0]?.Id) ? platforms[0] : null;
     }
 }

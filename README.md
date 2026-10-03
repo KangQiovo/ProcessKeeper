@@ -13,13 +13,13 @@
 
 Process Keeper is a Windows application and process manager with an editable whitelist, startup management, and tools for restoring supported hidden application windows. Related processes are grouped under their application, so you can inspect what an action will affect before confirming it.
 
-The modern interface uses **WinUI 3**. An **x86 WPF / WPF UI compatibility interface** shares the core behavior and provides a route for older systems. A native launcher can package both interfaces into one portable EXE.
+The modern interface uses **WinUI 3**. A shared **WPF / WPF UI compatibility interface** supports x86 and x64 older systems. Version 1.7.0 offers three portable editions, three installers with uninstallers, and one universal portable package.
 
 > Download the official portable EXE from [Releases](https://github.com/KangQiovo/ProcessKeeper/releases/latest). Release packages are unsigned, so Windows may show **Unknown publisher**. Ordinary builds retain the **“Test version — does not represent final quality”** notice; official stable builds remove it. Older-system support remains a compatibility target, not completed device certification.
 
 ## Features
 
-**1.6.0** adds application removal, a signed recommendation catalog, Utilities, confirmed system-memory optimization, a resumable file downloader, native ARM64 packaging, executable-role labels and a refined performance display. Lists keep their selection during refresh, use a single right-aligned checkbox per row, and preserve each game's original local icon under platform groups. Utilities follows Settings in the sidebar. Device compatibility limits remain documented below.
+**1.7.0** merges duplicate application parents, especially Installed applications and Startup, while preserving all exact component paths and management targets. It adds Markdown update notes, resumable downloads, verified background replacement, installers and cache cleanup. See the [release notes](docs/RELEASE-1.7.0.md) for all seven packages and migration instructions.
 
 | Area | What you can do |
 | --- | --- |
@@ -69,7 +69,7 @@ Each language edition uses captures of its corresponding application language. T
 ## Getting started
 
 1. Launch the portable EXE. Windows requests administrator permission; cancelling opens the permission page instead of management.
-2. Complete the environment check and onboarding. Automatic language selection prefers the system display language.
+2. Complete onboarding. Automatic language selection prefers the system display language; **Settings → About → Environment check** can inspect the environment again.
 3. Review running or installed software and mark applications to keep. Click rows to select multiple items; use the arrow to inspect processes or executable components.
 4. Choose a close action and review its exact target list. Graceful exit is the default; forced termination requires an explicit choice.
 5. Read the activity log. Failures, unavailable capabilities and unverifiable identities are not counted as success.
@@ -86,7 +86,9 @@ The profile editor sits below the backup tools. **Sync empty rules in real time*
 
 Running, installed and whitelist pages search application names, process names, paths and exact PIDs. A matching child keeps its parent application visible. Available details include executable identity, account/session, parent PID, services and windows. Icons come from the original local executable when readable.
 
-A single **Select all / Deselect all** button selects the currently visible rows. Parent and child rows can be selected independently without Ctrl; use the arrow to expand them. Rows with Keep/Enable show only that checkbox on the right; click the row itself to select it, shown by the native selection highlight. Rows without a protection checkbox show a matching right-aligned selection checkbox. Selection does not change whitelist rules. In the whitelist page, choose which pages protection covers: Running and Installed by default, with optional Startup and Uninstall scopes. Full settings backups retain these choices. Checking a parent selection checkbox selects every descendant, including collapsed children; clearing it clears that branch. Partial child selection marks the parent as mixed. Keep/Enable checkboxes retain their protection meaning.
+A single **Select all / Deselect all** button selects the currently visible rows. Click rows to select multiple applications or individual children without Ctrl; use the arrow to expand them. Rows with Keep/Enable show only that checkbox on the right; click the row itself to select it, shown by the native selection highlight. Rows without a protection checkbox show a matching right-aligned selection checkbox. Selection does not change whitelist rules. In the whitelist page, choose which pages protection covers: Running and Installed by default, with optional Startup and Uninstall scopes. Full settings backups retain these choices. Selecting a parent row or selection checkbox selects every descendant, including collapsed children; clearing it clears that branch. Partial child selection marks the parent as mixed. Keep/Enable checkboxes retain their protection meaning.
+
+Application grouping combines verified identity, original executable paths, and product/publisher evidence. Multiple installed versions retain their own files, main/uninstaller labels and locations; startup groups retain each source entry and enable state. Unknown or conflicting ownership remains separate. Grouping is for presentation and never substitutes a display name for an exact close, startup-change or uninstall target.
 
 Installed executable children label explicit entry points in green, possible main files in yellow and uninstallers in red. Main candidates come first, followed by uninstallers; other components retain their inventory order. Local rules match English application names to EXE names, using file descriptions and known helper/uninstall evidence. Filename inference always remains yellow. Inferred labels may be wrong and do not establish safety or successful launch. Parent file-location actions prefer a unique resolved main executable; ambiguous entries open the folder rather than arbitrarily selecting the first EXE.
 
@@ -163,13 +165,35 @@ Read the [compatibility matrix and known limitations](docs/COMPATIBILITY.md). Re
 
 ## Packaging, settings and updates
 
-The intended distribution is one native EXE containing both interfaces. Portable means no installer registration, **not no disk writes**: verified runtime files use a restricted ProgramData cache; personal settings/logs use `%LOCALAPPDATA%\ProcessKeeper`; startup backups use protected ProgramData storage.
+Version 1.7.0 publishes **seven packages**: three portable editions, three corresponding installers with uninstallers, and a universal portable EXE.
+
+| Download | Choose for |
+| --- | --- |
+| `ProcessKeeper-v1.7.0-win7-x86-compat.exe` | Portable \| Win7 SP1 / 8.1 and supported newer x86/x64 systems \| WPF; requires .NET Framework 4.6.2 or compatible newer 4.x. |
+| `ProcessKeeper-v1.7.0-win10-x86-x64.exe` | Portable \| Win10/11 x86/x64 \| WinUI on x64 build 19041+; bundled WPF compatibility UI for x86 or older supported x64 systems. |
+| `ProcessKeeper-v1.7.0-win10-arm64.exe` | Portable \| Win10 build 19041+ / Win11 ARM64 \| Native ARM64 WinUI; x86 launcher under emulation. |
+| `ProcessKeeper-v1.7.0-win7-x86-compat-setup.exe` | Installer + uninstaller \| Win7 SP1 / 8.1 and supported newer x86/x64 systems. |
+| `ProcessKeeper-v1.7.0-win10-x86-x64-setup.exe` | Installer + uninstaller \| Win10/11 x86/x64 \| Includes the same modern and compatibility routes. |
+| `ProcessKeeper-v1.7.0-win10-arm64-setup.exe` | Installer + uninstaller \| Win10 build 19041+ / Win11 ARM64. |
+| `ProcessKeeper-v1.7.0.exe` | Universal portable \| All three runtime routes \| Largest download; historical updater-compatible PK14 format. |
+
+Portable packages create no Programs registration but still write verified runtime caches and separate settings. Installers register Process Keeper in Windows Programs, create shortcuts and include Uninstall.exe. Installation does not widen or prefill the empty default whitelist.
 
 Whitelist-only and complete-settings exports are separate formats. Imports show a preview; local path rules are not widened into broad name rules. Profile edits use revision checks and one atomic whitelist file, so a stale editor cannot overwrite newer rules. Complete-settings imports keep backups and attempt rollback on failure, but cannot guarantee multi-file atomicity across sudden power loss.
 
-Update authority is fixed to **`KangQiovo/ProcessKeeper`** in configuration, official metadata, assets and installation handoff. GitHub supplies release identity and digests; third parties only supply allowed download routes. Automatic source choice measures actual asset requests. Missing releases/digests, rate limits, network errors and invalid packages are reported. Restart requires confirmation.
+Update authority is fixed to **`KangQiovo/ProcessKeeper`** in configuration, official metadata, assets and installation handoff. GitHub supplies release identity and digests; third parties only supply allowed download routes. Automatic source choice measures actual asset requests. The update prompt renders the actual Markdown release notes and lists the published assets; automatic installation selects the compatible package flavor. A progress window supports pausing/resuming and switching sources. An active download survives navigation and repeated checks during the same app session; it does not promise recovery after closing the app. Downloading does not exit the application. Replacement starts only after an explicit Update and restart click and confirmation, with no automatic countdown. The old package backup is removed only after the replacement reports ready; unrelated EXEs are untouched. Missing releases/digests, rate limits, network errors and invalid packages are reported.
+
+**For 1.6.x in-app upgrades, select ProcessKeeper-v1.7.0.exe (Universal).** The old updater accepts PK14 and rejects PK17 split editions or installers safely. To switch to a smaller edition or an installed copy, download its corresponding EXE manually. From 1.7.0, updates select the same portable package flavor; setup files are never passed to the automatic update helper.
 
 Build time is preserved to the second with a UTC+8 baseline and displayed in the computer's current time zone, refreshed every five seconds. Current builds are unsigned: hash checks and fixed repository identity do not make a locally rewritten EXE impossible. Real public-release upgrades and production UAC/cache cold starts still need field testing.
+
+### Portable files and removal
+
+Portable packages embed the trusted updater. Installers additionally provide Uninstall.exe and an owned Programs registration. Updates retain the stable original application path, preserve the uninstaller and refresh only matching installation metadata and shortcuts.
+
+To remove Process Keeper manually, finish or cancel pending updates, exit the application, and remove the chosen EXE and its **Process Keeper.lnk** from the actual Windows Desktop folder, which may be redirected. Optional full cleanup can also remove your `%LOCALAPPDATA%\ProcessKeeper` settings/history and the protected `%ProgramData%\ProcessKeeper\Universal\<your-user-SID>` extracted payload/session folder. Only remove your own SID folder; other users' caches must be preserved. Startup recovery backups are separate under `%ProgramData%\ProcessKeeper\AutorunBackups\<your-user-SID>`; retain them if you may need to restore startup changes. Deleting files does not reverse earlier startup modifications. The portable package creates no installer registration in Windows Programs.
+
+When migrating manually from 1.6.x, verify the new 1.7.0 EXE works before removing the old downloaded EXE yourself. The app does not sweep nearby executables or archives.
 
 ## Build and contribute
 
@@ -189,3 +213,9 @@ Created by **KangQi**: [GitHub](https://github.com/KangQiovo) | [Coolapk](https:
 Built with references from [Microsoft WinUI Gallery](https://github.com/microsoft/WinUI-Gallery), [Windows App SDK](https://github.com/microsoft/WindowsAppSDK), [.NET](https://github.com/dotnet/runtime) and [WPF UI](https://github.com/lepoco/wpfui). [Third-party notices](THIRD-PARTY-NOTICES.md) describe components, icons and licenses. This project is independent of Microsoft and the software it displays.
 
 Process Keeper source uses the [MIT license](LICENSE). Third-party components retain their licenses and trademarks. The application icon was AI-generated; screenshots are actual UI captures, not generated images.
+
+## Installers and removal
+
+Installers are compiled with pinned NSIS 3.13 and request administrator permission. They register an owned machine-wide Programs entry, install a stable ProcessKeeper.exe plus Uninstall.exe and install.ini, and create matching shortcuts. The uninstaller removes only its owned application files, links and registration; it preserves settings/history and startup recovery backups. Optional manual own-user data cleanup is described in the README. Installation/uninstallation on Win7, x86 and ARM64 remains unverified on real target systems.
+
+In **Settings → About → Local files**, **Clear app cache** requests verified old-version cleanup. Current payloads, files in use, downloads, whitelist profiles and settings are retained. Unconfirmed or modified cache trees are not recursively erased; the result reports actual files, bytes and retained trees.

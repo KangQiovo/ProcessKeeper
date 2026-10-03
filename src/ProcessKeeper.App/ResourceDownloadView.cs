@@ -9,7 +9,7 @@ public sealed class ResourceDownloadView : UserControl, IDisposable
     private readonly TextBox _url = new() { Header = L.T("下载地址"), PlaceholderText = "https://", HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _folder = new() { Header = L.T("保存目录"), PlaceholderText = L.T("选择目录"), IsReadOnly = true, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _name = new() { Header = L.T("文件名"), HorizontalAlignment = HorizontalAlignment.Stretch };
-    private readonly TextBox _agent = new() { Header = "User-Agent", Text = "ProcessKeeper/1.6.0", HorizontalAlignment = HorizontalAlignment.Stretch };
+    private readonly TextBox _agent = new() { Header = "User-Agent", Text = "ProcessKeeper/1.7.0", HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _sha = new() { Header = L.T("SHA256（可选）"), HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox _source = new() { Header = L.T("GitHub 镜像（可选）"), HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly NumberBox _connections = new() { Header = L.T("最大并发连接"), Minimum = 1, Maximum = 32, Value = 16,

@@ -103,7 +103,10 @@ public sealed partial class MainWindow
             .ToDictionary(g => g.Key, g => g.First().Path, StringComparer.OrdinalIgnoreCase);
         var next = new List<RuleRow>();
         var offlineMatches = query.Length > 0 ? searchIndex.MatchingRuleIds(rules, query) : [];
-        foreach (var rule in _rules)
+        foreach (var group in ApplicationPresentationGroups.GroupRules(_rules, installed, snapshot))
+        {
+        var groupStart = next.Count;
+        foreach (var rule in group.Rules)
         {
             var matches = matcher.Match(rule);
             var visible = matches.Where(match => showSystem || match.Process.Category != RunCategory.System)
@@ -128,6 +131,7 @@ public sealed partial class MainWindow
             next.Add(new RuleRow
             {
                 Id = rule.Id, RowKey = "rule:" + rule.Id, Name = WhitelistStore.GetDisplayName(rule), Enabled = rule.Enabled,
+                PresentationDepth = group.Rules.Count > 1 ? 1 : 0,
                 IsExpanded = _expandedRules.Contains(rule.Id) || searchExpanded, IconPath = iconPath, LocationPath = locationPath,
                 Detail = $"{KindLabel(rule.Kind)} | {rule.Value}", MatchText = status,
                 Tooltip = $"{WhitelistStore.GetDisplayName(rule)}\n{scope}{inheritance}\n{KindLabel(rule.Kind)}：{rule.Value}\n{status}\n" +
@@ -145,6 +149,7 @@ public sealed partial class MainWindow
                 next.Add(new RuleRow
                 {
                     Id = rule.Id, RowKey = $"rule:{rule.Id}|pid:{process.Id}:{process.StartTimeUtcTicks}",
+                    PresentationDepth = group.Rules.Count > 1 ? 1 : 0,
                     ProcessId = process.Id, ProcessStartTicks = process.StartTimeUtcTicks, IconPath = process.Path, LocationPath = process.Path,
                     Name = $"{process.Name} | PID {process.Id}", Enabled = rule.Enabled,
                     Detail = L.F($"所属软件：{process.ApplicationName}") + $" | {CategoryLabel(process.Category)} | {Memory(process.MemoryBytes)} | {relation}",
@@ -153,6 +158,16 @@ public sealed partial class MainWindow
                     Tooltip = $"{process.ApplicationName}\n{process.Name} | PID {process.Id}\n{process.RoleDescription}\n{process.Path}\n{relation}\n{protection}"
                 });
             }
+        }
+        if (group.Rules.Count > 1 && next.Count > groupStart)
+        {
+            var first = next[groupStart];
+            var open = expanded.Contains(group.Key) || query.Length > 0 && !collapsedSearch.Contains(group.Key);
+            if (!open) next.RemoveRange(groupStart, next.Count - groupStart);
+            next.Insert(groupStart, new RuleRow { Id = group.Key, RowKey = group.Key, Name = group.Name,
+                IsApplicationGroup = true, IsExpanded = open, IconPath = first.IconPath, LocationPath = first.LocationPath,
+                Detail = L.F($"{group.Rules.Count} 条规则"), MatchText = L.T("单击展开各项规则"), Tooltip = group.Name });
+        }
         }
         return next;
         });
@@ -198,6 +213,8 @@ public sealed partial class MainWindow
                 row.RecoveryTooltip = candidate.RecoveryTooltip;
                 row.Tooltip = candidate.Tooltip;
                 row.Enabled = candidate.Enabled;
+                row.IsApplicationGroup = candidate.IsApplicationGroup;
+                row.PresentationDepth = candidate.PresentationDepth;
                 row.IsExpanded = candidate.IsExpanded;
                 row.LocationPath = candidate.LocationPath;
                 if (!string.Equals(row.IconPath, candidate.IconPath, StringComparison.OrdinalIgnoreCase))
@@ -209,7 +226,7 @@ public sealed partial class MainWindow
                 }
                 row.Notify();
             }
-            _expandedRules.IntersectWith(_rules.Select(rule => rule.Id));
+            _expandedRules.IntersectWith(_rules.Select(rule => rule.Id).Concat(ApplicationPresentationGroups.GroupRules(_rules, installed, snapshot).Select(group => group.Key)));
             RulesEmpty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         finally { _rendering = wasRendering; QueueVisibleIcons(); RefreshSelectionButtons(); }

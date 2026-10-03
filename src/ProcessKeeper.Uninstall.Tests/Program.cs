@@ -29,6 +29,7 @@ internal static class Program
             RegistryMapping();
             UninstallApplicationIdentityVerification.Run(Check);
             DisplayCases();
+            UninstallGroupingVerification.Run(Check);
             Recommendations();
             await ManagerCases(entry);
             await BatchCases();

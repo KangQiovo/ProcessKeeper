@@ -13,7 +13,14 @@ public partial class MainWindow
         if (_mergedInstalledResult is not null && ReferenceEquals(_mergedInstalledBase, _installed) &&
             ReferenceEquals(_mergedInstalledRegistrations, registrations)) return _mergedInstalledResult;
         _mergedInstalledBase = _installed; _mergedInstalledRegistrations = registrations;
-        return _mergedInstalledResult = InstalledApplicationCatalog.IncludeVerifiedApplications(_installed, registrations);
+        return _mergedInstalledResult = ApplicationPresentationGroups.MergeInstalled(
+            InstalledApplicationCatalog.IncludeVerifiedApplications(_installed, registrations));
+    }
+
+    private static string InstalledApplicationEvidence(InstalledApplication app)
+    {
+        var members = app.Installations.Count > 0 ? app.Installations : new[] { app };
+        return string.Join("\n\n", members.Select(member => member.Name + "\n" + member.InstallLocation + "\n" + member.IdentityEvidence));
     }
 
     private void OnUninstallInventoryChanged()

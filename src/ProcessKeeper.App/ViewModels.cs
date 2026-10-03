@@ -59,11 +59,13 @@ public sealed class RuleRow : INotifyPropertyChanged
     public int? ProcessId { get; set; }
     public long ProcessStartTicks { get; set; }
     public bool IsProcess => ProcessId.HasValue;
+    public bool IsApplicationGroup { get; set; }
+    public int PresentationDepth { get; set; }
     public bool IsExpanded { get; set; }
     public string Chevron => IsExpanded ? "\uE70D" : "\uE76C";
     public Visibility ChevronVisibility => IsProcess ? Visibility.Collapsed : Visibility.Visible;
-    public Visibility ActionsVisibility => IsProcess ? Visibility.Collapsed : Visibility.Visible;
-    public Thickness RowMargin => IsProcess ? new Thickness(25, 0, 0, 0) : new Thickness(0);
+    public Visibility ActionsVisibility => IsProcess || IsApplicationGroup ? Visibility.Collapsed : Visibility.Visible;
+    public Thickness RowMargin => new((IsProcess ? 25 : 0) + PresentationDepth * 24, 0, 0, 0);
     public double IconSize => IsProcess ? 22 : 32;
     public string IconPath { get; set; } = "";
     public string LocationPath { get; set; } = "";
@@ -81,7 +83,7 @@ public sealed class RuleRow : INotifyPropertyChanged
     public void NotifyIcon() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
     public void Notify() => _changes.Publish(this, PropertyChanged,
         (nameof(Id), Id), (nameof(RowKey), RowKey), (nameof(ProcessId), ProcessId), (nameof(ProcessStartTicks), ProcessStartTicks),
-        (nameof(IsProcess), IsProcess), (nameof(IsExpanded), IsExpanded), (nameof(Chevron), Chevron),
+        (nameof(IsProcess), IsProcess), (nameof(IsApplicationGroup), IsApplicationGroup), (nameof(PresentationDepth), PresentationDepth), (nameof(IsExpanded), IsExpanded), (nameof(Chevron), Chevron),
         (nameof(ChevronVisibility), ChevronVisibility), (nameof(ActionsVisibility), ActionsVisibility), (nameof(RowMargin), RowMargin),
         (nameof(IconSize), IconSize), (nameof(IconPath), IconPath), (nameof(LocationPath), LocationPath), (nameof(Name), Name), (nameof(Detail), Detail),
         (nameof(MatchText), MatchText), (nameof(Tooltip), Tooltip), (nameof(RecoveryText), RecoveryText),

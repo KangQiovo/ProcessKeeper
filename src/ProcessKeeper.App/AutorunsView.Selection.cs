@@ -45,7 +45,7 @@ public sealed partial class AutorunsView
         foreach (var row in rows)
         {
             result.Add(row);
-            if (!row.IsExpanded || row.IsPresentationGroup) continue;
+            if (!row.IsExpanded || row.IsPresentationGroup || row.IsApplicationGroup) continue;
             foreach (var process in row.Processes)
                 result.Add(new AutorunRow
                 {

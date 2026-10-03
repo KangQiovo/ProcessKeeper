@@ -15,7 +15,7 @@ try {
     if ($files.Count -eq 0) { throw 'Run this check in the source Git repository after staging files.' }
     $inventoryDescription = if ($IncludeUntracked) { 'included in the local audit' } else { 'tracked' }
     $failures = [Collections.Generic.List[string]]::new()
-    $textExtensions = @('.cs','.cpp','.h','.xaml','.csproj','.props','.targets','.ps1','.cmd','.json','.xml','.pem','.md','.yml','.yaml','.txt','.manifest')
+    $textExtensions = @('.cs','.cpp','.h','.xaml','.csproj','.props','.targets','.ps1','.cmd','.json','.xml','.pem','.md','.yml','.yaml','.txt','.manifest','.nsi','.nsh')
     $credentialPattern = 'gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|<(?:P|Q|D|DP|DQ|InverseQ)>[A-Za-z0-9+/=\r\n\t ]{16,}</'
     foreach ($relative in $files) {
         if ($relative -match '(?i)(^|/)(bin|obj|artifacts|work|App|App-arm64|recommendation-catalog|\.vs)/|\.(exe|dll|pdb|cab|zip|7z|msix|msixbundle|appx|nupkg|pfx|p12|key)$|\.private\.(xml|pem)$|\.package\.json$|\.log$') {

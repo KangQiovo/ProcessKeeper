@@ -53,6 +53,16 @@ The update suite uses fake HTTP and isolated download files; it does not install
 
 See the dedicated [AVD](../src/ProcessKeeper.Avd.Tests/README.md), [launcher](../src/ProcessKeeper.Launcher.Tests/README.md), [search](../src/ProcessKeeper.Search.Tests/README.md) and [Legacy Core](../src/ProcessKeeper.Legacy.Core/README.md) notes.
 
+## 1.7.0 regression boundaries
+
+The installed-application suite includes duplicate registrations, version/architecture suffixes, another drive, blank and conflicting publishers, shared command hosts, retained executable-role evidence, exact startup entries and individual whitelist states. Uninstall tests retain every registration while grouping related versions. Grouping must preserve source identities: a shorter list alone is not a pass.
+
+Update tests use seven published-asset candidates and verify that only a compatible flavor is eligible. Check Markdown notes and links, progress-window pause/resume and source switching, navigation during a download, idle-after-download behavior, explicit final update consent and canceled confirmation preserving ready bytes, and old-backup cleanup only after replacement readiness. Download state persists within the application's lifetime; do not claim resume across a full application exit.
+
+Update fixtures use all seven asset kinds. Only the exact matching portable flavor is eligible; installer executables remain manual. Inspect PK17 split manifests (Win10 has modern + compatibility), PK14 universal manifests, actual architecture and hashes. The real released 1.6 validator must accept Universal and refuse split/setup candidates without replacing a user application. Installer source/resource/compiler checks do not replace actual install/uninstall testing on each target OS.
+
+Native grouping fixtures exercised three languages, light/dark and two window widths on the current modern host, including collapsed selection, partial deselection, search, stable row refresh and independent enable/protection state. Separate read-only real inventory checks compared the full sets of executable paths and source entry identities before/after grouping. Neither modifies real startup configuration or closes users' applications. Security software blocking or missing fixture output is interference to investigate, not a passing test or a verified product failure. Do not disable protection or approve prompts automatically.
+
 ## Build gates and manual checks
 
 `build.ps1` runs the managed gates listed in that script and publishes the modern application; it is not a test-only command. Native launcher/updater and compatibility UI builds have separate requirements and steps in the build guide. Ordinary builds remain **Preview**, even in Release configuration. Use stable-channel flags only for an explicitly prepared official Stable release.

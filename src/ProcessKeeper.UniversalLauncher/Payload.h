@@ -12,14 +12,17 @@ struct OrdinalIgnoreCase {
 struct PayloadFile { std::wstring path, hash; ULONGLONG length = 0; };
 struct Manifest {
     std::wstring archiveHash, identity;
+    PackageTarget target = PackageTarget::Universal;
     std::map<std::wstring, PayloadFile, OrdinalIgnoreCase> files;
 };
 void ValidateRelativePath(const std::wstring& path);
 Manifest ParseManifest(const std::string& text);
+PackageTarget EmbeddedPackageTarget();
 std::wstring PayloadDirectory(Route route);
 bool IsPayloadFile(const std::wstring& path, Route route);
 struct PreparedPayload {
     std::wstring directory;
+    PackageTarget target = PackageTarget::Universal;
     std::vector<Handle> files, parents;
 };
 PreparedPayload PreparePayload(Route route, const std::atomic_bool* canceled = nullptr);

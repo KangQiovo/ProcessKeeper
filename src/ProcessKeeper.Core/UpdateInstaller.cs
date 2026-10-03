@@ -54,6 +54,7 @@ public static class UpdateInstaller
         CancellationToken cancellationToken = default)
     {
         ValidateDownloadIdentity(download);
+        if (context.PackageTarget != download.Asset.PackageTarget) throw new InvalidDataException(L.T("更新文件类型与当前应用包不一致。"));
         return PrepareVerified(context, download.FilePath, download.Sha256, download.Release.Version, download.Asset.Size, cancellationToken);
     }
 
@@ -67,6 +68,7 @@ public static class UpdateInstaller
         if (!string.Equals(release.Repository, UpdatePolicy.Repository, StringComparison.Ordinal) ||
             !UpdateVersion.TryParse(release.Tag, out var tagVersion) || tagVersion!.Value != release.Version ||
             !UpdateService.PortableVersion(release.Version) || !UpdateService.PortableAssetName(asset.Name) || !asset.CanAutoInstall || asset.Restriction.Length != 0 || asset.Id <= 0 ||
+            asset.PackageTarget != UpdatePackagePolicy.Identify(asset.Name, release.Version) || !UpdatePackagePolicy.Supports(asset.PackageTarget, UpdatePackagePolicy.Current()) ||
             asset.Size < 4096 || asset.Size > 536870912 || !UpdateTrustedFiles.ValidHash(download.Sha256) ||
             !UpdateService.ValidDigest(asset.Digest) || !asset.Digest.Substring(7).Equals(download.Sha256, StringComparison.OrdinalIgnoreCase) ||
             !UpdateSources.All.Any(source => source.Id == download.SourceId) || release.Assets is null ||

@@ -21,7 +21,20 @@ public sealed partial class AutorunsView
     private static AutorunRow[] GroupRows(AutorunRow[] rows, ApplicationDisplayCatalog display, bool group, HashSet<string> collapsed, string query)
     {
         if (!group) return rows;
-        var classified = rows.Select(row => (Row: row, Platform: display.FindGamePlatform(row.Entry))).ToArray();
+        var segments = new List<List<AutorunRow>>();
+        foreach (var row in rows)
+        {
+            if (row.ApplicationGroupKey.Length == 0 || row.IsApplicationGroup || segments.Count == 0)
+                segments.Add(new List<AutorunRow>());
+            segments[^1].Add(row);
+        }
+        GamePlatform? Platform(AutorunRow row)
+        {
+            if (!row.IsApplicationGroup) return display.FindGamePlatform(row.Entry);
+            var platforms = row.ApplicationEntries.Select(display.FindGamePlatform).ToArray();
+            return platforms.Length > 0 && platforms.All(item => item is not null && item.Id == platforms[0]?.Id) ? platforms[0] : null;
+        }
+        var classified = segments.Select(segment => (Rows: segment, Platform: Platform(segment[0]))).ToArray();
         var result = new List<AutorunRow>();
         foreach (var platform in classified.Where(item => item.Platform is not null).GroupBy(item => item.Platform!.Id))
         {
@@ -29,10 +42,10 @@ public sealed partial class AutorunsView
             result.Add(new AutorunRow { Entry = new AutorunEntry { Id = PlatformRowPrefix + first.Id, Name = first.Name, TargetPath = display.Clients.FirstOrDefault(c => c.Platform.Id == first.Id)?.ExecutablePath ?? "" },
                 Summary = L.T("游戏平台"), ProcessSummary = "", DetailText = "", IsExpanded = open,
                 IsPresentationGroup = true, PresentationPlatformId = first.Id });
-            if (open) foreach (var item in platform)
-            { item.Row.PresentationDepth = 1; item.Row.PresentationPlatformId = first.Id; result.Add(item.Row); }
+            if (open) foreach (var item in platform) foreach (var row in item.Rows)
+            { row.PresentationDepth++; row.PresentationPlatformId = first.Id; result.Add(row); }
         }
-        result.AddRange(classified.Where(item => item.Platform is null).Select(item => item.Row));
+        foreach (var item in classified.Where(item => item.Platform is null)) result.AddRange(item.Rows);
         return result.ToArray();
     }
 }

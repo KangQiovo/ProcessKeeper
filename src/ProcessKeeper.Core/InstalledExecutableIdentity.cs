@@ -77,6 +77,19 @@ public sealed class InstalledExecutableIdentity
     {
         if(_applications.TryGetValue(application,out var found))return found;
         var roles=new Dictionary<string,InstalledExecutableRoleIdentity>(StringComparer.OrdinalIgnoreCase);
+        if(application.Installations.Count>0)
+        {
+            bool truncated=_registrationsTruncated;
+            foreach(var member in application.Installations)
+            {
+                var original=GetRoles(member);truncated|=original.Truncated;
+                foreach(var pair in original.Roles)
+                    if(!roles.TryGetValue(pair.Key,out var previous)||RoleStrength(pair.Value)>RoleStrength(previous))roles[pair.Key]=pair.Value;
+            }
+            found=new(roles,truncated);
+            if(_applications.Count<10000)_applications.Add(application,found);
+            return found;
+        }
         var entries=new HashSet<string>(application.EntryPaths.Take(MaximumExecutables),StringComparer.OrdinalIgnoreCase);
         var name=NameKey(application.Name);
         var englishName=EnglishNameKey(application.Name);
@@ -141,4 +154,11 @@ public sealed class InstalledExecutableIdentity
         return joined.Count(c=>c is >= 'A' and <= 'Z' or >= 'a' and <= 'z')>=3?NameKey(joined):"";
     }
     private sealed record ApplicationRoles(Dictionary<string,InstalledExecutableRoleIdentity> Roles,bool Truncated);
+    private static int RoleStrength(InstalledExecutableRoleIdentity role)=>role.Role switch
+    {
+        InstalledExecutableRole.Uninstaller when !role.IsUncertain=>100,
+        InstalledExecutableRole.Main=>90,InstalledExecutableRole.PotentialUninstaller=>80,
+        InstalledExecutableRole.Diagnostic or InstalledExecutableRole.Helper=>70,
+        InstalledExecutableRole.PotentialMain=>60,_=>0
+    };
 }

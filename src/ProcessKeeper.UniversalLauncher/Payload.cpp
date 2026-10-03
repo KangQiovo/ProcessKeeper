@@ -1,4 +1,5 @@
 #include "Payload.h"
+#include "CacheCleanup.h"
 #include <fdi.h>
 #include <set>
 #include <algorithm>
@@ -248,8 +249,14 @@ Manifest ParseManifest(const std::string& text) {
     if (lines.size() < 3 || lines.size() > MaximumFiles + 2) throw Failure(L"Invalid embedded manifest size.");
     for (auto& line : lines) if (!line.empty() && line.back() == L'\r') line.pop_back();
     auto header = Split(lines.front(), L'\t');
-    if (header.size() != 2 || header[0] != L"PK14" || !ValidHash(header[1])) throw Failure(L"Invalid embedded manifest header.");
+    if (!(header.size() == 2 && header[0] == L"PK14" || header.size() == 3 && header[0] == L"PK17") || !ValidHash(header[1])) throw Failure(L"Invalid embedded manifest header.");
     Manifest result; result.archiveHash = header[1]; result.identity = Hex(HashBytes(text.data(), text.size())); ULONGLONG total = 0;
+    if (header.size() == 3) {
+        if (header[2] == L"Windows7Compat") result.target = PackageTarget::Windows7Compat;
+        else if (header[2] == L"Windows10x64") result.target = PackageTarget::Windows10x64;
+        else if (header[2] == L"Windows10arm64") result.target = PackageTarget::Windows10arm64;
+        else throw Failure(L"Unknown single-platform package target.");
+    }
     for (size_t i = 1; i < lines.size(); ++i) {
         if (i == lines.size() - 1 && lines[i].empty()) continue;
         auto fields = Split(lines[i], L'\t');
@@ -259,7 +266,15 @@ Manifest ParseManifest(const std::string& text) {
         PayloadFile file{ fields[0], fields[2], ReadLength(fields[1]) }; total += file.length;
         if (total > 4ull * 1024 * 1024 * 1024 || !result.files.emplace(file.path, file).second) throw Failure(L"Oversized or duplicate embedded application file.");
     }
-    if (!result.files.count(L"modern/ProcessKeeper.exe") || !result.files.count(L"legacy/ProcessKeeper.exe")) throw Failure(L"An embedded application entry point is missing.");
+    if (result.target == PackageTarget::Universal) {
+        if (!result.files.count(L"modern/ProcessKeeper.exe") || !result.files.count(L"legacy/ProcessKeeper.exe")) throw Failure(L"An embedded application entry point is missing.");
+    } else {
+        const auto route = result.target == PackageTarget::Windows7Compat ? Route::Legacy : result.target == PackageTarget::Windows10x64 ? Route::ModernX64 : Route::ModernArm64;
+        const auto directory = PayloadDirectory(route);
+        if (!result.files.count(directory + L"/ProcessKeeper.exe") || !result.files.count(directory + L"/ProcessKeeper.Updater.exe")) throw Failure(L"The declared package entry point or updater is missing.");
+        if (result.target == PackageTarget::Windows10x64 && (!result.files.count(L"legacy/ProcessKeeper.exe") || !result.files.count(L"legacy/ProcessKeeper.Updater.exe"))) throw Failure(L"The Windows x86/x64 package requires its real x86 compatibility payload and updater.");
+        for (const auto& pair : result.files) if (!IsPayloadFile(pair.first, route) && !(result.target == PackageTarget::Windows10x64 && IsPayloadFile(pair.first, Route::Legacy))) throw Failure(L"The declared package contains another platform's payload.");
+    }
     if (std::any_of(result.files.begin(), result.files.end(), [](const auto& pair) { return IsPayloadFile(pair.first, Route::ModernArm64); }) &&
         !result.files.count(L"modern/arm64/ProcessKeeper.exe")) throw Failure(L"The ARM64 application entry point is missing.");
     for (const auto& pair : result.files) {
@@ -267,6 +282,11 @@ Manifest ParseManifest(const std::string& text) {
             if (result.files.count(pair.first.substr(0, slash))) throw Failure(L"Embedded file/directory conflict.");
     }
     return result;
+}
+PackageTarget EmbeddedPackageTarget() {
+    const auto manifest = ReadResource(101);
+    if (manifest.length > 16 * 1024 * 1024) throw Failure(L"The embedded manifest is too large.");
+    return ParseManifest(std::string(reinterpret_cast<const char*>(manifest.bytes), manifest.length)).target;
 }
 PreparedPayload PreparePayload(Route route, const std::atomic_bool* canceled) {
     CheckCancellation(canceled);
@@ -277,6 +297,7 @@ PreparedPayload PreparePayload(Route route, const std::atomic_bool* canceled) {
     const auto selected = PayloadDirectory(route);
     if (!manifest.files.count(selected + L"/ProcessKeeper.exe")) throw Failure(L"The package does not contain the selected processor architecture.");
     const auto cache = ProtectedCacheRoot();
+    RunPendingPayloadCleanup(manifest.identity);
     const auto root = cache + L"\\" + manifest.identity + L"-" + (route == Route::ModernArm64 ? L"arm64" : selected);
     EnsureProtectedDirectory(root);
     auto parents = LockParents(root + L"\\lock", true);
@@ -306,7 +327,7 @@ PreparedPayload PreparePayload(Route route, const std::atomic_bool* canceled) {
             if (route == Route::ModernArm64) RemoveDirectoryW(ToFilePath(staging, L"modern").c_str());
             RemoveDirectoryW(staging.c_str()); // Empty owned staging only. Failed/incomplete trees are never reused or executed.
         }
-        PreparedPayload result; result.directory = ToFilePath(root, selected); result.parents = std::move(parents);
+        PreparedPayload result; result.directory = ToFilePath(root, selected); result.parents = std::move(parents); result.target = manifest.target;
         std::set<std::wstring, OrdinalIgnoreCase> seen;
         EnumerateVerified(manifest, root, selected, seen, result.files, route, canceled);
         size_t expected = 0;

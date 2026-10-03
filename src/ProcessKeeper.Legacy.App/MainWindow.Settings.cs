@@ -80,6 +80,11 @@ public partial class MainWindow
         }
         about.Children.Add(Button(L.T("运行环境检测"), async () => await CheckCompatibilityAsync()));
         about.Children.Add(Button(L.T("重新进入引导（OOBE）"), () => { if (HasPendingTool || _busy || _checkingCompatibility) Notice(L.T("请等待当前操作完成")); else ShowOnboarding(true); }));
+        about.Children.Add(Text(L.T("本机文件"), 20));
+        about.Children.Add(Button(L.T("清理应用缓存"), async () => await ClearAppCacheAsync()));
+        about.Children.Add(Button(L.T("打开配置与记录目录"), () =>
+        { try { Process.Start(new ProcessStartInfo(_directory) { UseShellExecute = true }); } catch (Exception ex) { Notice(ex.Message); } }));
+        about.Children.Add(Text(L.T("清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。"), 12));
         var diagnostics = Text(L.T("正在读取运行环境…")); about.Children.Add(diagnostics);
         about.Children.Add(Button(L.T("刷新诊断信息"), async () => await LoadDiagnostics()));
         _ = LoadDiagnostics();
@@ -103,6 +108,16 @@ public partial class MainWindow
         risk.Tag = "risk-mode-toggle"; risk.Background = new SolidColorBrush(Color.FromRgb(176, 0, 32)); risk.Foreground = Brushes.White;
         risk.Style = (Style)Resources[typeof(Button)]; risk.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险模式"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
         about.Children.Add(Text(L.T("仅本次运行生效；重新启动后恢复风险确认。"))); about.Children.Add(risk);
+    }
+    private async Task ClearAppCacheAsync()
+    {
+        if (_closed || _busy || HasPendingTool || _updateDownloading || _updateDialogOpen) return;
+        if (!LauncherContextReader.TryGetCurrent(out var context, out var error)) { Notice(L.T("缓存清理未完成") + " | " + error); return; }
+        if (!await Confirm(L.T("清理应用缓存？"), L.T("清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。")) || _closed) return;
+        if (_busy || HasPendingTool || _updateDownloading) return;
+        _busy = true;
+        try { var result = await Task.Run(() => AppCacheCleanupService.Clear(context!)); if (!_closed) Notice(L.T(result.Success ? "缓存清理完成" : "缓存清理未完成") + " | " + result.Message); }
+        finally { _busy = false; }
     }
     private void OpenWebsite(string uri) { try { if (_backend.OpenWebPage is not null) _backend.OpenWebPage(uri); else Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); } catch (Exception ex) { Notice(ex.Message); } }
     private Button AuthorButton(string name, string geometry, string uri, bool stroked = false)

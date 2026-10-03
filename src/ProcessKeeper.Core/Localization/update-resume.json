@@ -1,0 +1,9 @@
+[
+  { "source": "更新文件类型与当前应用包不一致。", "en": "The update package flavor does not match the current app." },
+  { "source": "此更新文件不支持当前系统、界面版本或处理器架构。", "en": "This update package does not support the current Windows version, interface or processor architecture." },
+  { "source": "所选更新文件不能在当前环境中安装。", "en": "The selected update package cannot be installed in this environment." },
+  { "source": "继续下载已验证身份的更新文件。", "en": "Resuming the verified update download." },
+  { "source": "更新下载已暂停，已下载片段已保留。", "en": "Update download paused. Downloaded data has been retained." },
+  { "source": "此下载源不支持续传，正在重新下载；原片段暂时保留。", "en": "This source cannot resume. Restarting the download while retaining the previous data." },
+  { "source": "更新暂存片段已变化，请取消后重新下载。", "en": "The retained download data has changed. Cancel and download again." }
+]

@@ -1,0 +1,18 @@
+[
+  { "source": "正在暂停…", "en": "Pausing…" },
+  { "source": "已暂停，可切换更新源后继续。", "en": "Paused. You can change the source before resuming." },
+  { "source": "下载失败，可切换更新源后重试。", "en": "Download failed. You can change the source and retry." },
+  { "source": "暂停下载", "en": "Pause download" },
+  { "source": "暂停后可切换更新源；返回应用后下载仍会继续。", "en": "Pause to change the source. Downloads continue when you return to the app." },
+  { "source": "查看下载进度", "en": "View download progress" },
+  { "source": "点击“更新并重新启动”后，Process Keeper 将退出并安装已下载的更新，然后重新启动。其他应用不会因此退出；请先完成本应用中的其他操作。", "en": "Click Update and restart to exit Process Keeper, install the downloaded update and restart it. Other applications remain running. Finish other operations in this app first." },
+  { "source": "请确认更新并重新启动。", "en": "Confirm the update and restart." },
+  { "source": "更新日志较长，完整内容请查看发布主页。", "en": "These release notes are long. View the release page for the full text." },
+  { "source": "Windows 7 及以上 | x86/x64 兼容版", "en": "Windows 7 and later | x86/x64 compatibility edition" },
+  { "source": "Windows 10/11 | x86/x64", "en": "Windows 10/11 | x86/x64" },
+  { "source": "Windows 10/11 | ARM64", "en": "Windows 10/11 | ARM64" },
+  { "source": "通用版本", "en": "Universal edition" },
+  { "source": "安装版 | 包含卸载程序", "en": "Installer | includes an uninstaller" },
+  { "source": "单文件免安装版", "en": "Single-file portable edition" },
+  { "source": "更新日志的 Markdown 解析；使用原生控件显示。", "en": "Parses Markdown release notes for display with native controls." }
+]

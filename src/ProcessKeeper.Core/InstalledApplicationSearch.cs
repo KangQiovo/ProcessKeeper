@@ -19,15 +19,18 @@ public sealed class InstalledApplicationSearch
         (path[2] == '\\' || path[2] == '/') ? char.ToUpperInvariant(path[0]) + ":" : "";
 
     public static IReadOnlyList<string> Drives(IEnumerable<InstalledApplication> applications) => applications
-        .SelectMany(a => a.Executables.Select(e => DriveOf(e.Path)).Append(DriveOf(a.InstallLocation)))
+        .SelectMany(a => a.Executables.Select(e => DriveOf(e.Path)).Append(DriveOf(a.InstallLocation))
+            .Concat(a.Installations.Select(member => DriveOf(member.InstallLocation))))
         .Where(d => d.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
 
     public static bool OnDrive(InstalledApplication app, string drive) => drive.Length == 0 ||
         DriveOf(app.InstallLocation).Equals(drive, StringComparison.OrdinalIgnoreCase) ||
+        app.Installations.Any(member => DriveOf(member.InstallLocation).Equals(drive, StringComparison.OrdinalIgnoreCase)) ||
         app.Executables.Any(e => DriveOf(e.Path).Equals(drive, StringComparison.OrdinalIgnoreCase));
 
     public static bool MatchesApplication(InstalledApplication app, string query) => Contains(app.Name, query) ||
-        Contains(app.Publisher, query) || Contains(app.InstallLocation, query);
+        Contains(app.Publisher, query) || Contains(app.InstallLocation, query) ||
+        app.Installations.Any(member => Contains(member.Name, query) || Contains(member.Publisher, query) || Contains(member.InstallLocation, query));
 
     public static bool MatchesExecutable(InstalledExecutable executable, string query) =>
         Contains(executable.Name, query) || Contains(executable.Description, query) || Contains(executable.Path, query);
