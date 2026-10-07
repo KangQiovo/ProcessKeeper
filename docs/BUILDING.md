@@ -32,11 +32,11 @@ if ($LASTEXITCODE -ne 0) { throw 'Compatibility build failed.' }
 
 `build.ps1` stamps the release once, runs the managed regression suites and publishes the modern payload into `App`. Build the compatibility payload **after that same stamp**. Do not regenerate build time between the three payload builds and packaging. For a private SDK/cache, use `-DotnetPath` and `-NugetPackages`. The native tests only use owned fixture processes.
 
-## Package the 1.8.0 release targets
+## Package the 1.8.1 release targets
 
 The ARM64 build above cross-compiles the modern payload into `App-arm64` using the same stamp. The outer launcher and updater remain x86 and do not require ARM64 MSVC tools. Cross-compilation does not validate execution on an ARM device.
 
-Windows7Compat packages the compatibility payload. Windows10x64 packages modern x64 **and** x86-compatible WPF fallback. Windows10arm64 packages native ARM64. Universal retains all three under PK14; formal 1.8.0 publishes all four portable outputs plus three installers.
+Windows7Compat packages the compatibility payload. Windows10x64 packages modern x64 **and** x86-compatible WPF fallback. Windows10arm64 packages native ARM64. Universal retains all three under PK14; formal 1.8.1 publishes all four portable outputs plus three installers.
 
 ```powershell
 New-Item -ItemType Directory -Path artifacts -Force | Out-Null
@@ -56,7 +56,7 @@ foreach ($entry in $targets.GetEnumerator()) {
 
 Choose a **new output filename** each time. The packager refuses to overwrite an existing file, checks the selected payload's channel and timestamp, builds the native updater, creates a manifest/hash-verified CAB and embeds it in an x86 bootstrapper. No application is launched by packaging.
 
--PackageTarget Universal remains the default and uses PK14. Formal 1.8.0 includes ProcessKeeper-v1.8.0.exe, which the released 1.6 updater accepts. PK17 split packages remain unsupported by that old updater; select Universal for migration or manually download another edition.
+-PackageTarget Universal remains the default and uses PK14. Formal 1.8.1 includes ProcessKeeper-v1.8.1.exe, which the released 1.6 updater accepts. PK17 split packages remain unsupported by that old updater; select Universal for migration or manually download another edition.
 
 Directly launching `App/ProcessKeeper.exe` is a development route and lacks the original portable-launch context required for in-app updating and desktop-shortcut creation. An unavailable update route is not a successful update test.
 
@@ -81,12 +81,12 @@ foreach ($entry in $targets.GetEnumerator()) {
   ./package-universal.ps1 -StableRelease -PackageTarget $entry.Key `
     -ModernDirectory ./App -Arm64Directory ./App-arm64 `
     -LegacyDirectory ./src/ProcessKeeper.Legacy.App/bin/Release/net462 `
-    -OutputPath ("./artifacts/ProcessKeeper-v1.8.0-" + $entry.Value + ".exe")
+    -OutputPath ("./artifacts/ProcessKeeper-v1.8.1-" + $entry.Value + ".exe")
   if ($LASTEXITCODE -ne 0) { throw 'Stable portable package failed.' }
 }
 ```
 
-Run the remaining tests and inspect **every actual EXE**, its route marker, PE architecture, embedded manifest, payload hashes, empty default rules and published SHA-256 before distribution. Mixed channels/dates or unknown channels are rejected. Only stable UI hides the preview sentence across sidebar, About and onboarding. The repository does not automatically publish releases or provide a signing certificate. Compatible future update assets must match the fixed repository, semantic version, package flavor, `PK17` contract and official SHA-256. See [1.8.0 release notes](RELEASE-1.8.0.md).
+Run the remaining tests and inspect **every actual EXE**, its route marker, PE architecture, embedded manifest, payload hashes, empty default rules and published SHA-256 before distribution. Mixed channels/dates or unknown channels are rejected. Only stable UI hides the preview sentence across sidebar, About and onboarding. The repository does not automatically publish releases or provide a signing certificate. Compatible future update assets must match the fixed repository, semantic version, package flavor, `PK17` contract and official SHA-256. See [1.8.1 release notes](RELEASE-1.8.1.md).
 
 ## Public source checks
 
@@ -108,7 +108,7 @@ Installers are compiled with pinned NSIS 3.13 and request administrator permissi
 ./package-universal.ps1 -StableRelease -PackageTarget Universal `
   -ModernDirectory ./App -Arm64Directory ./App-arm64 `
   -LegacyDirectory ./src/ProcessKeeper.Legacy.App/bin/Release/net462 `
-  -OutputPath ./artifacts/ProcessKeeper-v1.8.0.exe
+  -OutputPath ./artifacts/ProcessKeeper-v1.8.1.exe
 if ($LASTEXITCODE -ne 0) { throw 'Universal package failed.' }
 ./src/ProcessKeeper.UniversalLauncher/build-native.ps1 -SetupGuardOnly `
   -OutputPath ./artifacts/ProcessKeeper.SetupGuard.dll `
@@ -116,8 +116,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Universal package failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Setup guard build failed.' }
 foreach ($entry in $targets.GetEnumerator()) {
   ./scripts/package-installers.ps1 -StableRelease -PackageTarget $entry.Key `
-    -PortablePath ("./artifacts/ProcessKeeper-v1.8.0-" + $entry.Value + ".exe") `
-    -OutputPath ("./artifacts/ProcessKeeper-v1.8.0-" + $entry.Value + "-setup.exe") `
+    -PortablePath ("./artifacts/ProcessKeeper-v1.8.1-" + $entry.Value + ".exe") `
+    -OutputPath ("./artifacts/ProcessKeeper-v1.8.1-" + $entry.Value + "-setup.exe") `
     -NsisCompiler ./tools/nsis-3.13/makensis.exe `
     -SetupGuardPath ./artifacts/ProcessKeeper.SetupGuard.dll
   if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }

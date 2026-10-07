@@ -6,6 +6,7 @@
 #include <objbase.h>
 #include <shlobj.h>
 #include <fstream>
+#include <thread>
 #include "HelperText.h"
 
 namespace {
@@ -277,6 +278,92 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         }
         check(GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES && GetFileAttributesW(receipt.c_str()) == INVALID_FILE_ATTRIBUTES &&
             GetFileAttributesW(foreign.c_str()) != INVALID_FILE_ATTRIBUTES, L"deferred cleanup deletes only one fully verified old payload tree and its owned receipt");
+    }
+    {
+        const auto cache = path(L"fair-cache"); CreateDirectoryW(cache.c_str(), nullptr);
+        for (wchar_t digit : {L'1', L'2', L'3'}) {
+            const auto identity = std::wstring(64, digit), tree = cache + L"\\" + identity + L"-modern", directory = tree + L"\\modern";
+            CreateDirectoryW(tree.c_str(), nullptr); CreateDirectoryW(directory.c_str(), nullptr);
+            const auto app = directory + L"\\ProcessKeeper.exe", helper = directory + L"\\ProcessKeeper.Updater.exe";
+            Bytes(app, "owned cache app"); Bytes(helper, "owned cache helper");
+            Manifest old; old.identity = identity;
+            old.files.emplace(L"modern/ProcessKeeper.exe", PayloadFile{L"modern/ProcessKeeper.exe", DigestFile(app), 15});
+            old.files.emplace(L"modern/ProcessKeeper.Updater.exe", PayloadFile{L"modern/ProcessKeeper.Updater.exe", DigestFile(helper), 18});
+            SchedulePayloadCleanupFixture(cache, old, Route::ModernX64);
+        }
+        // Derive actual filesystem order, so this regression does not assume NTFS sorting.
+        WIN32_FIND_DATAW item{}; auto receiptSearch = FindFirstFileW((cache + L"\\cleanup-*.txt").c_str(), &item);
+        std::vector<std::wstring> names;
+        if (receiptSearch != INVALID_HANDLE_VALUE) { do { names.emplace_back(item.cFileName); } while (FindNextFileW(receiptSearch, &item)); FindClose(receiptSearch); }
+        check(names.size() == 3, L"fair cleanup fixture enumerates three exact receipts");
+        Bytes(cache + L"\\" + names[0], "invalid receipt\n"); Bytes(cache + L"\\" + names[1], "invalid receipt\n");
+        RunPendingPayloadCleanupFixture(cache, std::wstring(64, L'f'));
+        check(GetFileAttributesW((cache + L"\\" + names[2]).c_str()) == INVALID_FILE_ATTRIBUTES &&
+            GetFileAttributesW((cache + L"\\" + names[0]).c_str()) != INVALID_FILE_ATTRIBUTES &&
+            GetFileAttributesW((cache + L"\\" + names[1]).c_str()) != INVALID_FILE_ATTRIBUTES,
+            L"untrusted receipts cannot permanently starve a later verified old payload");
+    }
+    for (unsigned scenario = 0; scenario < 8; ++scenario) {
+        const auto cache = path((L"retry-cache-" + std::to_wstring(scenario)).c_str()); CreateDirectoryW(cache.c_str(), nullptr);
+        const auto identity = std::wstring(64, L'a'), tree = cache + L"\\" + identity + L"-modern", directory = tree + L"\\modern";
+        CreateDirectoryW(tree.c_str(), nullptr); CreateDirectoryW(directory.c_str(), nullptr);
+        const auto app = directory + L"\\ProcessKeeper.exe", helper = directory + L"\\ProcessKeeper.Updater.exe";
+        Bytes(app, "owned cache app"); Bytes(helper, "owned cache helper");
+        if (scenario == 6) {
+            if (!CopyFileW(self.path().c_str(), helper.c_str(), FALSE)) Fail(L"Cannot copy the inert old helper.");
+            const std::string asInvoker = "<?xml version=\"1.0\"?><assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\"><trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v3\"><security><requestedPrivileges><requestedExecutionLevel level=\"asInvoker\" uiAccess=\"false\"/></requestedPrivileges></security></trustInfo></assembly>";
+            auto updaterResources = BeginUpdateResourceW(helper.c_str(), FALSE);
+            if (!updaterResources || !UpdateResourceW(updaterResources, RT_MANIFEST, MAKEINTRESOURCEW(1), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), const_cast<char*>(asInvoker.data()), static_cast<DWORD>(asInvoker.size())) || !EndUpdateResourceW(updaterResources, FALSE)) Fail(L"Cannot keep the inert helper non-elevated.");
+        }
+        WIN32_FILE_ATTRIBUTE_DATA helperData{}; GetFileAttributesExW(helper.c_str(), GetFileExInfoStandard, &helperData);
+        Manifest old; old.identity = identity;
+        old.files.emplace(L"modern/ProcessKeeper.exe", PayloadFile{L"modern/ProcessKeeper.exe", DigestFile(app), 15});
+        old.files.emplace(L"modern/ProcessKeeper.Updater.exe", PayloadFile{L"modern/ProcessKeeper.Updater.exe", DigestFile(helper), helperData.nFileSizeLow});
+        const auto receipt = cache + L"\\cleanup-" + identity + L"-modern.txt", foreign = cache + L"\\foreign.exe";
+        Bytes(foreign, "preserve foreign file");
+        const auto downloads = cache + L"\\sessions"; CreateDirectoryW(downloads.c_str(), nullptr);
+        Bytes(downloads + L"\\update.exe", "preserve active update stage");
+        if (scenario != 0) SchedulePayloadCleanupFixture(cache, old, Route::ModernX64);
+        if (scenario == 4) Bytes(helper, "changed cache leaf");
+        if (scenario == 5) {
+            const auto invalid = std::string("PKCACHE1\n") + std::string(64, 'a') + "\nmodern\n../foreign.exe\t21\t" + std::string(64, 'a') + "\nmodern/ProcessKeeper.exe\t15\t" + std::string(64, 'a') + "\n";
+            Bytes(receipt, invalid.c_str());
+        }
+        Handle locked;
+        if (scenario == 1 || scenario == 3 || scenario == 7) locked = Handle(CreateFileW(helper.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr));
+        Handle stopped(CreateEventW(nullptr, TRUE, FALSE, nullptr));
+        PROCESS_INFORMATION child{}; Handle childProcess, childThread;
+        if (scenario == 6 || scenario == 7) {
+            const auto image = scenario == 6 ? helper : self.path();
+            auto command = L"\"" + image + L"\" --fixture-child 350 0"; STARTUPINFOW startup{sizeof(startup)};
+            if (!CreateProcessW(image.c_str(), &command[0], nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, cache.c_str(), &startup, &child)) Fail(L"Cannot start the isolated no-op cleanup child.");
+            childProcess = Handle(child.hProcess); childThread = Handle(child.hThread);
+        }
+        HANDLE currentHandle = nullptr;
+        if (!DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(), GetCurrentProcess(), &currentHandle, SYNCHRONIZE, FALSE, 0)) Fail(L"Cannot hold the fixture caller lifetime.");
+        Handle fixtureCaller(currentHandle);
+        PayloadCleanupResult retryResult; std::exception_ptr retryFailure; const auto before = GetTickCount64();
+        std::thread worker([&] {
+            try { retryResult = RetryPendingPayloadCleanupFixture(cache, scenario == 2 ? identity : std::wstring(64, L'b'), scenario == 7 ? childProcess.get() : fixtureCaller.get(), stopped.get(), 800, 50); }
+            catch (...) { retryFailure = std::current_exception(); }
+        });
+        Sleep(100);
+        if (scenario == 0) SchedulePayloadCleanupFixture(cache, old, Route::ModernX64);
+        if (scenario == 1) locked.reset();
+        if (scenario == 3) SetEvent(stopped.get());
+        worker.join();
+        if (retryFailure) std::rethrow_exception(retryFailure);
+        if (childProcess.valid()) check(WaitForSingleObject(childProcess.get(), 3000) == WAIT_OBJECT_0, L"isolated cleanup child exits naturally");
+        if (scenario == 0 || scenario == 1 || scenario == 6) {
+            check(GetFileAttributesW(tree.c_str()) == INVALID_FILE_ATTRIBUTES && GetFileAttributesW(receipt.c_str()) == INVALID_FILE_ATTRIBUTES && retryResult.removedFiles == 2,
+                scenario == 0 ? L"startup retry consumes a receipt arriving after the new window is ready" : scenario == 1 ? L"startup retry cleans old payload after helper lock is released without another app launch" : L"startup retry retains a running old helper then cleans only after its natural exit");
+        } else {
+            check(GetFileAttributesW(app.c_str()) != INVALID_FILE_ATTRIBUTES && GetFileAttributesW(receipt.c_str()) != INVALID_FILE_ATTRIBUTES && retryResult.removedFiles == 0,
+                L"startup retry preserves active changed escaped cancelled or still-locked payloads");
+            if (scenario == 3 || scenario == 7) check(GetTickCount64() - before < 700, L"startup worker ends promptly on cancellation or verified caller exit");
+        }
+        check(GetFileAttributesW(foreign.c_str()) != INVALID_FILE_ATTRIBUTES && GetFileAttributesW((downloads + L"\\update.exe").c_str()) != INVALID_FILE_ATTRIBUTES,
+            L"startup retry never removes foreign files or touches download and job stages");
     }
     const auto guardCache = FullPath(tempRoot + L"setup-guard-" + NewContextId().substr(0, 8)), sidRoot = guardCache + L"\\" + UserSid(), guardSessions = sidRoot + L"\\sessions";
     const auto payloadRoot = sidRoot + L"\\" + std::wstring(64, L'a') + L"-legacy", payloadFolder = payloadRoot + L"\\legacy";

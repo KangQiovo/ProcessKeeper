@@ -12,6 +12,58 @@ public sealed record AppCacheCleanupResult(bool Success, int RemovedFiles, long 
 /// <summary>Clears verified old payloads and inactive owned update stages, preserving settings and the active payload.</summary>
 public static class AppCacheCleanupService
 {
+    /// <summary>Retries only receipt-authorized old payloads after the new window is ready.</summary>
+    public static Task<AppCacheCleanupResult> ClearPendingPayloadsAfterStartupAsync(LauncherContext context, CancellationToken cancellationToken)
+        => Task.Run(() => ClearPendingAfterStartup(context, cancellationToken));
+
+    private static AppCacheCleanupResult ClearPendingAfterStartup(LauncherContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            LauncherContextReader.RequireCurrent(context);
+            using var helper = UpdateTrustedFiles.OpenRead(context.HelperPath);
+            UpdateTrustedFiles.RequireHash(helper, context.HelperSha256);
+            cancellationToken.ThrowIfCancellationRequested();
+            var id = Guid.NewGuid().ToString("N");
+            var start = new ProcessStartInfo(context.HelperPath)
+            {
+                UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden,
+                WorkingDirectory = Path.GetDirectoryName(context.HelperPath)!, Arguments = "--clear-pending-cache " + context.Id + " " + id
+            };
+            start.EnvironmentVariables["PROCESSKEEPER_HELPER_LANGUAGE"] = L.Language;
+            using var process = Process.Start(start) ?? throw new IOException(L.T("无法启动已验证的缓存清理助手。"));
+            WaitForPendingCleanupExit(process.WaitForExit, () =>
+            {
+                // This marker only stops this request; it cannot authorize any deletion.
+                using var marker = UpdateTrustedFiles.Create(Path.Combine(context.DirectoryPath, "cache-" + id + ".cancel"));
+                marker.Flush(true);
+            }, cancellationToken);
+            using var stream = UpdateTrustedFiles.OpenRead(Path.Combine(context.DirectoryPath, "cache-" + id + ".txt"));
+            if (process.ExitCode != 0 || stream.Length > 1024) throw new InvalidDataException(L.T("缓存清理结果无效。"));
+            using var reader = new StreamReader(stream, new UTF8Encoding(false, true));
+            return ParseResponse(reader.ReadToEnd());
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { return new(false, 0, 0, 0, ex.Message); }
+    }
+
+    internal static void WaitForPendingCleanupExit(Func<int, bool> waitForExit, Action requestCancellation, CancellationToken cancellationToken)
+    {
+        bool requested = false;
+        var deadline = Stopwatch.StartNew();
+        while (!waitForExit(250))
+        {
+            if (!requested && cancellationToken.IsCancellationRequested)
+            {
+                requested = true;
+                try { requestCancellation(); } catch { /* The verified native worker also ends on caller exit or its own deadline. */ }
+            }
+            if (deadline.ElapsedMilliseconds >= 25000) throw new IOException("The bounded cache cleanup helper did not finish.");
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
     public static AppCacheCleanupResult Clear(LauncherContext context)
     {
         try

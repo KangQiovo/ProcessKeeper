@@ -8,13 +8,13 @@
 
 Process Keeper 是 Windows 軟體與處理程序管理工具，提供可編輯的白名單、啟動項目管理，以及針對部分隱藏視窗的還原功能。相關處理程序依所屬軟體分組，讓你在確認操作前看清影響範圍。
 
-現代介面使用 **WinUI 3**；共用核心的 **WPF / WPF UI 相容介面**支援舊系統及 x86、x64。**1.8.0** 提供三個免安裝版本、三個附解除安裝程式的安裝版本和一個免安裝整合包。
+現代介面使用 **WinUI 3**；共用核心的 **WPF / WPF UI 相容介面**支援舊系統及 x86、x64。**1.8v2** 提供三個免安裝版本、三個附解除安裝程式的安裝版本和一個免安裝整合包。
 
 > 從 [Releases](https://github.com/KangQiovo/ProcessKeeper/releases/latest) 下載官方免安裝 EXE。發行套件尚未取得可信程式碼簽章，Windows 可能顯示**未知的發行者**。一般建置保留「測試版本不代表最終品質」提示，官方正式建置會移除。舊系統支援仍是相容目標，不代表已完成所有裝置認證。
 
 ## 功能一覽
 
-**1.8.0** 擴充已驗證的微軟篩選，涵蓋健康登錄套件、沒有 EXE 的套件及通過獨立套件簽章驗證的項目；修正 Apple Software Update、Autodesk Access、Python 的重複登錄/捷徑主項目與預設主檔案定位。暫停即時收集後，已請求的驗證也能完成。**新設定預設關閉「隱藏微軟應用程式」**，保留使用者已儲存的選擇。[發佈說明](docs/RELEASE-1.8.0.zh-TW.md)。
+**1.8v2** 修正更新檔案篩選、自動檢查勾選即時儲存與所有頁面的更新對話框；切換版本類型改為個別確認。新版啟動後限時清理身分驗證的舊載荷，既有同目標桌面捷徑更新，無關下載副本保留。介面顯示 **1.8v2**，內部身分為 **1.8.1** / `v1.8.1`，讓 1.8 用戶端識別新版。**新設定預設關閉隱藏微軟應用程式，本機白名單為空**，保留使用者已儲存的選擇。[發佈說明](docs/RELEASE-1.8.1.zh-TW.md)。
 
 外觀新增原生背景的色調不透明度、亮度層不透明度與色調顏色，可即時預覽、恢復原生預設，並納入設定備份。效果受系統材質支援及透明度、輔助功能策略限制；相容介面保留這些設定供現代介面使用。
 
@@ -166,25 +166,25 @@ Steam 優先收到經驗證的正常結束要求，但這無法證明遊戲已�
 
 所有免安裝與安裝版本共用目前 Windows 使用者及工作階段的單一執行個體限制。優先保留較新的相容版本；版本相同時優先使用符合環境要求的原生 WinUI，再考慮 WPF 相容介面。條件相同則保留最新開啟的版本。未被選中的啟動會啟用既有視窗並結束；替換時要求正常關閉，等待舊處理程序完全結束後才開啟新介面。
 
-**1.8.0** 發佈**七個套件**：三個免安裝版本、三個對應的附解除安裝程式版本，以及一個免安裝整合包。
+**1.8v2** 發佈**七個套件**：三個免安裝版本、三個對應的附解除安裝程式版本，以及一個免安裝整合包。
 
 | 下載檔案 | 適用環境 |
 | --- | --- |
-| [ProcessKeeper-v1.8.0-win7-x86-compat.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0-win7-x86-compat.exe) | 免安裝 \| Win7 SP1 / 8.1 及支援的新系統 x86/x64 \| WPF；需要 .NET Framework 4.6.2 或相容的較新 4.x。 |
-| [ProcessKeeper-v1.8.0-win10-x86-x64.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0-win10-x86-x64.exe) | 免安裝 \| Win10/11 x86、x64 \| x64 19041+ 使用 WinUI；內附 WPF 相容介面供 x86 或支援的較早 x64 系統使用。 |
-| [ProcessKeeper-v1.8.0-win10-arm64.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0-win10-arm64.exe) | 免安裝 \| Win10 19041+ / Win11 ARM64 \| 原生 ARM64 WinUI；x86 引導程式透過模擬執行。 |
-| [ProcessKeeper-v1.8.0-win7-x86-compat-setup.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0-win7-x86-compat-setup.exe) | 安裝版 + 解除安裝程式 \| Win7 SP1 / 8.1 及支援新系統 x86/x64。 |
-| [ProcessKeeper-v1.8.0-win10-x86-x64-setup.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0-win10-x86-x64-setup.exe) | 安裝版 + 解除安裝程式 \| Win10/11 x86、x64 \| 包含相同的現代與相容路線。 |
-| [ProcessKeeper-v1.8.0-win10-arm64-setup.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0-win10-arm64-setup.exe) | 安裝版 + 解除安裝程式 \| Win10 19041+ / Win11 ARM64。 |
-| [ProcessKeeper-v1.8.0.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.0/ProcessKeeper-v1.8.0.exe) | 免安裝整合包 \| 包含全部三種執行載荷 \| 下載最大；保留舊更新程式支援的 PK14 格式。 |
+| [ProcessKeeper-v1.8.1-win7-x86-compat.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1-win7-x86-compat.exe) | 免安裝 \| Win7 SP1 / 8.1 及支援的新系統 x86/x64 \| WPF；需要 .NET Framework 4.6.2 或相容的較新 4.x。 |
+| [ProcessKeeper-v1.8.1-win10-x86-x64.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1-win10-x86-x64.exe) | 免安裝 \| Win10/11 x86、x64 \| x64 19041+ 使用 WinUI；內附 WPF 相容介面供 x86 或支援的較早 x64 系統使用。 |
+| [ProcessKeeper-v1.8.1-win10-arm64.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1-win10-arm64.exe) | 免安裝 \| Win10 19041+ / Win11 ARM64 \| 原生 ARM64 WinUI；x86 引導程式透過模擬執行。 |
+| [ProcessKeeper-v1.8.1-win7-x86-compat-setup.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1-win7-x86-compat-setup.exe) | 安裝版 + 解除安裝程式 \| Win7 SP1 / 8.1 及支援新系統 x86/x64。 |
+| [ProcessKeeper-v1.8.1-win10-x86-x64-setup.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1-win10-x86-x64-setup.exe) | 安裝版 + 解除安裝程式 \| Win10/11 x86、x64 \| 包含相同的現代與相容路線。 |
+| [ProcessKeeper-v1.8.1-win10-arm64-setup.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1-win10-arm64-setup.exe) | 安裝版 + 解除安裝程式 \| Win10 19041+ / Win11 ARM64。 |
+| [ProcessKeeper-v1.8.1.exe](https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.8.1/ProcessKeeper-v1.8.1.exe) | 免安裝整合包 \| 包含全部三種執行載荷 \| 下載最大；保留舊更新程式支援的 PK14 格式。 |
 
 免安裝套件不登錄到控制台，但仍寫入驗證後的執行快取與獨立設定。安裝版在 Windows 程式清單登錄 Process Keeper，建立捷徑並附 Uninstall.exe。安裝不會預填或擴大預設空白白名單。
 
 僅白名單與完整設定是兩種匯出格式。匯入先預覽，不會把本機路徑規則擅自擴大成程序名稱規則。設定檔編輯採用版本驗證與單一檔案的不可分割儲存，過期編輯不會覆寫較新的規則。完整設定匯入保存備份，寫入失敗時嘗試復原，但無法保證突然斷電時的多檔案不可分割提交。
 
-更新身分在設定、官方中繼資料、附件及安裝交接中固定為 **`KangQiovo/ProcessKeeper`**。版本身分與摘要來自 GitHub，第三方僅提供允許的下載入口；自動選源實測目標檔案請求。彈窗呈現實際 Markdown 更新說明與全部發行附件，預設選擇符合的套件類型與執行方式。下載後明確確認，才進行免安裝替換或開啟標準安裝精靈。下載進度視窗支援暫停、繼續與切換來源；同次執行切換頁面或重新檢查不會遺失下載，但不承諾關閉應用程式後恢復。下載完成後維持待更新，使用者點選更新並重新啟動且確認後才退出，沒有自動倒數，新套件回報就緒後才清理本次替換的舊套件備份，不處理無關 EXE。缺少版本或摘要、限流、網路錯誤及無效套件均如實顯示。
+更新身分在設定、官方中繼資料、附件及安裝交接中固定為 **`KangQiovo/ProcessKeeper`**。版本身分與摘要來自 GitHub，第三方僅提供允許的下載入口；自動選源實測目標檔案請求。彈窗呈現實際 Markdown 更新說明與已識別的應用套件，預設選擇符合的套件類型與執行方式。下載後明確確認，才進行免安裝替換或開啟標準安裝精靈。下載進度視窗支援暫停、繼續與切換來源；同次執行切換頁面或重新檢查不會遺失下載，但不承諾關閉應用程式後恢復。下載完成後維持待更新，使用者點選更新並重新啟動且確認後才退出，沒有自動倒數，新套件回報就緒後才清理本次替換的舊套件備份，不處理無關 EXE。缺少版本或摘要、限流、網路錯誤及無效套件均如實顯示。
 
-**1.6.x 應用內升級請選擇 ProcessKeeper-v1.8.0.exe（整合包）。** 舊更新程式支援 PK14，會安全拒絕 PK17 分包或安裝程式。若要切換較小版本或安裝版，請手動下載對應檔案。1.7.1 起預設符合已驗證的目前套件類型與免安裝、安裝方式；切換其他相容套件需確認。安裝套件更新經明確同意後開啟標準安裝精靈，由使用者完成或取消精靈。
+**1.6.x 應用內升級請選擇 ProcessKeeper-v1.8.1.exe（整合包）。** 舊更新程式支援 PK14，會安全拒絕 PK17 分包或安裝程式。若要切換較小版本或安裝版，請手動下載對應檔案。1.7.1 起預設符合已驗證的目前套件類型與免安裝、安裝方式；切換其他相容套件需確認。安裝套件更新經明確同意後開啟標準安裝精靈，由使用者完成或取消精靈。
 
 建置時間精確到秒，以 UTC+8 為基準，介面每五秒依電腦目前時區更新。目前建置未簽章，摘要及固定儲存庫無法絕對防止他人重寫 EXE。真實公開版本升級及正式 UAC/快取首次啟動仍待現場驗證。
 
@@ -194,7 +194,7 @@ Steam 優先收到經驗證的正常結束要求，但這無法證明遊戲已�
 
 手動移除時，先完成或取消待執行的更新並退出應用，再刪除所選 EXE 與 Windows 實際桌面目錄的 **Process Keeper.lnk**，桌面可能已重新導向。完整清理可選刪除自己的 `%LOCALAPPDATA%\ProcessKeeper` 設定/記錄，以及受保護的 `%ProgramData%\ProcessKeeper\Universal\<自己的使用者SID>` 解包載荷/會話目錄；只刪除自己的 SID 目錄，保留其他使用者快取。啟動恢復備份獨立保存在 `%ProgramData%\ProcessKeeper\AutorunBackups\<自己的使用者SID>`，仍可能需要還原啟動更改時請保留，刪除檔案不會撤銷之前的啟動修改。免安裝套件不會在 Windows 程式清單登錄安裝器。
 
-從 1.6.x 手動遷移時，請確認新的 1.8.0 EXE 可用後自行刪除舊下載檔案，應用不會掃除附近無關的 EXE 或壓縮檔。
+從 1.6.x 手動遷移時，請確認新的 1.8.1 EXE 可用後自行刪除舊下載檔案，應用不會掃除附近無關的 EXE 或壓縮檔。
 
 ## 編譯與參與
 

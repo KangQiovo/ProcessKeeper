@@ -58,10 +58,29 @@ public partial class MainWindow
     private async Task<bool> ConfirmUpdatePackageChangeAsync(UpdateAsset asset, UpdateRuntimeIdentity runtime)
     {
         if (!UpdatePackagePolicy.IsPackageChange(asset, runtime)) return true;
-        var detail = L.T("所选更新包与当前运行的包类型不同，可能改变安装方式或兼容界面。确认后继续。") +
-            "\n\n" + string.Join(" | ", DistributionBadges(runtime)) + "\n" + asset.Name;
+        var detail = L.T("所选文件与当前版本类型不同，更新后将切换版本类型。") +
+            "\n\n" + L.F($"当前版本类型：{string.Join(" | ", DistributionBadges(runtime))}") +
+            "\n" + L.F($"所选版本类型：{UpdatePackageDescription.Text(asset)}") + "\n" + asset.Name;
         if (PreservesInstallation(asset, runtime)) detail += "\n\n" + InstalledPayloadNotice();
-        return await Confirm(L.T("切换更新包类型？"), detail);
+        if (_backend.Confirm is not null) return await _backend.Confirm(L.T("切换更新包类型？"), detail);
+        var window = UpdateWindow(L.T("切换更新包类型？"), 640, out _, out var body, out var actions);
+        var windowClosed = false; window.Closed += (_, _) => windowClosed = true;
+        window.Tag = "update-package-confirm"; body.Children.Add(Text(detail));
+        var cancel = Button(L.T("取消"), () => window.DialogResult = false); cancel.IsCancel = cancel.IsDefault = true;
+        actions.Children.Add(cancel); actions.Children.Add(Button(L.T("继续"), () => window.DialogResult = true));
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token, _updateCheckCancellation?.Token ?? CancellationToken.None);
+        using var canceled = cancellation.Token.Register(() => Dispatcher.BeginInvoke(new Action(() => { if (window.IsVisible) window.Close(); })));
+        _releaseDialogCancellation = cancellation;
+        try
+        {
+            await Task.Yield();
+            return !cancellation.IsCancellationRequested && !_closed && !_replacementRequested && !_savingBeforeClose && !_closingMotion && window.ShowDialog() == true;
+        }
+        finally
+        {
+            if (ReferenceEquals(_releaseDialogCancellation, cancellation)) _releaseDialogCancellation = null;
+            if (!windowClosed) window.Close();
+        }
     }
     private static bool PreservesInstallation(UpdateAsset asset, UpdateRuntimeIdentity runtime) =>
         runtime.DistributionKind == UpdateDistributionKind.Installer && asset.DistributionKind == UpdateDistributionKind.Portable;

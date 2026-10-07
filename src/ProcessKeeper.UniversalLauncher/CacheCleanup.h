@@ -7,9 +7,12 @@ PayloadCleanupPlan CapturePayloadCleanup(const LaunchContext& context);
 void SchedulePayloadCleanup(const PayloadCleanupPlan& plan);
 PayloadCleanupResult RunPendingPayloadCleanup(const std::wstring& activeIdentity);
 PayloadCleanupResult ClearPendingPayloadCache(const LaunchContext& context, const std::wstring& request);
+PayloadCleanupResult ClearPendingPayloadsAfterStartup(const LaunchContext& context, const std::wstring& request);
 #ifdef PK_FIXTURE_BUILD
 void SchedulePayloadCleanupFixture(const std::wstring& cache, const Manifest& manifest, Route route);
 void RunPendingPayloadCleanupFixture(const std::wstring& cache, const std::wstring& activeIdentity);
 PayloadCleanupResult ClearDownloadCacheFixture(const std::wstring& cache, const std::wstring& currentSession);
+PayloadCleanupResult RetryPendingPayloadCleanupFixture(const std::wstring& cache, const std::wstring& activeIdentity, HANDLE caller, HANDLE cancellation,
+    DWORD graceMilliseconds, DWORD pollMilliseconds);
 #endif
 }

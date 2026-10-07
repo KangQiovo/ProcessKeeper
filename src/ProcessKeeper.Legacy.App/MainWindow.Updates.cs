@@ -37,6 +37,22 @@ public partial class MainWindow
     private CancellationTokenSource? _releaseDialogCancellation;
     private readonly HashSet<string> _shownUpdateVersions = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _updatePromptTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private bool _startupPendingCleanupStarted;
+
+    private async Task ClearPendingUpdatePayloadsAfterStartupAsync()
+    {
+        if (_startupPendingCleanupStarted || !_ready || _closed || _replacementRequested) return;
+        _startupPendingCleanupStarted = true;
+        try
+        {
+            var context = await Task.Run(() => LauncherContextReader.TryGetCurrent(out var current, out _) ? current : null, _life.Token);
+            if (context is null || _closed || _replacementRequested || _life.IsCancellationRequested) return;
+            var result = await AppCacheCleanupService.ClearPendingPayloadsAfterStartupAsync(context, _life.Token);
+            if ((!result.Success || result.RemovedFiles > 0) && !_closed && !_replacementRequested) Log(result.Message);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_closed && !_replacementRequested) Log(ex.Message); }
+    }
 
     private void BuildUpdateSettings(StackPanel about)
     {
@@ -57,19 +73,25 @@ public partial class MainWindow
         source.SelectionChanged += (_, _) => UpdateNodeVisibility(); UpdateNodeVisibility();
         panel.Children.Add(Text(L.T("版本信息来自 GitHub 官方；更新源用于下载安装包。"), 12));
         panel.Children.Add(Text(L.T("自动模式优先使用 GitHub 官方源；不可用时再尝试第三方源。"), 12));
-        bool Save()
+        var saving = false;
+        bool Save(bool checkWhenEnabled = true)
         {
+            if (saving) return false;
+            saving = true;
             try
             {
                 var preferences = UpdatePreferencesStore.Validate(_updates with { CheckOnStartup = startup.IsChecked == true, SourceMode = (UpdateSourceMode)source.SelectedIndex, ThirdPartySourceId = nodes[Math.Max(0, node.SelectedIndex)].Id, AutoDesktopShortcut = shortcut.IsChecked == true });
-                new UpdatePreferencesStore(_directory).Save(preferences); ApplyUpdatePreferences(preferences);
+                new UpdatePreferencesStore(_directory).Save(preferences); ApplyUpdatePreferences(preferences, checkWhenEnabled);
                 SetUpdateStatus(L.T("更新设置已保存")); return true;
             }
-            catch (Exception ex) { SetUpdateStatus(ex.Message); return false; }
+            catch (Exception ex) { startup.IsChecked = _updates.CheckOnStartup; SetUpdateStatus(ex.Message); return false; }
+            finally { saving = false; }
         }
+        startup.Checked += (_, _) => Save();
+        startup.Unchecked += (_, _) => Save();
         var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left }; panel.Children.Add(actions);
         var save = Button(L.T("保存更新设置"), () => Save()); save.Tag = "update-save"; actions.Children.Add(save);
-        var check = Button(L.T("立即检查"), async () => { if (Save()) await CheckUpdatesAsync(true); }); check.Tag = "update-check"; actions.Children.Add(check);
+        var check = Button(L.T("立即检查"), async () => { if (Save(false)) await CheckUpdatesAsync(true); }); check.Tag = "update-check"; actions.Children.Add(check);
         var create = Button(L.T("创建桌面快捷方式"), async () => await EnsureDesktopShortcutAsync(true)); create.Tag = "update-create-shortcut"; actions.Children.Add(create);
         _updateStatusText = Text(_updateStatus, 12); _updateStatusText.Tag = "update-status"; panel.Children.Add(_updateStatusText);
     }
@@ -79,22 +101,29 @@ public partial class MainWindow
     { if (_closed) return; _updateStatus = message; if (_updateStatusText is not null) _updateStatusText.Text = message; }
     private void RefreshBuildDateLabel()
     { if (!_closed && _buildDateText is not null) _buildDateText.Text = L.F($"构建时间：{BuildInfo.DisplayBuildDate}"); }
-    private void ApplyUpdatePreferences(UpdatePreferences preferences)
+    private void ApplyUpdatePreferences(UpdatePreferences preferences, bool checkWhenEnabled = true)
     {
         preferences = UpdatePreferencesStore.Validate(preferences);
+        var enabled = preferences.CheckOnStartup && (!_updatesReadable || !_updates.CheckOnStartup);
         if (_updates != preferences)
         {
             _updateCheckGeneration++; _updateCheckCancellation?.Cancel();
             _pendingUpdate = null; _updatePromptTimer.Stop();
         }
         _updates = preferences; _updatesReadable = true;
+        if (checkWhenEnabled && enabled) _ = CheckAutomaticUpdatesAfterReadyAsync();
+    }
+    private async Task CheckAutomaticUpdatesAfterReadyAsync()
+    {
+        await Task.Yield();
+        if (_ready && !_closed && _updatesReadable && _updates.CheckOnStartup) await CheckUpdatesAsync(false);
     }
     private async Task InitializeUpdatesAsync()
     {
         await Task.Yield();
         if (_closed || !_updatesReadable || !_backend.IsAdministrator) return;
         var shortcut = _updates.AutoDesktopShortcut ? EnsureDesktopShortcutAsync(false) : Task.CompletedTask;
-        var check = _updates.CheckOnStartup ? CheckUpdatesAsync(false) : Task.CompletedTask;
+        var check = CheckAutomaticUpdatesAfterReadyAsync();
         await Task.WhenAll(shortcut, check);
     }
     private async Task EnsureDesktopShortcutAsync(bool manual)
@@ -143,7 +172,7 @@ public partial class MainWindow
         catch (Exception ex) { if (generation == _updateCheckGeneration) SetUpdateStatus(L.T("检查更新失败") + " | " + ex.Message); }
         finally { if (ReferenceEquals(_updateCheckCancellation, cancellation)) _updateCheckCancellation = null; cancellation.Dispose(); finished.TrySetResult(true); _updateChecks.Remove(finished.Task); }
     }
-    private bool UpdateUiAvailable() => !_closed && !_replacementRequested && !_savingBeforeClose && !_closingMotion && !_busy && !_updateDialogOpen && !_riskModeDialogOpen && !_updateDownloading && Overlay.Visibility != Visibility.Visible && OwnedWindows.Count == 0;
+    private bool UpdateUiAvailable() => _ready && !_closed && !_replacementRequested && !_savingBeforeClose && !_closingMotion && !_busy && !_updateDialogOpen && !_riskModeDialogOpen && !_updateDownloading && Overlay.Visibility != Visibility.Visible && OwnedWindows.Count == 0;
     private static string ReleaseIdentity(UpdateRelease release) => release.Repository + "|" + release.Tag;
     private async Task ShowPendingUpdateAsync()
     {
@@ -159,11 +188,19 @@ public partial class MainWindow
         UpdateSelection? selected = null;
         try
         {
-            if (result.LatestRelease is not null) _shownUpdateVersions.Add(ReleaseIdentity(result.LatestRelease));
             selected = await ChooseUpdateReleaseAsync(result);
+            if (selected is not null)
+            {
+                var runtime = await Task.Run(_backend.Updates.RuntimeIdentity, _life.Token);
+                if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || selected.Preferences != _updates ||
+                    !UpdatePackagePolicy.Supports(selected.Asset, runtime) || !await ConfirmUpdatePackageChangeAsync(selected.Asset, runtime))
+                    selected = null;
+            }
         }
+        catch (OperationCanceledException) { selected = null; }
+        catch (Exception ex) { selected = null; SetUpdateStatus(L.T("检查更新失败") + " | " + ex.Message); }
         finally { _updateDialogOpen = false; }
-        if (selected is not null && !_closed && !_replacementRequested) await DownloadUpdateAsync(selected);
+        if (selected is not null && !_closed && !_replacementRequested && !_life.IsCancellationRequested && selected.Preferences == _updates) await DownloadUpdateAsync(selected);
     }
     private sealed record UpdateSelection(UpdateRelease Release, UpdateAsset Asset, UpdatePreferences Preferences, bool ShowProgressWindow = false);
     private Window UpdateWindow(string title, double width, out Grid root, out StackPanel body, out WrapPanel actions)
@@ -181,105 +218,120 @@ public partial class MainWindow
         var preferences = _updates;
         var window = UpdateWindow(L.T("检查更新"), 720, out _, out var body, out var actions);
         using var dialogCancellation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token, _updateCheckCancellation?.Token ?? CancellationToken.None);
-        window.Closed += (_, _) => dialogCancellation.Cancel();
-        body.Children.Add(Text(result.UpdateAvailable && result.LatestRelease is not null ? L.F($"发现新版本 | {ProcessKeeper.Core.ReleaseIdentity.DisplayVersion(result.LatestRelease.Version)}") : result.Message, 22));
-        body.Children.Add(Text(L.F($"当前版本：{DisplayAboutVersion(CurrentAppVersion)}"), 12)); body.Children.Add(Text(L.F($"更新仓库：{preferences.Repository}"), 12)); body.Children.Add(Text(L.T("版本信息来自 GitHub 官方；更新源用于下载安装包。"), 12));
-        var releases = UpdateCombo("update-releases", result.Releases.Select(item => DisplayUpdateReleaseTag(item) + " | " + item.Name).ToArray(), 0); body.Children.Add(releases);
-        body.Children.Add(Text(L.T("更新日志"), 18));
-        var notes = new ScrollViewer { Tag = "update-notes", MaxHeight = 240, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 0, 0, 16) }; body.Children.Add(notes);
-        body.Children.Add(Text(L.T("发布文件"), 18));
-        var assets = new ListBox { Tag = "update-assets", MinHeight = 54, MaxHeight = 180, HorizontalContentAlignment = HorizontalAlignment.Stretch, Background = window.Background, Foreground = window.Foreground, BorderThickness = new Thickness(0) }; ScrollViewer.SetHorizontalScrollBarVisibility(assets, ScrollBarVisibility.Disabled); body.Children.Add(assets);
-        var restriction = Text("", 12); body.Children.Add(restriction);
-        var probeStatus = Text("", 12); body.Children.Add(probeStatus);
-        Button? probe = null; var probing = false; Action? refreshAsset = null;
-        probe = Button(L.T("检测节点延迟"), async () =>
-        {
-            if (probing || assets.SelectedIndex < 0 || releases.SelectedIndex < 0) return;
-            probing = true; probe!.IsEnabled = false;
-            var release = result.Releases[releases.SelectedIndex]; var asset = release.Assets[assets.SelectedIndex];
-            try
-            {
-                var measured = await _backend.Updates.Probe(preferences, release, asset, new Progress<UpdateProgress>(progress => { if (probing && window.IsVisible && !dialogCancellation.IsCancellationRequested) probeStatus.Text = progress.Message; }), dialogCancellation.Token);
-                if (window.IsVisible) probeStatus.Text = string.Join("\n", measured.Select(item =>
-                    (UpdateSources.All.FirstOrDefault(source => source.Id == item.SourceId)?.Name ?? item.SourceId) + " | " +
-                    (item.LatencyMilliseconds.HasValue ? item.LatencyMilliseconds + " ms | " : "") + item.Message));
-            }
-            catch (OperationCanceledException) { } catch (Exception ex) { if (window.IsVisible) probeStatus.Text = ex.Message; }
-            finally { probing = false; if (window.IsVisible) refreshAsset?.Invoke(); }
-        }); probe.Tag = "update-probe"; body.Children.Add(probe);
-        var page = Button(L.T("发布主页"), async () =>
-        {
-            if (releases.SelectedIndex < 0) return; var url = result.Releases[releases.SelectedIndex].HtmlUrl;
-            var title = L.T("打开项目主页？"); var detail = L.T("将在默认浏览器打开以下网址：") + "\n" + url;
-            var confirmed = _backend.Confirm is not null ? await _backend.Confirm(title, detail) : MessageBox.Show(window, detail, "Process Keeper | " + title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
-            if (confirmed) OpenWebsite(url);
-        }); body.Children.Add(page);
-        var showProgress = new CheckBox { Tag = "update-show-progress", IsChecked = false, Content = new TextBlock { Text = L.T("显示下载进度窗口"), TextWrapping = TextWrapping.Wrap }, Margin = new Thickness(0, 0, 0, 12) };
-        body.Children.Add(showProgress);
-        var later = new Button { Content = L.T("取消"), Tag = "update-later", Style = (Style)Resources[typeof(Button)], IsCancel = true, IsDefault = true };
-        var download = new Button { Content = L.T("下载并更新"), Tag = "update-download", Style = (Style)Resources[typeof(Button)], IsEnabled = false };
-        actions.Children.Add(later); actions.Children.Add(download);
-        var trusted = await Task.Run(_backend.Updates.HasTrustedLauncher, _life.Token);
-        var runtime = await Task.Run(_backend.Updates.RuntimeIdentity, _life.Token);
-        if (_closed || _life.IsCancellationRequested || preferences != _updates) return null;
-        void SelectAsset()
-        {
-            var release = result.Releases[Math.Max(0, releases.SelectedIndex)]; var asset = assets.SelectedIndex >= 0 ? release.Assets[assets.SelectedIndex] : null;
-            var eligible = asset?.CanAutoInstall == true && UpdatePackagePolicy.Supports(asset, runtime);
-            download.IsEnabled = trusted && eligible;
-            probe.IsEnabled = !probing && eligible;
-            restriction.Text = !trusted ? L.T("当前文件不支持应用内更新，请从原始单文件 EXE 启动。") : asset?.Restriction ?? L.T("没有可用发布文件。");
-            if (trusted && eligible && asset is not null)
-                restriction.Text = PreservesInstallation(asset, runtime) ? InstalledPayloadNotice() : UpdatePackagePolicy.IsPackageChange(asset, runtime)
-                    ? L.T("所选更新包与当前运行的包类型不同，可能改变安装方式或兼容界面。确认后继续。") : asset.Restriction;
-            else if (trusted && asset is not null && asset.Restriction.Length == 0) restriction.Text = L.T("所选更新包不支持当前系统或运行方式。");
-        }
-        refreshAsset = SelectAsset;
-        var noteGeneration = 0;
-        async void SelectRelease()
-        {
-            var release = result.Releases[Math.Max(0, releases.SelectedIndex)];
-            var generation = ++noteGeneration;
-            assets.Items.Clear(); assets.SelectedIndex = -1; download.IsEnabled = probe.IsEnabled = false;
-            var document = await Task.Run(() => ReleaseNotesParser.Parse(string.IsNullOrWhiteSpace(release.Body) ? L.T("未提供更新日志。") : release.Body));
-            if (dialogCancellation.IsCancellationRequested || generation != noteGeneration) return;
-            notes.Content = ReleaseNotesView.Create(document, async url =>
-            {
-                if (!ReleaseNotesParser.SafeLink(url) || dialogCancellation.IsCancellationRequested) return;
-                var title = L.T("打开项目主页？"); var detail = L.T("将在默认浏览器打开以下网址：") + "\n" + url;
-                var confirmed = _backend.Confirm is not null ? await _backend.Confirm(title, detail) : MessageBox.Show(window, detail, "Process Keeper | " + title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
-                if (confirmed && !dialogCancellation.IsCancellationRequested) OpenWebsite(url);
-            });
-            assets.Items.Clear(); foreach (var asset in release.Assets) assets.Items.Add(new ListBoxItem { Content = new TextBlock { Text = asset.Name + " | " + UpdatePackageDescription.Text(asset) + " | " + FormatUpdateBytes(asset.Size) + (string.IsNullOrWhiteSpace(asset.Restriction) ? "" : " | " + asset.Restriction), TextWrapping = TextWrapping.Wrap }, Padding = new Thickness(4, 7, 4, 7) });
-            var preferred = UpdatePackagePolicy.DefaultAsset(release, runtime);
-            assets.SelectedIndex = preferred is null ? -1 : release.Assets.ToList().IndexOf(preferred); SelectAsset();
-        }
-        releases.SelectionChanged += (_, _) => SelectRelease(); assets.SelectionChanged += (_, _) => SelectAsset(); SelectRelease();
-        UpdateSelection? selection = null;
-        later.Click += (_, _) => window.DialogResult = false;
-        download.Click += async (_, _) =>
-        {
-            if (!download.IsEnabled || releases.SelectedIndex < 0 || assets.SelectedIndex < 0) return;
-            var release = result.Releases[releases.SelectedIndex]; var asset = release.Assets[assets.SelectedIndex]; download.IsEnabled = false;
-            try
-            {
-                if (!await ConfirmUpdatePackageChangeAsync(asset, runtime) || dialogCancellation.IsCancellationRequested || _closed || _replacementRequested) return;
-                if (!window.IsVisible || releases.SelectedIndex < 0 || !ReferenceEquals(release, result.Releases[releases.SelectedIndex]) || assets.SelectedIndex < 0 || !ReferenceEquals(asset, release.Assets[assets.SelectedIndex]) || !asset.CanAutoInstall || !UpdatePackagePolicy.Supports(asset, runtime)) return;
-                selection = new UpdateSelection(release, asset, preferences, showProgress.IsChecked == true); window.DialogResult = true;
-            }
-            catch (Exception ex) { if (window.IsVisible && !dialogCancellation.IsCancellationRequested) restriction.Text = ex.Message; }
-            finally { if (window.IsVisible) SelectAsset(); }
-        };
-        using var canceled = dialogCancellation.Token.Register(() => Dispatcher.BeginInvoke(new Action(() => { if (window.IsVisible) window.Close(); })));
-        _releaseDialogCancellation = dialogCancellation;
+        var appeared = false; var windowClosed = false; var canceledBeforeClose = false;
+        window.Loaded += (_, _) => appeared = true;
+        window.Closed += (_, _) => { windowClosed = true; canceledBeforeClose = dialogCancellation.IsCancellationRequested; dialogCancellation.Cancel(); };
         try
         {
-            if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || dialogCancellation.IsCancellationRequested) return null;
-            await Task.Yield();
-            if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || dialogCancellation.IsCancellationRequested) return null;
-            return window.ShowDialog() == true ? selection : null;
+            body.Children.Add(Text(result.UpdateAvailable && result.LatestRelease is not null ? L.F($"发现新版本 | {ProcessKeeper.Core.ReleaseIdentity.DisplayVersion(result.LatestRelease.Version)}") : result.Message, 22));
+            body.Children.Add(Text(L.F($"当前版本：{DisplayAboutVersion(CurrentAppVersion)}"), 12)); body.Children.Add(Text(L.F($"更新仓库：{preferences.Repository}"), 12)); body.Children.Add(Text(L.T("版本信息来自 GitHub 官方；更新源用于下载安装包。"), 12));
+            var releases = UpdateCombo("update-releases", result.Releases.Select(item => DisplayUpdateReleaseTag(item) + " | " + item.Name).ToArray(), 0); body.Children.Add(releases);
+            body.Children.Add(Text(L.T("更新日志"), 18));
+            var notes = new ScrollViewer { Tag = "update-notes", MaxHeight = 240, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 0, 0, 16) }; body.Children.Add(notes);
+            body.Children.Add(Text(L.T("发布文件"), 18));
+            var assets = new ListBox { Tag = "update-assets", MinHeight = 54, MaxHeight = 180, HorizontalContentAlignment = HorizontalAlignment.Stretch, Background = window.Background, Foreground = window.Foreground, BorderThickness = new Thickness(0) }; ScrollViewer.SetHorizontalScrollBarVisibility(assets, ScrollBarVisibility.Disabled); body.Children.Add(assets);
+            var restriction = Text("", 12); body.Children.Add(restriction);
+            var probeStatus = Text("", 12); body.Children.Add(probeStatus);
+            IReadOnlyList<UpdateAsset> selectableAssets = Array.Empty<UpdateAsset>();
+            UpdateAsset? SelectedAsset() => assets.SelectedIndex >= 0 && assets.SelectedIndex < selectableAssets.Count ? selectableAssets[assets.SelectedIndex] : null;
+            Button? probe = null; var probing = false; Action? refreshAsset = null;
+            probe = Button(L.T("检测节点延迟"), async () =>
+            {
+                var asset = SelectedAsset();
+                if (probing || asset is null || releases.SelectedIndex < 0) return;
+                probing = true; probe!.IsEnabled = false;
+                var release = result.Releases[releases.SelectedIndex];
+                try
+                {
+                    var measured = await _backend.Updates.Probe(preferences, release, asset, new Progress<UpdateProgress>(progress => { if (probing && window.IsVisible && !dialogCancellation.IsCancellationRequested) probeStatus.Text = progress.Message; }), dialogCancellation.Token);
+                    if (window.IsVisible) probeStatus.Text = string.Join("\n", measured.Select(item =>
+                        (UpdateSources.All.FirstOrDefault(source => source.Id == item.SourceId)?.Name ?? item.SourceId) + " | " +
+                        (item.LatencyMilliseconds.HasValue ? item.LatencyMilliseconds + " ms | " : "") + item.Message));
+                }
+                catch (OperationCanceledException) { } catch (Exception ex) { if (window.IsVisible) probeStatus.Text = ex.Message; }
+                finally { probing = false; if (window.IsVisible) refreshAsset?.Invoke(); }
+            }); probe.Tag = "update-probe"; body.Children.Add(probe);
+            var page = Button(L.T("发布主页"), async () =>
+            {
+                if (releases.SelectedIndex < 0) return; var url = result.Releases[releases.SelectedIndex].HtmlUrl;
+                var title = L.T("打开项目主页？"); var detail = L.T("将在默认浏览器打开以下网址：") + "\n" + url;
+                var confirmed = _backend.Confirm is not null ? await _backend.Confirm(title, detail) : MessageBox.Show(window, detail, "Process Keeper | " + title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
+                if (confirmed) OpenWebsite(url);
+            }); body.Children.Add(page);
+            var showProgress = new CheckBox { Tag = "update-show-progress", IsChecked = false, Content = new TextBlock { Text = L.T("显示下载进度窗口"), TextWrapping = TextWrapping.Wrap }, Margin = new Thickness(0, 0, 0, 12) };
+            body.Children.Add(showProgress);
+            var later = new Button { Content = L.T("取消"), Tag = "update-later", Style = (Style)Resources[typeof(Button)], IsCancel = true, IsDefault = true };
+            var download = new Button { Content = L.T("下载并更新"), Tag = "update-download", Style = (Style)Resources[typeof(Button)], IsEnabled = false };
+            actions.Children.Add(later); actions.Children.Add(download);
+            var trusted = await Task.Run(_backend.Updates.HasTrustedLauncher, _life.Token);
+            var runtime = await Task.Run(_backend.Updates.RuntimeIdentity, _life.Token);
+            if (_closed || _life.IsCancellationRequested || preferences != _updates) return null;
+            void SelectAsset()
+            {
+                var asset = SelectedAsset();
+                var eligible = asset?.CanAutoInstall == true && UpdatePackagePolicy.Supports(asset, runtime);
+                download.IsEnabled = trusted && eligible;
+                download.Content = L.T(asset is not null && UpdatePackagePolicy.IsPackageChange(asset, runtime) ? "继续" : "下载并更新");
+                probe.IsEnabled = !probing && eligible;
+                restriction.Text = !trusted ? L.T("当前文件不支持应用内更新，请从原始单文件 EXE 启动。") : asset?.Restriction ?? L.T("没有可用发布文件。");
+                if (trusted && eligible && asset is not null)
+                    restriction.Text = PreservesInstallation(asset, runtime) ? InstalledPayloadNotice() : asset.Restriction;
+                else if (trusted && asset is not null && asset.Restriction.Length == 0) restriction.Text = L.T("所选更新包不支持当前系统或运行方式。");
+            }
+            refreshAsset = SelectAsset;
+            var noteGeneration = 0;
+            async void SelectRelease()
+            {
+                var release = result.Releases[Math.Max(0, releases.SelectedIndex)];
+                var generation = ++noteGeneration;
+                selectableAssets = UpdatePackagePolicy.SelectableAssets(release);
+                assets.Items.Clear(); assets.SelectedIndex = -1; download.IsEnabled = probe.IsEnabled = false;
+                var document = await Task.Run(() => ReleaseNotesParser.Parse(string.IsNullOrWhiteSpace(release.Body) ? L.T("未提供更新日志。") : release.Body));
+                if (dialogCancellation.IsCancellationRequested || generation != noteGeneration) return;
+                notes.Content = ReleaseNotesView.Create(document, async url =>
+                {
+                    if (!ReleaseNotesParser.SafeLink(url) || dialogCancellation.IsCancellationRequested) return;
+                    var title = L.T("打开项目主页？"); var detail = L.T("将在默认浏览器打开以下网址：") + "\n" + url;
+                    var confirmed = _backend.Confirm is not null ? await _backend.Confirm(title, detail) : MessageBox.Show(window, detail, "Process Keeper | " + title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
+                    if (confirmed && !dialogCancellation.IsCancellationRequested) OpenWebsite(url);
+                });
+                assets.Items.Clear(); foreach (var asset in selectableAssets) assets.Items.Add(new ListBoxItem { Content = new TextBlock { Text = asset.Name + " | " + UpdatePackageDescription.Text(asset) + " | " + FormatUpdateBytes(asset.Size) + (string.IsNullOrWhiteSpace(asset.Restriction) ? "" : " | " + asset.Restriction), TextWrapping = TextWrapping.Wrap }, Padding = new Thickness(4, 7, 4, 7) });
+                var preferred = UpdatePackagePolicy.DefaultAsset(release, runtime);
+                assets.SelectedIndex = preferred is null ? -1 : selectableAssets.ToList().IndexOf(preferred); SelectAsset();
+            }
+            releases.SelectionChanged += (_, _) => SelectRelease(); assets.SelectionChanged += (_, _) => SelectAsset(); SelectRelease();
+            UpdateSelection? selection = null;
+            later.Click += (_, _) => window.DialogResult = false;
+            download.Click += (_, _) =>
+            {
+                var asset = SelectedAsset();
+                if (!download.IsEnabled || releases.SelectedIndex < 0 || asset is null) return;
+                var release = result.Releases[releases.SelectedIndex]; download.IsEnabled = false;
+                try
+                {
+                    if (dialogCancellation.IsCancellationRequested || _closed || _replacementRequested) return;
+                    if (!window.IsVisible || releases.SelectedIndex < 0 || !ReferenceEquals(release, result.Releases[releases.SelectedIndex]) || !ReferenceEquals(asset, SelectedAsset()) || !asset.CanAutoInstall || !UpdatePackagePolicy.Supports(asset, runtime)) return;
+                    selection = new UpdateSelection(release, asset, preferences, showProgress.IsChecked == true); window.DialogResult = true;
+                }
+                catch (Exception ex) { if (window.IsVisible && !dialogCancellation.IsCancellationRequested) restriction.Text = ex.Message; }
+                finally { if (window.IsVisible) SelectAsset(); }
+            };
+            using var canceled = dialogCancellation.Token.Register(() => Dispatcher.BeginInvoke(new Action(() => { if (window.IsVisible) window.Close(); })));
+            _releaseDialogCancellation = dialogCancellation;
+            try
+            {
+                if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || dialogCancellation.IsCancellationRequested) return null;
+                await Task.Yield();
+                if (_closed || _replacementRequested || _savingBeforeClose || _closingMotion || dialogCancellation.IsCancellationRequested) return null;
+                var accepted = window.ShowDialog() == true;
+                if (appeared && !canceledBeforeClose && !_closed && !_replacementRequested && !_savingBeforeClose && !_closingMotion &&
+                    !_life.IsCancellationRequested && preferences == _updates && result.LatestRelease is not null)
+                    _shownUpdateVersions.Add(ReleaseIdentity(result.LatestRelease));
+                return accepted ? selection : null;
+            }
+            finally { if (ReferenceEquals(_releaseDialogCancellation, dialogCancellation)) _releaseDialogCancellation = null; }
         }
-        finally { if (ReferenceEquals(_releaseDialogCancellation, dialogCancellation)) _releaseDialogCancellation = null; }
+        finally { if (!windowClosed) window.Close(); }
     }
     private static string FormatUpdateBytes(long bytes) => bytes >= 1024 * 1024 ? (bytes / 1048576d).ToString("0.0") + " MiB" : bytes >= 1024 ? (bytes / 1024d).ToString("0.0") + " KiB" : bytes + " B";
 

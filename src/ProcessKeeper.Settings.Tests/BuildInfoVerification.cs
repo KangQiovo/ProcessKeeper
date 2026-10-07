@@ -5,10 +5,10 @@ internal static class BuildInfoVerification
 {
     internal static void Run(Action<bool, string> check)
     {
-        check(ReleaseIdentity.NumericVersion == "1.8.0" && ReleaseIdentity.DisplayVersion("1.8.0") == "1.8.0", "1.8 release has matching displayed and numeric update identity");
-        check(ReleaseIdentity.DisplayVersion("1.8.0+source") == "1.8.0", "source hash metadata does not change the displayed release version");
-        check(ReleaseIdentity.DisplayVersion("1.7.2") == "1.7.2" && ReleaseIdentity.DisplayVersion("1.8.0-preview") == "1.8.0-preview", "unrelated and preview versions retain their own identity");
-        check(UpdateVersion.TryParse(ReleaseIdentity.NumericVersion, out var numeric) && UpdateVersion.TryParse("1.7.2", out var prior) && numeric!.CompareTo(prior) > 0, "1.8 numeric version is newer for retained strict SemVer update clients");
+        check(ReleaseIdentity.DisplayVersion("1.8.1") == "1.8v2", "1.8v2 uses its requested friendly label for the strict update revision");
+        check(ReleaseIdentity.DisplayVersion("1.8.1+source") == "1.8v2", "source hash metadata does not change the displayed revision label");
+        check(ReleaseIdentity.DisplayVersion("1.8.0") == "1.8.0" && ReleaseIdentity.DisplayVersion("1.8.1-preview") == "1.8.1-preview", "earlier and preview versions retain their own identity");
+        check(UpdateVersion.TryParse(ReleaseIdentity.NumericVersion, out var numeric) && UpdateVersion.TryParse("1.8.0", out var prior) && numeric!.CompareTo(prior) > 0, "existing 1.8 clients detect 1.8v2 as a newer release using strict SemVer");
         var utc = DateTimeOffset.ParseExact(BuildInfo.BuildDateUtc, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
         var utc8 = DateTimeOffset.ParseExact(BuildInfo.BuildDateUtc8, "yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
         check(utc == utc8 && utc8.Offset == TimeSpan.FromHours(8), "UTC and default UTC+8 build metadata describe the same second");

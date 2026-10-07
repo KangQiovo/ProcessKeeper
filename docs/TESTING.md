@@ -2,6 +2,14 @@
 
 **English** | [简体中文](TESTING.zh-CN.md) | [繁體中文](TESTING.zh-TW.md)
 
+## 1.8v2 update regressions
+
+Use real native checkbox events to verify immediate preference persistence and one automatic check after startup is ready. Keep About unselected and its update view unrealized in the WinUI fixture; the release dialog must use the visible shell root and current theme. Cover busy-dialog deferral, shutdown cancellation, failed presentation followed by retry, and no repeated automatic announcement after an actual dialog. The compatibility fixture must exercise the same behavior on an x86 CLR, without claiming Windows 7 hardware coverage.
+
+Mix the seven exact current release packages with checksums, notes, archives and helper EXEs. Assert the selectable list and default reference the original verified asset objects, while the complete release inventory remains intact. Confirm changing package type closes the chooser before a separate Continue/Cancel modal; cancellation cannot create a download stage. Keep pause, resume, source changes and explicit Update and restart covered.
+
+Old-payload fixtures must cover a receipt arriving after launch, a locked helper later exiting, invalid receipts before valid ones, current-payload preservation, cancellation, content changes, hash mismatches and unsafe paths. The startup pass must be bounded, run outside the UI thread, and consume only receipt-authorized payloads. Inspect every final bundled updater PE icon frame against the original download-arrow ICO; do not execute production update/install commands as part of these resource checks.
+
 Read [BUILDING.md](BUILDING.md) for toolchain requirements and [COMPATIBILITY.md](COMPATIBILITY.md) for supported routes and limitations. Commands below run from the repository root on Windows with PowerShell 7 and the required .NET SDK. Do not run multiple builds against the same project's `obj` directory at once.
 
 ## 1.8.0 display ownership and registration grouping

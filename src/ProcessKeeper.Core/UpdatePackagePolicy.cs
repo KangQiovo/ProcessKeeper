@@ -53,12 +53,27 @@ public static class UpdatePackagePolicy
         return name.EndsWith("-setup.exe", StringComparison.OrdinalIgnoreCase) ? UpdateDistributionKind.Unknown :
             UpdateService.PortableAssetName(name) ? UpdateDistributionKind.Portable : UpdateDistributionKind.Unknown;
     }
+    /// <summary>Package choices preserve official asset identities and restrictions; the complete release inventory remains available for verification.</summary>
+    public static IReadOnlyList<UpdateAsset> SelectableAssets(UpdateRelease release) => Array.AsReadOnly(release.Assets.Where(asset =>
+        PackageFileName(asset.Name, release.Version)).ToArray());
+    private static bool PackageFileName(string name, string version)
+    {
+        // Earlier Universal releases used this unversioned filename.
+        if (name.Equals("ProcessKeeper.exe", StringComparison.OrdinalIgnoreCase)) return true;
+        foreach (var target in new[] { UpdatePackageTarget.Universal, UpdatePackageTarget.Windows7Compat, UpdatePackageTarget.Windows10x64, UpdatePackageTarget.Windows10arm64 })
+        {
+            var portable = AssetName(version, target);
+            if (name.Equals(portable, StringComparison.Ordinal)) return true;
+            if (target != UpdatePackageTarget.Universal && name.Equals(portable.Substring(0, portable.Length - ".exe".Length) + "-setup.exe", StringComparison.Ordinal)) return true;
+        }
+        return false;
+    }
     public static UpdateAsset? DefaultAsset(UpdateRelease release, UpdateRuntimeIdentity runtime)
     {
         if (runtime.DistributionKind == UpdateDistributionKind.Unknown || runtime.PackageFlavor == UpdatePackageTarget.Unsupported) return null;
         var target = runtime.PackageFlavor;
         var distribution = DefaultDistribution(runtime);
-        var matches = release.Assets.Where(asset => asset.CanAutoInstall && asset.Restriction.Length == 0 && Supports(asset, runtime) &&
+        var matches = SelectableAssets(release).Where(asset => asset.CanAutoInstall && asset.Restriction.Length == 0 && Supports(asset, runtime) &&
             asset.PackageTarget == target && asset.DistributionKind == distribution).Take(2).ToArray();
         return matches.Length == 1 ? matches[0] : null;
     }

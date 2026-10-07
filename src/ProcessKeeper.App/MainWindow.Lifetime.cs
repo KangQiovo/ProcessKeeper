@@ -15,7 +15,7 @@ public sealed partial class MainWindow
     internal async Task CloseForReplacementAsync()
     {
         if (_replacementPreparing || _closed) return;
-        _replacementPreparing = true; _timer.Stop(); CancelInstalledWork();
+        _replacementPreparing = true; _pendingPayloadCleanupLifetime.Cancel(); _timer.Stop(); CancelInstalledWork();
         Root.IsHitTestVisible = false;
         if (_updatesView is not null) await _updatesView.CloseAndWaitAsync();
         if (_downloadView is not null) await _downloadView.CancelAndWaitAsync();

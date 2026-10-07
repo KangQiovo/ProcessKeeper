@@ -2,9 +2,11 @@
 #include <algorithm>
 #include <fstream>
 #include <set>
+#include <functional>
 #include <tlhelp32.h>
 
 namespace pk { namespace {
+struct CleanupBusy : Failure { CleanupBusy() : Failure(L"Old cache remains in use.") {} };
 std::wstring RouteKey(Route route) { return route == Route::ModernArm64 ? L"arm64" : PayloadDirectory(route); }
 std::vector<std::wstring> Receipt(const Manifest& manifest, Route route) {
     std::vector<std::wstring> lines{L"PKCACHE1", manifest.identity, RouteKey(route)};
@@ -39,16 +41,22 @@ std::wstring FilePath(const std::wstring& root, std::wstring relative) { if (rel
 Handle OpenOwned(const std::wstring& path, bool directory, bool fixture) {
     Handle file(CreateFileW(path.c_str(), GENERIC_READ | READ_CONTROL | DELETE, directory ? FILE_SHARE_READ | FILE_SHARE_WRITE : 0, nullptr, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT | (directory ? FILE_FLAG_BACKUP_SEMANTICS : 0), nullptr));
-    if (!file.valid()) Fail(L"Old cache remains in use or cannot be verified.");
+    if (!file.valid()) {
+        if (GetLastError() == ERROR_SHARING_VIOLATION || GetLastError() == ERROR_LOCK_VIOLATION) throw CleanupBusy();
+        Fail(L"Old cache remains in use or cannot be verified.");
+    }
     VerifyHandlePath(file.get(), path, directory); if (!fixture) VerifySecurity(file.get(), directory, true); return file;
 }
 void Collect(const Manifest& manifest, const std::wstring& root, const std::wstring& relative,
-    std::vector<Handle>& files, std::vector<Handle>& directories, std::set<std::wstring, OrdinalIgnoreCase>& seen, bool fixture) {
+    std::vector<Handle>& files, std::vector<Handle>& directories, std::set<std::wstring, OrdinalIgnoreCase>& seen, bool fixture,
+    const std::function<bool()>& keepGoing = {}) {
+    if (keepGoing && !keepGoing()) throw Failure(L"Pending cache cleanup stopped before verification.");
     auto directory = OpenOwned(FilePath(root, relative), true, fixture);
     WIN32_FIND_DATAW item{}; auto search = FindFirstFileW((FilePath(root, relative) + L"\\*").c_str(), &item);
     if (search == INVALID_HANDLE_VALUE) { if (GetLastError() == ERROR_FILE_NOT_FOUND) { directories.push_back(std::move(directory)); return; } Fail(L"Cannot inspect old cache."); }
     try {
         do {
+            if (keepGoing && !keepGoing()) throw Failure(L"Pending cache cleanup stopped during verification.");
             if (wcscmp(item.cFileName, L".") == 0 || wcscmp(item.cFileName, L"..") == 0) continue;
             if (item.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) throw Failure(L"Old cache contains an unowned link.");
             const auto name = relative.empty() ? std::wstring(item.cFileName) : relative + L"/" + item.cFileName;
@@ -56,7 +64,7 @@ void Collect(const Manifest& manifest, const std::wstring& root, const std::wstr
             if (item.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
                 const auto prefix = name + L"/";
                 if (std::count(name.begin(), name.end(), L'/') > 32 || std::none_of(manifest.files.begin(), manifest.files.end(), [&](const auto& pair) { return pair.first.rfind(prefix, 0) == 0; })) throw Failure(L"Old cache contains an unowned directory.");
-                Collect(manifest, root, name, files, directories, seen, fixture);
+                Collect(manifest, root, name, files, directories, seen, fixture, keepGoing);
             } else {
                 const auto expected = manifest.files.find(name);
                 if (expected == manifest.files.end() || !seen.insert(name).second) throw Failure(L"Old cache contains an unowned file.");
@@ -89,14 +97,18 @@ void Schedule(const std::wstring& cache, const std::vector<std::wstring>& lines,
     if (!fixture) WriteProtectedLines(path, lines);
     else { std::ofstream file(path, std::ios::binary); for (const auto& line : lines) { for (auto c : line) file.put(static_cast<char>(c)); file.put('\n'); } if (!file.good()) throw Failure(L"Cannot write cache cleanup fixture."); }
 }
-PayloadCleanupResult Run(const std::wstring& cache, const std::wstring& activeIdentity, bool fixture, unsigned maximum = 2) {
-    PayloadCleanupResult result;
+PayloadCleanupResult Run(const std::wstring& cache, const std::wstring& activeIdentity, bool fixture, unsigned maximum = 2,
+    std::set<std::wstring>* settled = nullptr, const std::function<bool()>& keepGoing = {}, PayloadCleanupResult result = {}) {
+    result.retained = 0;
     auto parents = LockParents(cache + L"\\cleanup-scope", !fixture);
     WIN32_FIND_DATAW item{}; auto search = FindFirstFileW((cache + L"\\cleanup-*.txt").c_str(), &item); if (search == INVALID_HANDLE_VALUE) return result;
-    unsigned examined = 0;
+    unsigned examined = 0, completed = 0;
     do {
+        if (keepGoing && !keepGoing()) break;
         ++result.retained;
-        if (++examined > maximum) continue;
+        if (++examined > 4096 || completed >= maximum) continue;
+        const auto receiptName = std::wstring(item.cFileName);
+        if (settled && !settled->insert(receiptName).second) continue;
         try {
             if (item.dwFileAttributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) continue;
             const auto receiptPath = cache + L"\\" + item.cFileName;
@@ -111,25 +123,49 @@ PayloadCleanupResult Run(const std::wstring& cache, const std::wstring& activeId
             if (std::wstring(item.cFileName) != L"cleanup-" + manifest.identity + L"-" + RouteKey(route) + L".txt" || manifest.identity == activeIdentity) continue;
             const auto root = cache + L"\\" + manifest.identity + L"-" + RouteKey(route);
             Handle mutex(CreateMutexW(nullptr, FALSE, (L"Local\\ProcessKeeper.Universal." + UserSid() + L"." + manifest.identity).c_str()));
-            if (!mutex.valid()) continue; const auto state = WaitForSingleObject(mutex.get(), 0); if (state != WAIT_OBJECT_0 && state != WAIT_ABANDONED) continue;
+            if (!mutex.valid()) continue; const auto state = WaitForSingleObject(mutex.get(), 0); if (state != WAIT_OBJECT_0 && state != WAIT_ABANDONED) throw CleanupBusy();
             try {
-                if (GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_FILE_NOT_FOUND) { DeleteOwned(receipt.get()); --result.retained; ReleaseMutex(mutex.get()); continue; }
-                if (HasRunningImage(root)) { ReleaseMutex(mutex.get()); continue; }
+                if (GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_FILE_NOT_FOUND) { DeleteOwned(receipt.get()); --result.retained; ++completed; ReleaseMutex(mutex.get()); continue; }
+                // A busy app/helper is probed without hashing or enumerating processes on each retry.
+                if (settled) {
+                    auto app = OpenOwned(FilePath(root, PayloadDirectory(route) + L"/ProcessKeeper.exe"), false, fixture);
+                    auto helper = OpenOwned(FilePath(root, PayloadDirectory(route) + L"/ProcessKeeper.Updater.exe"), false, fixture);
+                }
+                if (HasRunningImage(root)) throw CleanupBusy();
                 std::vector<Handle> files, directories; std::set<std::wstring, OrdinalIgnoreCase> seen;
-                Collect(manifest, root, L"", files, directories, seen, fixture);
-                if (HasRunningImage(root)) throw Failure(L"Old cache remains in use.");
+                Collect(manifest, root, L"", files, directories, seen, fixture, keepGoing);
+                if (HasRunningImage(root)) throw CleanupBusy();
                 ULONGLONG total = 0;
                 for (auto& file : files) { LARGE_INTEGER bytes{}; if (!GetFileSizeEx(file.get(), &bytes)) Fail(L"Cannot report old cache size."); total += static_cast<ULONGLONG>(bytes.QuadPart); }
                 if (result.removedFiles + files.size() > 1000000 || result.removedBytes + total > 16ull * 1024 * 1024 * 1024)
                     throw Failure(L"Cache cleanup reached its reported limit.");
                 // All paths and digests are verified and every leaf is locked before deletion begins.
+                if (keepGoing && !keepGoing()) throw Failure(L"Pending cache cleanup stopped before deletion.");
                 for (auto& file : files) { LARGE_INTEGER bytes{}; if (!GetFileSizeEx(file.get(), &bytes)) Fail(L"Cannot report old cache size."); DeleteOwned(file.get()); file.reset(); ++result.removedFiles; result.removedBytes += static_cast<ULONGLONG>(bytes.QuadPart); }
                 for (auto& directory : directories) { DeleteOwned(directory.get()); directory.reset(); }
-                DeleteOwned(receipt.get()); --result.retained; ReleaseMutex(mutex.get());
-            } catch (...) { ReleaseMutex(mutex.get()); }
-        } catch (...) { /* An unverified/busy cache is retained; it never prevents app startup. */ }
+                DeleteOwned(receipt.get()); --result.retained; ++completed; ReleaseMutex(mutex.get());
+            } catch (...) { ReleaseMutex(mutex.get()); throw; }
+        } catch (const CleanupBusy&) { if (settled) settled->erase(receiptName); }
+        catch (...) { /* An unverified cache is retained; it never prevents app startup. */ }
     } while (FindNextFileW(search, &item));
     FindClose(search); return result;
+}
+PayloadCleanupResult RetryPending(const std::wstring& cache, const std::wstring& activeIdentity, HANDLE caller,
+    const std::function<bool()>& cancelled, bool fixture, DWORD graceMilliseconds, DWORD pollMilliseconds) {
+    if (!caller || caller == INVALID_HANDLE_VALUE || !ValidSha256(activeIdentity) || !graceMilliseconds || graceMilliseconds > 20000 || !pollMilliseconds || pollMilliseconds > 500)
+        throw Failure(L"Invalid bounded pending cleanup request.");
+    const auto started = GetTickCount64();
+    auto keepGoing = [&] { return GetTickCount64() - started < graceMilliseconds && WaitForSingleObject(caller, 0) == WAIT_TIMEOUT && !cancelled(); };
+    PayloadCleanupResult result; std::set<std::wstring> settled;
+    while (keepGoing()) {
+        // Invalid/current receipts are inspected once. Sharing locks alone are retried cheaply.
+        result = Run(cache, activeIdentity, fixture, 4096, &settled, keepGoing, result);
+        if (!keepGoing()) break;
+        const auto elapsed = GetTickCount64() - started; if (elapsed >= graceMilliseconds) break;
+        const auto remaining = graceMilliseconds - static_cast<DWORD>(elapsed);
+        if (WaitForSingleObject(caller, std::min(pollMilliseconds, remaining)) != WAIT_TIMEOUT) break;
+    }
+    return result;
 }
 std::vector<std::wstring> ReadCleanupContext(HANDLE file) {
     LARGE_INTEGER size{}; if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0 || size.QuadPart > 300000) throw Failure(L"Invalid cached session.");
@@ -276,9 +312,27 @@ PayloadCleanupResult ClearPendingPayloadCache(const LaunchContext& context, cons
     WriteProtectedLines(context.directory + L"\\cache-" + request + L".txt", {L"PKCACHESTATUS1", L"completed", std::to_wstring(result.removedFiles), std::to_wstring(result.removedBytes), std::to_wstring(result.retained)});
     return result;
 }
+PayloadCleanupResult ClearPendingPayloadsAfterStartup(const LaunchContext& context, const std::wstring& request) {
+    if (!ValidContextId(request)) throw Failure(L"Invalid pending cache cleanup request.");
+    auto caller = OpenContextProcess(context); const auto root = ProtectedCacheRoot();
+    if (!OwnedPayload(root, context.payload, false)) throw Failure(L"Unknown active payload cache.");
+    const auto activeIdentity = context.payload.substr(root.size() + 1, 64);
+    const auto cancellation = context.directory + L"\\cache-" + request + L".cancel";
+    auto cancelled = [&] {
+        if (GetFileAttributesW(cancellation.c_str()) != INVALID_FILE_ATTRIBUTES) return true;
+        return GetLastError() != ERROR_FILE_NOT_FOUND && GetLastError() != ERROR_PATH_NOT_FOUND;
+    };
+    const auto result = RetryPending(root, activeIdentity, caller.get(), cancelled, false, 20000, 500);
+    WriteProtectedLines(context.directory + L"\\cache-" + request + L".txt", {L"PKCACHESTATUS1", L"completed", std::to_wstring(result.removedFiles), std::to_wstring(result.removedBytes), std::to_wstring(result.retained)});
+    return result;
+}
 #ifdef PK_FIXTURE_BUILD
 void SchedulePayloadCleanupFixture(const std::wstring& cache, const Manifest& manifest, Route route) { Schedule(FullPath(cache), Receipt(manifest, route), true); }
 void RunPendingPayloadCleanupFixture(const std::wstring& cache, const std::wstring& activeIdentity) { Run(FullPath(cache), activeIdentity, true); }
 PayloadCleanupResult ClearDownloadCacheFixture(const std::wstring& cache, const std::wstring& currentSession) { return ClearDownloadCache(FullPath(cache), currentSession, true); }
+PayloadCleanupResult RetryPendingPayloadCleanupFixture(const std::wstring& cache, const std::wstring& activeIdentity, HANDLE caller, HANDLE cancellation,
+    DWORD graceMilliseconds, DWORD pollMilliseconds) {
+    return RetryPending(FullPath(cache), activeIdentity, caller, [&] { return WaitForSingleObject(cancellation, 0) != WAIT_TIMEOUT; }, true, graceMilliseconds, pollMilliseconds);
+}
 #endif
 }

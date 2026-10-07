@@ -53,7 +53,7 @@ internal sealed class UpdatesView : UserControl
     private readonly ProgressBar _progress = new() { Visibility = Visibility.Collapsed, Minimum = 0, Maximum = 100 };
     private readonly List<string> _nodeIds = ["auto"];
     private readonly Queue<string> _sourceMessages = new();
-    private bool _closed, _loading, _readable = true;
+    private bool _closed, _loading, _launchReady, _readable = true;
     private UpdateDownloadWindow? _downloadWindow;
     private UpdateTransferController? _transfer;
     private UpdateRelease? _transferRelease;
@@ -64,6 +64,7 @@ internal sealed class UpdatesView : UserControl
     internal bool IsBusy => _operation is not null;
     internal UpdatePreferences Preferences { get; private set; } = new();
     internal Func<bool> CanPresent { get; set; } = () => true;
+    internal Func<FrameworkElement>? DialogHost { get; set; }
     internal Func<ContentDialog, Task<ContentDialogResult>> Present { get; set; } = async dialog => await dialog.ShowAsync();
     internal Action<string> Log { get; set; } = _ => { };
     internal bool ActivateProgressWindow { get; set; } = true;
@@ -111,16 +112,20 @@ internal sealed class UpdatesView : UserControl
         _check.Click += async (_, _) => await CheckAsync(false);
         _shortcut.Click += async (_, _) => await CreateShortcutAsync(false);
         _save.Click += (_, _) => Save();
+        _onStartup.Checked += (_, _) => { if (!_loading) Save(); };
+        _onStartup.Unchecked += (_, _) => { if (!_loading) Save(); };
         _cancel.Click += (_, _) => _operation?.Cancel();
         _installUpdate.Click += (_, _) => _requestInstall?.Invoke();
-        ActualThemeChanged += (_, _) => _downloadWindow?.ApplyTheme(ActualTheme);
+        ActualThemeChanged += (_, _) => RefreshTheme();
         try { Apply(_store.Load()); }
         catch (Exception exception) { Apply(new UpdatePreferences()); _readable = false; SetStatus(L.T("更新设置无法读取") + " | " + exception.Message); }
     }
 
     internal void Apply(UpdatePreferences preferences)
     {
-        Preferences = UpdatePreferencesStore.Validate(preferences);
+        var next = UpdatePreferencesStore.Validate(preferences);
+        var newlyEnabled = !Preferences.CheckOnStartup && next.CheckOnStartup;
+        Preferences = next;
         _readable = true;
         _loading = true;
         try
@@ -131,6 +136,13 @@ internal sealed class UpdatesView : UserControl
             _node.IsEnabled = Preferences.SourceMode == UpdateSourceMode.ThirdParty && !IsBusy;
         }
         finally { _loading = false; }
+        if (newlyEnabled && _launchReady && !_closed)
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                if (_closed || _closingSuspended || !Preferences.CheckOnStartup) return;
+                _startupChecked = true;
+                await CheckAsync(true);
+            });
     }
 
     private void Save()
@@ -143,12 +155,13 @@ internal sealed class UpdatesView : UserControl
             next = UpdatePreferencesStore.Validate(next); _store.Save(next); Apply(next); _readable = true;
             SetStatus(L.T("更新设置已保存")); Log(L.T("更新设置已保存"));
         }
-        catch (Exception exception) { SetStatus(exception.Message); }
+        catch (Exception exception) { Apply(Preferences); SetStatus(exception.Message); }
     }
 
     internal async Task StartOnLaunchAsync()
     {
         if (_closed || _closingSuspended || !_readable) return;
+        _launchReady = true;
         try
         {
             // Let initial list loading render; no collector work is blocked by networking.
@@ -208,7 +221,6 @@ internal sealed class UpdatesView : UserControl
             if (automatic && AnnouncedVersions.Contains(key)) return;
             while (!CanPresent()) await Task.Delay(250, token);
             token.ThrowIfCancellationRequested(); if (_closed) return;
-            AnnouncedVersions.Add(key);
             var chosen = await ChooseReleaseAssetAsync(release, token);
             if (chosen is null || _closed || token.IsCancellationRequested) return;
             await DownloadAndInstallAsync(settings, release, chosen, token);
@@ -230,10 +242,11 @@ internal sealed class UpdatesView : UserControl
         panel.Children.Add(new ScrollViewer { Content = ReleaseNotesView.Create(noteDocument, async url => await OpenReleaseLinkAsync(url)),
             MaxHeight = 240, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         var assets = new ComboBox { Header = L.T("发布文件"), HorizontalAlignment = HorizontalAlignment.Stretch };
-        foreach (var asset in release.Assets)
+        var selectableAssets = UpdatePackagePolicy.SelectableAssets(release);
+        foreach (var asset in selectableAssets)
             assets.Items.Add(new ComboBoxItem { Content = Text($"{asset.Name} | {UpdatePackageDescription.Text(asset)} | {asset.Size / 1048576d:F2} MiB", 12), Tag = asset });
         var preferred = UpdatePackagePolicy.DefaultAsset(release, runtime);
-        assets.SelectedIndex = preferred is null ? -1 : release.Assets.ToList().IndexOf(preferred);
+        assets.SelectedIndex = preferred is null ? -1 : selectableAssets.ToList().IndexOf(preferred);
         panel.Children.Add(assets);
         var reason = Text("", 12); panel.Children.Add(reason);
         var probe = new Button { Content = Text(L.T("检测节点延迟")) }; panel.Children.Add(probe);
@@ -255,8 +268,8 @@ internal sealed class UpdatesView : UserControl
             var unavailable = _backend.UnavailableReason();
             var eligible = asset?.CanAutoInstall == true && UpdatePackagePolicy.Supports(asset, runtime);
             reason.Text = unavailable ?? (asset is null ? L.T("请选择发布文件。") : asset.Restriction.Length > 0 ? asset.Restriction :
-                PreservesInstallation(asset, runtime) ? L.T("当前安装目录会继续更新，原有卸载入口与安装状态会保留。") + "\n" + L.T("如需独立的免安装副本，请另外手动下载到其他目录。") :
-                UpdatePackagePolicy.IsPackageChange(asset, runtime) ? L.T("所选文件与当前版本类型不同，更新后将切换版本类型。") : "");
+                PreservesInstallation(asset, runtime) ? L.T("当前安装目录会继续更新，原有卸载入口与安装状态会保留。") + "\n" + L.T("如需独立的免安装副本，请另外手动下载到其他目录。") : "");
+            dialog.PrimaryButtonText = asset is not null && UpdatePackagePolicy.IsPackageChange(asset, runtime) ? L.T("继续") : L.T("下载并更新");
             dialog.IsPrimaryButtonEnabled = !probingNow && unavailable is null && eligible;
             probe.IsEnabled = !probingNow && eligible;
         }
@@ -278,11 +291,16 @@ internal sealed class UpdatesView : UserControl
             finally { if (!probeToken.IsCancellationRequested) { probingNow = false; assets.IsEnabled = true; Selection(); } }
         };
         assets.SelectionChanged += (_, _) => Selection(); Selection();
-        if (await ShowCancellableDialog(dialog, token) != ContentDialogResult.Primary || token.IsCancellationRequested) return null;
+        var choice = await ShowCancellableDialog(dialog, token);
+        token.ThrowIfCancellationRequested();
+        if (_closed) return null;
+        AnnouncedVersions.Add(release.Repository + "|" + release.Tag);
+        if (choice != ContentDialogResult.Primary) return null;
         if ((assets.SelectedItem as ComboBoxItem)?.Tag is not UpdateAsset { CanAutoInstall: true } selected || !UpdatePackagePolicy.Supports(selected, runtime)) return null;
         if (UpdatePackagePolicy.IsPackageChange(selected, runtime))
         {
             var warning = new StackPanel { Spacing = 12, MaxWidth = 500 };
+            warning.Children.Add(Text(L.T("所选文件与当前版本类型不同，更新后将切换版本类型。")));
             warning.Children.Add(Text(L.T("所选更新包与当前运行的包类型不同，可能改变安装方式或兼容界面。确认后继续。")));
             if (PreservesInstallation(selected, runtime))
             {
@@ -290,6 +308,8 @@ internal sealed class UpdatesView : UserControl
                 warning.Children.Add(Text(L.T("如需独立的免安装副本，请另外手动下载到其他目录。"), 12));
             }
             warning.Children.Add(BuildAboutVersion(_currentVersion, runtime));
+            warning.Children.Add(Text(L.F($"当前版本类型：{string.Join(" | ", DistributionBadges(runtime))}"), 12));
+            warning.Children.Add(Text(L.F($"所选版本类型：{UpdatePackageDescription.Text(selected)}"), 12));
             warning.Children.Add(Text(selected.Name, 12));
             if (await ShowCancellableDialog(NewDialog(L.T("切换更新包类型？"), warning, L.T("下载并更新")), token) != ContentDialogResult.Primary || token.IsCancellationRequested) return null;
         }
@@ -378,7 +398,7 @@ internal sealed class UpdatesView : UserControl
     private void RevealDownloadWindow()
     {
         if (_closed || _transfer is null || _transferRelease is null || _transferAsset is null) return;
-        _downloadWindow ??= new UpdateDownloadWindow(_transfer, _transferRelease, _transferAsset, ActualTheme,
+        _downloadWindow ??= new UpdateDownloadWindow(_transfer, _transferRelease, _transferAsset, GetDialogHost().ActualTheme,
             () => _operation?.Cancel(), () => _requestInstall?.Invoke(), ActivateProgressWindow);
         _downloadWindow.Refresh(_transfer.Snapshot, CanRequestInstall); _downloadWindow.Reveal();
     }
@@ -410,16 +430,25 @@ internal sealed class UpdatesView : UserControl
         finally { EndOperation(); }
     }
 
-    private ContentDialog NewDialog(string title, StackPanel body, string primary) => new()
+    private FrameworkElement GetDialogHost() => DialogHost?.Invoke() ?? this;
+    internal void RefreshTheme() => _downloadWindow?.ApplyTheme(GetDialogHost().ActualTheme);
+    private ContentDialog NewDialog(string title, StackPanel body, string primary)
     {
-        XamlRoot = XamlRoot, RequestedTheme = ActualTheme, Title = title, PrimaryButtonText = primary,
-        CloseButtonText = L.T("取消"), DefaultButton = ContentDialogButton.Close,
-        Content = new ScrollViewer { Content = body, MaxHeight = Math.Max(100, Math.Min(520, XamlRoot.Size.Height - 200)),
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
-    };
+        var host = GetDialogHost();
+        var root = host.XamlRoot ?? throw new InvalidOperationException(L.T("请等待当前操作完成"));
+        return new ContentDialog
+        {
+            XamlRoot = root, RequestedTheme = host.ActualTheme, Title = title, PrimaryButtonText = primary,
+            CloseButtonText = L.T("取消"), DefaultButton = ContentDialogButton.Close,
+            Content = new ScrollViewer { Content = body, MaxHeight = Math.Max(100, Math.Min(520, root.Size.Height - 200)),
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
+        };
+    }
 
     private async Task<ContentDialogResult> ShowCancellableDialog(ContentDialog dialog, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
+        while (!CanPresent()) await Task.Delay(250, token);
         token.ThrowIfCancellationRequested();
         using var registration = token.Register(() => DispatcherQueue.TryEnqueue(() => dialog.Hide()));
         return await Present(dialog);

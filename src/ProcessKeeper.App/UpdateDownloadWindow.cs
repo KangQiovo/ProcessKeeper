@@ -1,6 +1,9 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.System;
+using Microsoft.UI.Windowing;
 using ProcessKeeper.Core;
+using System.Runtime.InteropServices;
 
 namespace ProcessKeeper.App;
 
@@ -21,9 +24,12 @@ internal sealed class UpdateDownloadWindow : Window
     private bool _closing;
     private readonly bool _activate;
     private readonly ScrollViewer _viewport;
+    private ThemeSettings? _captionThemeSettings;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue _captionDispatcher;
     internal UpdateDownloadWindow(UpdateTransferController transfer, UpdateRelease release, UpdateAsset asset, ElementTheme theme, Action cancel, Action install, bool activate = true)
     {
         _activate = activate;
+        _captionDispatcher = _body.DispatcherQueue;
         _transfer = transfer; _cancelAction = cancel; _installAction = install;
         Title = "Process Keeper | " + L.T("更新器"); _body.RequestedTheme = theme;
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "ProcessKeeperUpdater.ico"));
@@ -47,6 +53,24 @@ internal sealed class UpdateDownloadWindow : Window
         _viewport = (ScrollViewer)Microsoft.UI.Xaml.Markup.XamlReader.Load(
             "<ScrollViewer xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Background='{ThemeResource ApplicationPageBackgroundThemeBrush}' VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled'/>");
         _viewport.Content = _body; _viewport.RequestedTheme = theme; Content = _viewport;
+        try
+        {
+            if (AppWindowTitleBar.IsCustomizationSupported())
+            {
+                _captionThemeSettings = ThemeSettings.CreateForWindowId(AppWindow.Id);
+                _captionThemeSettings.Changed += CaptionThemeChanged;
+            }
+        }
+        catch (Exception error) when (IsCaptionInteropFailure(error)) { }
+        _body.ActualThemeChanged += (_, _) => UpdateCaptionTheme();
+        UpdateCaptionTheme();
+        Closed += (_, _) =>
+        {
+            _closing = true;
+            try { if (_captionThemeSettings is not null) _captionThemeSettings.Changed -= CaptionThemeChanged; }
+            catch (Exception error) when (IsCaptionInteropFailure(error)) { }
+            _captionThemeSettings = null;
+        };
         AppWindow.Resize(new Windows.Graphics.SizeInt32(620, 560));
         WindowSizePolicy.Attach(this, 480, 400);
         AppWindow.Closing += (_, args) => { if (!_closing) { args.Cancel = true; AppWindow.Hide(); } };
@@ -54,7 +78,28 @@ internal sealed class UpdateDownloadWindow : Window
         _cancel.Click += (_, _) => _cancelAction(); _install.Click += (_, _) => _installAction();
         Refresh(transfer.Snapshot);
     }
-    internal void ApplyTheme(ElementTheme theme) { _body.RequestedTheme = theme; _viewport.RequestedTheme = theme; }
+    internal void ApplyTheme(ElementTheme theme) { _body.RequestedTheme = theme; _viewport.RequestedTheme = theme; UpdateCaptionTheme(); }
+    private static bool IsCaptionInteropFailure(Exception error) => error is COMException or InvalidOperationException or NotSupportedException or ArgumentException;
+    private void CaptionThemeChanged(ThemeSettings sender, object args)
+    {
+        if (_closing) return;
+        try { _captionDispatcher.TryEnqueue(() => { if (!_closing && ReferenceEquals(sender, _captionThemeSettings)) UpdateCaptionTheme(); }); }
+        catch (Exception error) when (IsCaptionInteropFailure(error)) { }
+    }
+    private void UpdateCaptionTheme()
+    {
+        if (_closing) return;
+        try
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported()) return;
+            // Keep native high-contrast and button palettes, as the main window does.
+            var theme = TitleBarTheme.Legacy;
+            try { if (_captionThemeSettings is { HighContrast: false }) theme = _body.ActualTheme == ElementTheme.Light ? TitleBarTheme.Light : TitleBarTheme.Dark; }
+            catch (Exception error) when (IsCaptionInteropFailure(error)) { }
+            AppWindow.TitleBar.PreferredTheme = theme;
+        }
+        catch (Exception error) when (IsCaptionInteropFailure(error)) { }
+    }
     internal void Reveal() { if (!_closing) { AppWindow.Show(_activate); if (_activate) Activate(); } }
     internal void Finish() { _closing = true; Close(); }
     private UpdatePreferences SelectedPreferences() => _transfer.Preferences with

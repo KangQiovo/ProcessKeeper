@@ -9,6 +9,7 @@ public sealed partial class MainWindow
     private UpdateService? _updateService;
     private LauncherContext? _launcherContext;
     private string _launcherContextError = "";
+    private readonly CancellationTokenSource _pendingPayloadCleanupLifetime = new();
 
     private void InitializeUpdates()
     {
@@ -50,9 +51,11 @@ public sealed partial class MainWindow
         _updatesView = new UpdatesView(backend)
         {
             Present = ShowDialog,
-            CanPresent = () => !_closed && !_closingIntent && !_closingMotion && !_savingBeforeTransition && !_replacementPreparing && !_working && !HasPendingTool && !_dialogOpen && !_windowOperationRunning && _autorunsView?.IsChanging != true,
+            DialogHost = () => Root,
+            CanPresent = () => Root.XamlRoot is not null && _entranceShown && !_closed && !_closingIntent && !_closingMotion && !_savingBeforeTransition && !_replacementPreparing && !_working && !HasPendingTool && !_dialogOpen && !_windowOperationRunning && _autorunsView?.IsChanging != true && _uninstallView?.IsBusy != true,
             Log = Log
         };
+        Root.ActualThemeChanged += (_, _) => _updatesView.RefreshTheme();
         _updatesView.BusyChanged += busy => { if (!_closed) { LanguageChoice.IsEnabled = !busy; ReopenIntroductionButton.IsEnabled = !busy; } };
         UpdatesHost.Children.Add(_updatesView);
         var started = false;
@@ -60,9 +63,21 @@ public sealed partial class MainWindow
         {
             if (started || _closed) return; started = true;
             await Task.Run(() => LauncherContextReader.TryGetCurrent(out _launcherContext, out _launcherContextError));
+            if (!_closed && _launcherContext is { } context) _ = ClearPendingPayloadsAfterStartupAsync(context);
             if (!_closed) await _updatesView.StartOnLaunchAsync();
         };
-        Closed += (_, _) => { _updatesView.Close(); _updateService.Dispose(); };
+        Closed += (_, _) => { _pendingPayloadCleanupLifetime.Cancel(); _updatesView.Close(); _updateService.Dispose(); };
+    }
+
+    private async Task ClearPendingPayloadsAfterStartupAsync(LauncherContext context)
+    {
+        try
+        {
+            var result = await AppCacheCleanupService.ClearPendingPayloadsAfterStartupAsync(context, _pendingPayloadCleanupLifetime.Token);
+            if (!_closed && (!result.Success || result.RemovedFiles > 0)) Log(result.Message);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception error) { if (!_closed) Log(error.Message); }
     }
 
     private async Task InstallApplicationUpdateAsync(UpdateDownloadResult download, CancellationToken token)

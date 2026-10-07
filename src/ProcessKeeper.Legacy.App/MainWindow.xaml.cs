@@ -82,6 +82,7 @@ public partial class MainWindow : Window
         ShowSystem.IsChecked = _view.ShowSystemProcesses; HistoryAuto.IsChecked = _view.HistoryAutoScroll;
         _ready = true;
         Navigation.SelectedIndex = 0;
+        _ = ClearPendingUpdatePayloadsAfterStartupAsync();
         if (!_backend.IsAdministrator) { ShowPermission(); return; }
         var onboarding = new OnboardingStore(_directory);
         if (!onboarding.IsCompleted(out _)) ShowOnboarding(false);
