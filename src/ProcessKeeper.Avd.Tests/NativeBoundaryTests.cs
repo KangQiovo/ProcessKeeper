@@ -19,6 +19,13 @@ internal static class NativeBoundaryTests
                 suite.Check(!AvdGuiMatcher.IsGuiWindow(windows.Snapshot("main"), FakeAvdHost.AvdName, FakeAvdHost.Port), "a real hidden window is rejected");
                 windows.Show("main");
                 suite.Check(Native.IsWindowVisible(windows.Handles["main"]), "fixture main HWND is truly visible");
+                // ShowWindow completes before the shell necessarily clears its temporary DWM cloak.
+                // Wait for actual composition readiness; the GUI matcher and all negative cases stay strict.
+                suite.Check(SpinWait.SpinUntil(() =>
+                {
+                    var shown = windows.Snapshot("main");
+                    return shown.IsVisible && !shown.IsMinimized && !shown.IsCloaked;
+                }, TimeSpan.FromSeconds(2)), "fixture main HWND reaches composed visible state within bounded startup wait");
                 suite.Check(AvdGuiMatcher.IsGuiWindow(windows.Snapshot("main"), FakeAvdHost.AvdName, FakeAvdHost.Port), "real visible matching Win32 main window accepted");
                 foreach (string kind in new[] { "tool", "child", "zero" })
                 {
