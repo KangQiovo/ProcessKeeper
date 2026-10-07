@@ -18,7 +18,7 @@ public sealed class AppRow : INotifyPropertyChanged
     public bool IsExpanded { get; set; }
     public string Chevron => IsExpanded ? "\uE70D" : "\uE76C";
     public Visibility ChevronVisibility => IsProcess ? Visibility.Collapsed : Visibility.Visible;
-    public Visibility WhitelistVisibility => IsProcess || IsPresentationGroup ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility WhitelistVisibility => IsProcess || IsPresentationGroup || !CanWhitelist ? Visibility.Collapsed : Visibility.Visible;
     public Thickness RowMargin => new((IsProcess ? 25 : 0) + PresentationDepth * 24, 0, 0, 0);
     public double IconSize => IsProcess ? 22 : 32;
     public string IconPath { get; set; } = "";
@@ -33,6 +33,7 @@ public sealed class AppRow : INotifyPropertyChanged
     public string ProtectionText { get; set; } = "";
     public bool IsWhitelisted { get; set; }
     public bool CanWhitelist { get; set; } = true;
+    public string SelectionText => IsWhitelisted ? L.T("已保留") : L.T("选择");
     public event PropertyChangedEventHandler? PropertyChanged;
     public void NotifyIcon() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
     public void Notify()
@@ -45,7 +46,7 @@ public sealed class AppRow : INotifyPropertyChanged
             (nameof(RowMargin), RowMargin), (nameof(IconSize), IconSize), (nameof(IconPath), IconPath),
             (nameof(Tooltip), Tooltip), (nameof(RecoveryText), RecoveryText), (nameof(RecoveryTooltip), RecoveryTooltip),
             (nameof(RecoveryVisibility), RecoveryVisibility), (nameof(Name), Name), (nameof(Summary), Summary),
-            (nameof(ProtectionText), ProtectionText), (nameof(IsWhitelisted), IsWhitelisted), (nameof(CanWhitelist), CanWhitelist));
+            (nameof(ProtectionText), ProtectionText), (nameof(IsWhitelisted), IsWhitelisted), (nameof(CanWhitelist), CanWhitelist), (nameof(SelectionText), SelectionText));
     }
     // A OneWay checkbox can change visually even if a rejected action leaves the model unchanged.
     public void NotifyWhitelistState() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsWhitelisted)));

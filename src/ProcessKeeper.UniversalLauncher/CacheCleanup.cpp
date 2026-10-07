@@ -118,6 +118,10 @@ PayloadCleanupResult Run(const std::wstring& cache, const std::wstring& activeId
                 std::vector<Handle> files, directories; std::set<std::wstring, OrdinalIgnoreCase> seen;
                 Collect(manifest, root, L"", files, directories, seen, fixture);
                 if (HasRunningImage(root)) throw Failure(L"Old cache remains in use.");
+                ULONGLONG total = 0;
+                for (auto& file : files) { LARGE_INTEGER bytes{}; if (!GetFileSizeEx(file.get(), &bytes)) Fail(L"Cannot report old cache size."); total += static_cast<ULONGLONG>(bytes.QuadPart); }
+                if (result.removedFiles + files.size() > 1000000 || result.removedBytes + total > 16ull * 1024 * 1024 * 1024)
+                    throw Failure(L"Cache cleanup reached its reported limit.");
                 // All paths and digests are verified and every leaf is locked before deletion begins.
                 for (auto& file : files) { LARGE_INTEGER bytes{}; if (!GetFileSizeEx(file.get(), &bytes)) Fail(L"Cannot report old cache size."); DeleteOwned(file.get()); file.reset(); ++result.removedFiles; result.removedBytes += static_cast<ULONGLONG>(bytes.QuadPart); }
                 for (auto& directory : directories) { DeleteOwned(directory.get()); directory.reset(); }
@@ -126,6 +130,118 @@ PayloadCleanupResult Run(const std::wstring& cache, const std::wstring& activeId
         } catch (...) { /* An unverified/busy cache is retained; it never prevents app startup. */ }
     } while (FindNextFileW(search, &item));
     FindClose(search); return result;
+}
+std::vector<std::wstring> ReadCleanupContext(HANDLE file) {
+    LARGE_INTEGER size{}; if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0 || size.QuadPart > 300000) throw Failure(L"Invalid cached session.");
+    std::string bytes(static_cast<size_t>(size.QuadPart), '\0'); DWORD read = 0;
+    if (!ReadFile(file, &bytes[0], static_cast<DWORD>(bytes.size()), &read, nullptr) || read != bytes.size()) Fail(L"Cannot read cached session.");
+    std::vector<std::wstring> fields; std::wstring line;
+    for (unsigned char c : bytes) { if (c == '\n') { fields.push_back(line); line.clear(); } else if (c == 0 || c > 127 || c == '\r') throw Failure(L"Invalid cached session."); else line += c; }
+    if (!line.empty()) fields.push_back(line); return fields;
+}
+bool OwnedPayload(const std::wstring& cache, const std::wstring& path, bool helper) {
+    const auto prefix = cache + L"\\"; if (path.rfind(prefix, 0) != 0) return false;
+    const auto relative = path.substr(prefix.size()); if (relative.size() < 65 || !ValidSha256(relative.substr(0, 64))) return false;
+    const auto name = helper ? L"ProcessKeeper.Updater.exe" : L"ProcessKeeper.exe";
+    const auto tail = relative.substr(64);
+    return tail == L"-modern\\modern\\" + std::wstring(name) || tail == L"-legacy\\legacy\\" + std::wstring(name) || tail == L"-arm64\\modern\\arm64\\" + std::wstring(name);
+}
+bool HasRunningHelper(const std::wstring& image) {
+    Handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)); if (!snapshot.valid()) return true;
+    PROCESSENTRY32W entry{sizeof(entry)}; if (!Process32FirstW(snapshot.get(), &entry)) return true;
+    do {
+        if (entry.th32ProcessID == GetCurrentProcessId()) continue;
+        Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ProcessID)); if (!process.valid()) continue;
+        wchar_t path[32768]{}; DWORD size = 32768;
+        if (QueryFullProcessImageNameW(process.get(), 0, path, &size) && CompareStringOrdinal(path, -1, image.c_str(), -1, TRUE) == CSTR_EQUAL) return true;
+    } while (Process32NextW(snapshot.get(), &entry));
+    return false;
+}
+bool LiveSession(const std::vector<std::wstring>& fields) {
+    if (fields[9].empty() || fields[9].size() > 10 || fields[9].find_first_not_of(L"0123456789") != std::wstring::npos ||
+        fields[10].empty() || fields[10].size() > 20 || fields[10].find_first_not_of(L"0123456789") != std::wstring::npos) throw Failure(L"Invalid cached process identity.");
+    const auto pid = std::stoull(fields[9]); if (pid <= 4 || pid > MAXDWORD) throw Failure(L"Invalid cached process identity.");
+    Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, static_cast<DWORD>(pid)));
+    if (!process.valid()) return GetLastError() != ERROR_INVALID_PARAMETER;
+    if (WaitForSingleObject(process.get(), 0) == WAIT_OBJECT_0 || ProcessCreated(process.get()) != std::stoull(fields[10])) return false;
+    return CompareStringOrdinal(ProcessImage(process.get()).c_str(), -1, FullPath(DecodeContextText(fields[5])).c_str(), -1, TRUE) == CSTR_EQUAL;
+}
+bool StageLeaf(const std::wstring& name, bool download) {
+    if (download) {
+        const auto dot = name.find_last_of(L'.'); if (dot == std::wstring::npos) return false;
+        const auto stem = name.substr(0, dot), extension = name.substr(dot);
+        return stem.size() == 46 && stem.rfind(L"ProcessKeeper-", 0) == 0 && ValidContextId(stem.substr(14)) &&
+            (extension == L".exe" || extension == L".part" || extension == L".restart");
+    }
+    const auto pending = name.find(L".pending-");
+    if (pending != std::wstring::npos) return ValidContextId(name.substr(pending + 9)) && StageLeaf(name.substr(0, pending), false);
+    return name == L"update.exe" || name == L"job.txt" || name == L"ready.txt" || name == L"status.txt" ||
+        name == L"commit.pending" || name == L"commit.txt" || name == L"accepted.txt" || name == L"execute.pending" || name == L"execute.txt";
+}
+void ClearFlatStage(const std::wstring& path, bool download, bool fixture, PayloadCleanupResult& result) {
+    if (HasRunningImage(path)) throw Failure(L"Cached update image is still running.");
+    auto directory = OpenOwned(path, true, fixture);
+    WIN32_FIND_DATAW item{}; auto search = FindFirstFileW((path + L"\\*").c_str(), &item);
+    std::vector<Handle> files; ULONGLONG bytes = 0;
+    if (search == INVALID_HANDLE_VALUE && GetLastError() != ERROR_FILE_NOT_FOUND) Fail(L"Cannot inspect cached update files.");
+    if (search != INVALID_HANDLE_VALUE) {
+        try {
+            do {
+                if (wcscmp(item.cFileName, L".") == 0 || wcscmp(item.cFileName, L"..") == 0) continue;
+                if (files.size() >= 64 || item.dwFileAttributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY) || !StageLeaf(item.cFileName, download))
+                    throw Failure(L"Cached update contains unrecognized contents.");
+                auto file = OpenOwned(path + L"\\" + item.cFileName, false, fixture); LARGE_INTEGER length{};
+                if (!GetFileSizeEx(file.get(), &length) || length.QuadPart < 0 || length.QuadPart > 536870912) throw Failure(L"Cached update file exceeds its known bound.");
+                bytes += static_cast<ULONGLONG>(length.QuadPart); files.push_back(std::move(file));
+            } while (FindNextFileW(search, &item));
+            if (GetLastError() != ERROR_NO_MORE_FILES) Fail(L"Cannot completely inspect cached update files.");
+        } catch (...) { FindClose(search); throw; }
+        FindClose(search);
+    }
+    if (result.removedFiles + files.size() > 1000000 || result.removedBytes + bytes > 16ull * 1024 * 1024 * 1024) throw Failure(L"Cache cleanup reached its reported limit.");
+    if (HasRunningImage(path)) throw Failure(L"Cached update image is still running.");
+    // The entire flat stage is checked and locked before any leaf is removed.
+    for (auto& file : files) {
+        LARGE_INTEGER length{}; if (!GetFileSizeEx(file.get(), &length)) Fail(L"Cannot report cached update size.");
+        DeleteOwned(file.get()); file.reset(); ++result.removedFiles; result.removedBytes += static_cast<ULONGLONG>(length.QuadPart);
+    }
+    DeleteOwned(directory.get());
+}
+PayloadCleanupResult ClearDownloadCache(const std::wstring& cache, const std::wstring& currentSession, bool fixture, PayloadCleanupResult result = {}) {
+    auto parents = LockParents(cache + L"\\sessions\\cleanup-scope", !fixture);
+    WIN32_FIND_DATAW session{}; auto sessions = FindFirstFileW((cache + L"\\sessions\\*").c_str(), &session);
+    if (sessions == INVALID_HANDLE_VALUE) return result;
+    unsigned inspected = 0;
+    do {
+        if (wcscmp(session.cFileName, L".") == 0 || wcscmp(session.cFileName, L"..") == 0) continue;
+        try {
+            if (++inspected > 4096 || !(session.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || session.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT || !ValidContextId(session.cFileName))
+                throw Failure(L"Unrecognized cached session.");
+            const auto directory = cache + L"\\sessions\\" + session.cFileName;
+            auto sessionLock = OpenOwned(directory, true, fixture), context = OpenOwned(directory + L"\\context.txt", false, fixture);
+            const auto fields = ReadCleanupContext(context.get());
+            if ((fields.size() < 12 || fields.size() > 14) || fields[0] != L"PKLC1" || fields[1] != session.cFileName ||
+                DecodeContextText(fields[11]) != UserSid() || !ValidSha256(fields[3]) || !ValidSha256(fields[6]) || !ValidSha256(fields[8])) throw Failure(L"Invalid cached session ownership.");
+            const auto payload = FullPath(DecodeContextText(fields[5])), helper = FullPath(DecodeContextText(fields[7]));
+            if (!fixture && (!OwnedPayload(cache, payload, false) || !OwnedPayload(cache, helper, true))) throw Failure(L"Cached session is outside owned payloads.");
+            if (HasRunningHelper(helper) || (std::wstring(session.cFileName) != currentSession && LiveSession(fields))) throw Failure(L"Cached update session is still in use.");
+            WIN32_FIND_DATAW item{}; auto stages = FindFirstFileW((directory + L"\\*").c_str(), &item);
+            if (stages == INVALID_HANDLE_VALUE) continue;
+            unsigned examined = 0;
+            do {
+                const auto name = std::wstring(item.cFileName);
+                const bool download = name.rfind(L"download-", 0) == 0, job = name.rfind(L"job-", 0) == 0;
+                if (!download && !job) continue;
+                try {
+                    if (++examined > 4096 || !(item.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || item.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT ||
+                        !ValidContextId(name.substr(download ? 9 : 4))) throw Failure(L"Unrecognized update cache directory.");
+                    ClearFlatStage(directory + L"\\" + name, download, fixture, result);
+                } catch (...) { ++result.retained; }
+            } while (FindNextFileW(stages, &item));
+            FindClose(stages);
+        } catch (...) { ++result.retained; }
+    } while (FindNextFileW(sessions, &session));
+    FindClose(sessions); return result;
 }
 }
 PayloadCleanupPlan CapturePayloadCleanup(const LaunchContext& context) {
@@ -155,12 +271,14 @@ PayloadCleanupResult ClearPendingPayloadCache(const LaunchContext& context, cons
     if (context.payload.rfind(root + L"\\", 0) != 0) throw Failure(L"Unknown active payload cache.");
     const auto relative = context.payload.substr(root.size() + 1); const auto separator = relative.find(L'\\');
     if (separator == std::wstring::npos || separator < 65 || !ValidSha256(relative.substr(0, 64))) throw Failure(L"Unknown active payload cache.");
-    const auto result = Run(root, relative.substr(0, 64), false, 8);
+    auto result = Run(root, relative.substr(0, 64), false, 4096);
+    result = ClearDownloadCache(root, context.id, false, result);
     WriteProtectedLines(context.directory + L"\\cache-" + request + L".txt", {L"PKCACHESTATUS1", L"completed", std::to_wstring(result.removedFiles), std::to_wstring(result.removedBytes), std::to_wstring(result.retained)});
     return result;
 }
 #ifdef PK_FIXTURE_BUILD
 void SchedulePayloadCleanupFixture(const std::wstring& cache, const Manifest& manifest, Route route) { Schedule(FullPath(cache), Receipt(manifest, route), true); }
 void RunPendingPayloadCleanupFixture(const std::wstring& cache, const std::wstring& activeIdentity) { Run(FullPath(cache), activeIdentity, true); }
+PayloadCleanupResult ClearDownloadCacheFixture(const std::wstring& cache, const std::wstring& currentSession) { return ClearDownloadCache(FullPath(cache), currentSession, true); }
 #endif
 }

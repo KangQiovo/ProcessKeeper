@@ -1,7 +1,7 @@
 #pragma once
 #include "Payload.h"
 namespace pk {
-constexpr const wchar_t* ProductVersion = L"1.7.0";
+constexpr const wchar_t* ProductVersion = L"1.7.1";
 bool ValidContextId(const std::wstring& value);
 bool ValidSha256(const std::wstring& value);
 bool IsNewerUpdateVersion(const std::wstring& candidate, const std::wstring& current);
@@ -23,8 +23,11 @@ LaunchContext ReadLaunchContext(const std::wstring& id);
 LaunchContext ParseLaunchContext(const std::vector<std::wstring>& fields, const std::wstring& id, const std::wstring& directory);
 Handle OpenContextProcess(const LaunchContext& context);
 void ValidateUpdateBundle(const std::wstring& path, const std::wstring& expectedVersion, const PackageTarget* expectedTarget = nullptr);
+void ValidateUpdateInstaller(const std::wstring& path, const std::wstring& expectedVersion, PackageTarget expectedTarget);
+PackageTarget ValidateInstalledBundle(const std::wstring& path);
 #ifdef PK_FIXTURE_BUILD
 void ValidateUpdateBundleFixture(const std::wstring& path, const std::wstring& expectedVersion);
+void ValidateUpdateInstallerFixture(const std::wstring& path, const std::wstring& expectedVersion, PackageTarget expectedTarget);
 Handle OpenContextProcessFixture(const LaunchContext& context);
 #endif
 }

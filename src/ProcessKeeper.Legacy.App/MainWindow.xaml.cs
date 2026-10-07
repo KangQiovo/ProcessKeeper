@@ -40,7 +40,7 @@ public partial class MainWindow : Window
     {
         _backend = backend;
         _directory = configurationDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProcessKeeper");
-        InitializeComponent(); FitWorkingArea(_backend.WorkingArea()); List.ItemsSource = _rows;
+        InitializeComponent(); FitWorkingArea(_backend.WorkingArea()); List.ItemsSource = _rows; LegacyRowInteraction.Attach(List);
         BeginAuthorAvatar(authorAvatarTask);
         RiskConfirmationMode.Changed += RiskModeChanged;
         List.ContextMenu = new ContextMenu();
@@ -101,7 +101,7 @@ public partial class MainWindow : Window
         foreach (var i in order) Navigation.Items.Add(new ListBoxItem { Tag = i, Content = _collapsed ? symbols[i] : symbols[i] + "   " + L.T(names[i]), ToolTip = L.T(names[i]), Padding = new Thickness(8, 12, 4, 12) });
         Navigation.SelectedIndex = Array.IndexOf(order, _page);
         TestingText.Text = L.T("测试版本不代表最终品质"); TestingText.Visibility = !_collapsed && BuildInfo.IsPreviewBuild ? Visibility.Visible : Visibility.Collapsed;
-        LocalText.Text = L.T("本地运行 | 不上传数据"); LocalText.Margin = new Thickness(0, BuildInfo.IsPreviewBuild ? 7 : 0, 0, 0);
+        LocalText.Text = L.F($"版本：{CurrentAppVersion}"); LocalText.Margin = new Thickness(0, BuildInfo.IsPreviewBuild ? 7 : 0, 0, 0);
         CompatibilityText.Text = L.T("当前使用兼容运行环境，部分效果和功能可能与新系统不同。");
         CompatibilityNotice.Visibility = CompatibilityNoticeState.ShouldShow(true) ? Visibility.Visible : Visibility.Collapsed;
         Live.Content = L.T("实时更新"); ShowSystem.Content = L.T("显示系统进程"); AutorunMode.OffContent = L.T("简单"); AutorunMode.OnContent = L.T("复杂"); HistoryAuto.Content = L.T("自动滚动");
@@ -125,7 +125,7 @@ public partial class MainWindow : Window
         RefreshSelectionButton();
         SelectAllButton.Visibility = _page < 4 ? Visibility.Visible : Visibility.Collapsed;
         SelectAllButton.ToolTip = L.T("选择当前列表中显示的应用和子项目，不更改白名单。");
-        string[] subtitles = { "看清每个程序，让需要的留下。", "软件未运行，也可以提前加入白名单。", "把需要的程序留下，规则由你决定。", "管理登录、计划任务和服务的启动行为。", "每次更改和关闭，即时记录。", "语言、外观与备份。", "查看常规与隐藏卸载项，确认后移除不需要的软件。", "按需优化内存、下载文件与查看实时性能。" };
+        string[] subtitles = { "单击展开或折叠 | 勾选保留或选择", "单击展开或折叠 | 勾选保留或选择 | 推断标签可能有误，请谨慎甄别", "单击展开或折叠 | 勾选启用或选择 | 规则自动保存", "单击展开或折叠 | 勾选启用或选择", "每次更改和关闭，即时记录。", "语言、外观与备份。", "单击展开或折叠 | 勾选选择卸载项目", "按需优化内存、下载文件与查看实时性能。" };
         TitleText.Text = L.T(titles[_page]); SubtitleText.Text = L.T(subtitles[_page]);
         Toolbar.Visibility = Filters.Visibility = _page < 4 ? Visibility.Visible : Visibility.Collapsed;
         List.Visibility = _page < 4 ? Visibility.Visible : Visibility.Collapsed;

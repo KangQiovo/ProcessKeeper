@@ -64,8 +64,34 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
     const auto nextVersion = currentVersion.substr(0, patchOffset) +
         std::to_wstring(std::stoul(currentVersion.substr(patchOffset)) + 1) + L"-beta.1";
     check(IsNewerUpdateVersion(nextVersion, currentVersion), L"update fixture targets a version newer than the current build");
-    const std::vector<std::wstring> job = {L"PKUP2", session, jobId, std::wstring(64, L'a'), nextVersion, L"KangQiovo/ProcessKeeper"};
+    const std::vector<std::wstring> job = {L"PKUP3", session, jobId, std::wstring(64, L'a'), nextVersion, L"KangQiovo/ProcessKeeper", L"Universal", L"Portable"};
     check(!rejects([&] { ValidateUpdateJob(job, context, jobId); }), L"update job binds the fixed official repository across managed and native boundaries");
+    auto installerJob = job; installerJob[6] = L"Windows10x64"; installerJob[7] = L"Installer";
+    check(!rejects([&] { ValidateUpdateJob(installerJob, context, jobId); }), L"explicit installer selection has a distinct validated transaction kind");
+    auto changedJob = installerJob; changedJob[6] = L"Universal";
+    check(rejects([&] { ValidateUpdateJob(changedJob, context, jobId); }), L"unsupported Universal installer cannot authorize a transaction");
+    changedJob = installerJob; changedJob[7] = L"SilentInstall";
+    check(rejects([&] { ValidateUpdateJob(changedJob, context, jobId); }), L"arbitrary distribution actions cannot authorize setup execution");
+    auto distributionContext = fields; distributionContext.push_back(L"Windows10x64"); distributionContext.push_back(L"Installer");
+    check(!rejects([&] { ParseLaunchContext(distributionContext, session, context.directory); }), L"trusted distribution metadata retains valid current session identity");
+    distributionContext.back() = L"InstalledFromName";
+    check(rejects([&] { ParseLaunchContext(distributionContext, session, context.directory); }), L"unrecognized distribution hints cannot impersonate trusted installed context");
+    check(rejects([&] { ValidateUpdateInstaller(self.path(), ProductVersion, PackageTarget::Windows10x64); }), L"ordinary portable or fixture EXE cannot masquerade as the official installer");
+    wchar_t installerFixtures[32768]{};
+    const auto installerFixtureLength = GetEnvironmentVariableW(L"PROCESSKEEPER_INSTALLER_FIXTURE_DIRECTORY", installerFixtures, 32768);
+    if (installerFixtureLength && installerFixtureLength < 32768) {
+        const auto fixtureRoot = FullPath(installerFixtures);
+        for (const auto target : {PackageTarget::Windows7Compat, PackageTarget::Windows10x64, PackageTarget::Windows10arm64}) {
+            const auto name = target == PackageTarget::Windows7Compat ? L"Windows7Compat" : target == PackageTarget::Windows10x64 ? L"Windows10x64" : L"Windows10arm64";
+            const auto file = fixtureRoot + L"\\" + name + L"-inert-171.exe";
+            check(!rejects([&] { ValidateUpdateInstallerFixture(file, ProductVersion, target); }), L"real NSIS installer metadata validates as data without executing setup");
+            check(rejects([&] { ValidateUpdateInstallerFixture(file, L"1.7.2", target); }), L"installer VERSIONINFO cannot authorize another release version");
+            const auto otherTarget = target == PackageTarget::Windows10x64 ? PackageTarget::Windows7Compat : PackageTarget::Windows10x64;
+            check(rejects([&] { ValidateUpdateInstallerFixture(file, ProductVersion, otherTarget); }) &&
+                rejects([&] { ValidateUpdateInstallerFixture(file, ProductVersion, PackageTarget::Universal); }), L"installer resource identity rejects another target or invented Universal setup");
+            check(rejects([&] { ValidateUpdateBundleFixture(file, ProductVersion); }), L"installer bytes cannot enter the portable replacement transaction");
+        }
+    }
     auto wrongJob = job; wrongJob[5] = L"fork/ProcessKeeper";
     check(rejects([&] { ValidateUpdateJob(wrongJob, context, jobId); }), L"native job from another repository is refused");
     wrongJob = job; wrongJob[0] = L"PKUP1"; wrongJob.pop_back();
@@ -93,6 +119,42 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         throw Failure(L"Update fixtures require an explicitly routed shorter TEMP within Win7 path limits.");
     check(CreateDirectoryW(base.c_str(), nullptr) != FALSE, L"update fixture creates only a new isolated workspace directory");
     auto path = [&](const wchar_t* name) { return base + L"\\" + name; };
+    const auto packageFixture = path(L"owned-bundle.exe");
+    check(CopyFileW(self.path().c_str(), packageFixture.c_str(), TRUE) != FALSE, L"installed migration fixture copies only the inert test image");
+    {
+        std::fstream image(packageFixture, std::ios::in | std::ios::out | std::ios::binary); IMAGE_DOS_HEADER dos{};
+        image.read(reinterpret_cast<char*>(&dos), sizeof(dos));
+        image.seekp(dos.e_lfanew + offsetof(IMAGE_NT_HEADERS32, OptionalHeader) + offsetof(IMAGE_OPTIONAL_HEADER32, Subsystem));
+        const WORD subsystem = IMAGE_SUBSYSTEM_WINDOWS_GUI; image.write(reinterpret_cast<const char*>(&subsystem), sizeof(subsystem));
+        if (!image.good()) throw Failure(L"Cannot set an inert data-only package fixture subsystem.");
+    }
+    const std::string archive = "inert archive fixture: never extracted or executed";
+    auto archiveHash = Hex(HashBytes(archive.data(), archive.size()));
+    std::string archiveHex; for (auto c : archiveHash) archiveHex += static_cast<char>(c);
+    auto manifestText = std::string("PK14\t") + archiveHex + "\n";
+    for (const auto* entry : {"modern/ProcessKeeper.exe", "modern/ProcessKeeper.Updater.exe", "legacy/ProcessKeeper.exe", "legacy/ProcessKeeper.Updater.exe", "modern/arm64/ProcessKeeper.exe", "modern/arm64/ProcessKeeper.Updater.exe"})
+        manifestText += std::string(entry) + "\t1\t" + std::string(64, 'a') + "\n";
+    auto packageResources = BeginUpdateResourceW(packageFixture.c_str(), FALSE);
+    if (!packageResources || !UpdateResourceW(packageResources, RT_RCDATA, MAKEINTRESOURCEW(101), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), &manifestText[0], static_cast<DWORD>(manifestText.size())) ||
+        !UpdateResourceW(packageResources, RT_RCDATA, MAKEINTRESOURCEW(102), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), const_cast<char*>(archive.data()), static_cast<DWORD>(archive.size())) || !EndUpdateResourceW(packageResources, FALSE))
+        throw Failure(L"Cannot embed an inert installed-package identity fixture.");
+    check(CheckInstalledPackage(packageFixture) == 0, L"wizard migration validates the actual existing bundle identity without requiring stale ownership target or version");
+    check(GetInstalledPackageTarget(packageFixture) == 0, L"wizard confirmation uses the actual verified Universal payload target");
+    check(CheckInstalledPackage(self.path()) == 2, L"a same-product inert EXE without a bundle cannot authorize installed migration");
+    const auto tamperedPackage = path(L"tampered-bundle.exe");
+    if (!CopyFileW(packageFixture.c_str(), tamperedPackage.c_str(), TRUE)) throw Failure(L"Cannot create an independent tampered bundle fixture.");
+    auto tamperedResources = BeginUpdateResourceW(tamperedPackage.c_str(), FALSE); char badArchive[] = "changed archive";
+    if (!tamperedResources || !UpdateResourceW(tamperedResources, RT_RCDATA, MAKEINTRESOURCEW(102), MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), badArchive, sizeof(badArchive)) || !EndUpdateResourceW(tamperedResources, FALSE))
+        throw Failure(L"Cannot change only an inert bundle archive resource.");
+    check(CheckInstalledPackage(tamperedPackage) == 2 && GetInstalledPackageTarget(tamperedPackage) == -1, L"changed archive bytes cannot authorize wizard flavor migration");
+    wchar_t guardFixture[32768]{}; const auto guardFixtureLength = GetEnvironmentVariableW(L"PROCESSKEEPER_SETUP_GUARD_FIXTURE", guardFixture, 32768);
+    if (guardFixtureLength && guardFixtureLength < 32768) {
+        auto guardModule = LoadLibraryW(FullPath(guardFixture).c_str()); if (!guardModule) Fail(L"Cannot load the explicitly supplied locally compiled read-only guard fixture.");
+        const auto targetQuery = reinterpret_cast<int(__stdcall*)(const wchar_t*)>(GetProcAddress(guardModule, "GetInstalledPackageTargetW"));
+        check(targetQuery && targetQuery(packageFixture.c_str()) == 0 && targetQuery(tamperedPackage.c_str()) == -1,
+            L"actual compiled setup guard export binds the wizard to verified bundle identity and rejects changed archive bytes");
+        FreeLibrary(guardModule);
+    }
     for (int run = 0; run < 5; ++run) {
         const auto directory = base + L"\\handoff-" + std::to_wstring(run); CreateDirectoryW(directory.c_str(), nullptr);
         auto command = L"\"" + self.path() + L"\" --fixture-marker \"" + directory + L"\" " + std::to_wstring(GetCurrentProcessId());
@@ -171,6 +233,17 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         {L"ProcessKeeperPackageTarget", L"Windows10x64"}, {L"InstallLocation", installDirectory}, {L"UninstallString", L"\"" + installDirectory + L"\\Uninstall.exe\""},
         {L"DisplayIcon", L"\"" + installed + L"\",0"}, {L"URLInfoAbout", L"https://github.com/KangQiovo/ProcessKeeper"}};
     check(MatchesInstallation(registration, installed, PackageTarget::Windows10x64), L"installed version refresh requires exact fixed registry and sibling marker ownership");
+    check(MatchesInstalledOwner(registration, installed, PackageTarget::Windows7Compat) && MatchesInstalledOwner(registration, installed, PackageTarget::Universal),
+        L"authorized portable flavor migration retains validated installed ownership before metadata refresh");
+    check(MatchesInstallation(registration, installed, PackageTarget::Windows10x64) &&
+        !MatchesInstalledOwner(registration, installed, static_cast<PackageTarget>(99)), L"retained old uninstaller contract stays valid while unknown actual flavors are refused");
+    auto pendingMigration = registration; pendingMigration.text[L"ProcessKeeperPackageTarget"] = L"Windows7Compat";
+    check(!MatchesInstalledOwner(pendingMigration, installed, PackageTarget::Windows7Compat), L"partial registry-only migration cannot impersonate matching marker ownership");
+    pendingMigration.markerTarget = L"Windows7Compat";
+    check(MatchesInstalledOwner(pendingMigration, installed, PackageTarget::Windows7Compat) && MatchesInstallation(pendingMigration, installed, PackageTarget::Windows7Compat),
+        L"completed setup migration keeps the replacement uninstaller and new ownership target consistent");
+    pendingMigration = registration; pendingMigration.text[L"ProcessKeeperPayloadTarget"] = L"unknown-filename-hint";
+    check(MatchesInstalledOwner(pendingMigration, installed, PackageTarget::Universal), L"payload metadata hints never override verified source manifest and installed ownership");
     auto mismatched = registration; mismatched.text[L"UninstallString"] += L" /other";
     check(!MatchesInstallation(mismatched, installed, PackageTarget::Windows10x64), L"another uninstaller command cannot authorize installed metadata changes");
     mismatched = registration; mismatched.markerTarget = L"Windows10arm64";
@@ -226,22 +299,36 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         return process;
     };
     auto guarded = spawnGuard(guardApp); Handle guardedProcess(guarded.hProcess), guardedThread(guarded.hThread);
-    auto guardFields = fields; guardFields[1] = guardId; guardFields[2] = EncodeContextText(installed); guardFields[4] = L"1.6.0";
+    auto guardFields = fields; guardFields.push_back(L"Windows10x64"); guardFields[1] = guardId; guardFields[2] = EncodeContextText(installed); guardFields[4] = ProductVersion;
     guardFields[5] = EncodeContextText(guardApp); guardFields[7] = EncodeContextText(guardHelper); guardFields[9] = std::to_wstring(guarded.dwProcessId); guardFields[10] = std::to_wstring(ProcessCreated(guardedProcess.get()));
     auto saveGuard = [&] { std::ofstream output(guardDirectory + L"\\context.txt", std::ios::binary); for (const auto& line : guardFields) { for (auto character : line) output.put(static_cast<char>(character)); output.put('\n'); } };
     saveGuard();
+    HMODULE oldGuardModule = nullptr; int(__stdcall* oldGuardCheck)(const wchar_t*, const wchar_t*) = nullptr;
+    wchar_t oldGuardFixture[32768]{}; const auto oldGuardFixtureLength = GetEnvironmentVariableW(L"PROCESSKEEPER_OLD_GUARD_FIXTURE", oldGuardFixture, 32768);
+    if (oldGuardFixtureLength && oldGuardFixtureLength < 32768) {
+        oldGuardModule = LoadLibraryW(FullPath(oldGuardFixture).c_str()); if (!oldGuardModule) Fail(L"Cannot load the explicitly supplied original guard fixture.");
+        oldGuardCheck = reinterpret_cast<int(__stdcall*)(const wchar_t*, const wchar_t*)>(GetProcAddress(oldGuardModule, "CheckInstalledSessionFixtureW"));
+        check(oldGuardCheck && oldGuardCheck(guardCache.c_str(), installed.c_str()) == 1,
+            L"actual 1.7.0 guard recognizes a current 1.7.1 canonical thirteen-field running session");
+        guardFields.push_back(L"Installer"); saveGuard();
+        check(oldGuardCheck(guardCache.c_str(), installed.c_str()) == 2, L"original guard control proves a fourteen-field context would break retained uninstaller compatibility");
+        guardFields.pop_back(); saveGuard();
+    }
     check(CheckInstalledSessionFixture(guardCache, installed) == 1, L"setup guard detects actual cached managed session even after the original wrapper would exit");
     check(CheckInstalledSessionFixture(guardCache, path(L"different.exe")) == 0, L"independently verified sessions for another original do not block installation");
     const auto actualCreated = guardFields[10]; guardFields[10] = std::to_wstring(ProcessCreated(guardedProcess.get()) + 1); saveGuard();
     check(CheckInstalledSessionFixture(guardCache, installed) == 0, L"a stale reused-PID creation identity cannot impersonate an active installed UI");
     guardFields[10] = actualCreated; saveGuard();
     check(WaitForSingleObject(guardedProcess.get(), 5000) == WAIT_OBJECT_0, L"read-only setup guard never terminates its owned inert UI fixture");
+    if (oldGuardCheck) check(oldGuardCheck(guardCache.c_str(), installed.c_str()) == 0, L"retained original uninstaller guard permits the current canonical session after its actual UI exits");
     guarded = spawnGuard(guardHelper); Handle helperProcess(guarded.hProcess), helperThread(guarded.hThread);
     const auto helperJob = guardDirectory + L"\\job-" + NewContextId(); CreateDirectoryW(helperJob.c_str(), nullptr);
     { std::ofstream output(helperJob + L"\\ready.txt", std::ios::binary); output << "PKREADY1\n" << guarded.dwProcessId << "\n"; }
     check(CheckInstalledSessionFixture(guardCache, installed) == 1, L"setup guard detects the exact ready-marked background helper after its UI exits");
+    if (oldGuardCheck) check(oldGuardCheck(guardCache.c_str(), installed.c_str()) == 1, L"retained original guard still protects the live current ready-marked update helper");
     check(WaitForSingleObject(helperProcess.get(), 5000) == WAIT_OBJECT_0 && CheckInstalledSessionFixture(guardCache, installed) == 0,
         L"completed helper records remain safe to inspect and do not permanently block upgrades");
+    if (oldGuardCheck) check(oldGuardCheck(guardCache.c_str(), installed.c_str()) == 0, L"retained original guard permits uninstall after the current helper exits naturally");
     guardFields[2] = L"malformed"; saveGuard();
     check(CheckInstalledSessionFixture(guardCache, installed) == 2, L"malformed protected original identity fails closed rather than authorizing uninstall");
     check(CheckPortableFile(guardApp, DigestFile(guardApp)) == 0 && CheckPortableFile(guardApp, std::wstring(64, L'0')) == 2,
@@ -249,5 +336,6 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
     const auto hardLink = path(L"guard-hardlink.exe");
     check(CreateHardLinkW(hardLink.c_str(), guardApp.c_str(), nullptr) && CheckPortableFile(guardApp, DigestFile(guardApp)) == 2,
         L"setup refuses a staged executable with another hard-link alias");
+    if (oldGuardModule) FreeLibrary(oldGuardModule);
     CoUninitialize();
 }

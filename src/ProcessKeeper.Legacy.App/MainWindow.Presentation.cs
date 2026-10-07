@@ -63,7 +63,7 @@ public partial class MainWindow
         finally { _displayCapturing = false; }
     }
     private static List<LegacyRow> ApplyPresentation(List<LegacyRow> rows, int page, string query,
-        ApplicationDisplayCatalog display, bool group, bool hide, HashSet<string> collapsed)
+        ApplicationDisplayCatalog display, bool group, bool hide, HashSet<string> collapsed, HashSet<string>? searchCollapsed = null)
     {
         if (page == 2) return rows;
         var segments = new List<List<LegacyRow>>();
@@ -87,7 +87,8 @@ public partial class MainWindow
         var result = new List<LegacyRow>();
         foreach (var platform in shown.Where(s => s.Platform is not null).GroupBy(s => s.Platform!.Id))
         {
-            var first = platform.First().Platform!; var open = query.Length > 0 || !collapsed.Contains(page + ":" + first.Id);
+            var first = platform.First().Platform!; var open = query.Length > 0 ?
+                searchCollapsed?.Contains(PlatformRowPrefix + first.Id) != true : !collapsed.Contains(page + ":" + first.Id);
             result.Add(new LegacyRow { Id = PlatformRowPrefix + first.Id, Name = first.Name, Summary = L.T("游戏平台"),
                 Path = display.Clients.FirstOrDefault(c => c.Platform.Id == first.Id)?.ExecutablePath ?? "",
                 Detail = L.T("仅整理显示；关闭与白名单操作仍只针对原应用。"),

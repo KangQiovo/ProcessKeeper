@@ -41,7 +41,8 @@ public sealed partial class ApplicationDisplayCatalog
     public bool IsMicrosoft(ProcessRecord process) => IsMicrosoftPath(process.Path);
     public bool IsMicrosoft(ApplicationGroup app) => AllMicrosoft(app.Processes.Select(process => process.Path));
     public bool IsMicrosoft(InstalledApplication app) => AllMicrosoft(app.Executables.Select(executable => executable.Path));
-    public bool IsMicrosoft(AutorunEntry entry) => entry.Ownership == AutorunOwnership.Windows || SimpleAutorun(entry) && IsMicrosoftPath(entry.TargetPath);
+    public bool IsMicrosoft(AutorunEntry entry) => entry.Ownership == AutorunOwnership.Windows ||
+        (SimpleAutorun(entry) || entry.SourceKind == AutorunSourceKind.PackagedStartup) && IsMicrosoftPath(entry.TargetPath);
     private bool AllMicrosoft(IEnumerable<string> source)
     { var paths = source.Take(20001).ToArray(); return paths.Length is > 0 and <= 20000 && paths.All(IsMicrosoftPath); }
     private bool IsMicrosoftPath(string path)

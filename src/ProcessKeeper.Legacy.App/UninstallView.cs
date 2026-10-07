@@ -52,7 +52,7 @@ public sealed partial class UninstallView : UserControl, IDisposable
     public UninstallView(Func<string, string, Task<bool>> confirm, Action<string> log, Func<bool>? canAct = null, IUninstallBackend? backend = null, string? dataDirectory = null, Action<string>? openLocation = null, Action<string>? copyText = null)
     {
         _backend = backend ?? new UninstallWindowsBackend(); _confirm = confirm; _log = log; _canAct = canAct ?? (() => true);
-        _list.ItemsSource = _rows;
+        _list.ItemsSource = _rows; LegacyRowInteraction.Attach(_list); _list.PreviewMouseLeftButtonUp += UninstallRowClicked;
         _openLocation = openLocation ?? OpenApplicationLocation; _copyText = copyText ?? Clipboard.SetText;
         _catalog = dataDirectory is null ? null : new CatalogUpdater(dataDirectory);
         var root = new Grid();
@@ -251,7 +251,11 @@ public sealed partial class UninstallView : UserControl, IDisposable
     {
         var selected = SelectedEntries().Where(item => !IsWhitelistProtected(item) && item.CanUninstall).ToArray();
         if (selected.Length > 1 && mode == UninstallMode.Normal) { await UninstallSelectedAsync(selected); return; }
-        var entry = selected.Length == 1 ? selected[0] : null; if (_closed || IsBusy || !_canAct() || entry is null) return;
+        var entry = selected.Length == 1 ? selected[0] : null; if (entry is not null) await UninstallEntryAsync(entry, mode);
+    }
+    private async Task UninstallEntryAsync(UninstallEntry entry, UninstallMode mode)
+    {
+        if (_closed || IsBusy || !_canAct() || !entry.CanUninstall || IsWhitelistProtected(entry)) return;
         _confirming = true; _operation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token); SetBusy();
         try
         {

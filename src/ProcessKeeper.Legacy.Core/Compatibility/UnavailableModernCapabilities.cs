@@ -4,6 +4,8 @@ internal sealed record InstalledPackageSeed(string Name, string Publisher, strin
     string InstallLocation, IReadOnlyList<string> ExecutablePaths, string Warning);
 internal static class InstalledPackageCatalog
 {
+    internal static bool IsMicrosoftExecutable(string path, CancellationToken token)
+    { token.ThrowIfCancellationRequested(); return false; }
     internal static IReadOnlyList<InstalledPackageSeed> Read(ICollection<string> warnings, CancellationToken token = default, Func<bool>? budgetAvailable = null)
     { token.ThrowIfCancellationRequested(); warnings.Add(L.T("此兼容版本仅扫描传统桌面软件，不读取打包应用。")); return []; }
 }

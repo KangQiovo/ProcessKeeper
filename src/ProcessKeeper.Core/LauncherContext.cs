@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Principal;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace ProcessKeeper.Core;
@@ -12,6 +13,7 @@ public sealed class LauncherContext
     public string OriginalSha256 { get; }
     public string OriginalVersion { get; }
     public UpdatePackageTarget PackageTarget { get; }
+    public UpdateDistributionKind DistributionKind { get; }
     internal string Id { get; }
     internal string DirectoryPath { get; }
     internal string HelperPath { get; }
@@ -27,6 +29,11 @@ public sealed class LauncherContext
             "Windows10x64" => UpdatePackageTarget.Windows10x64, "Windows10arm64" => UpdatePackageTarget.Windows10arm64,
             _ => throw new InvalidDataException("Unknown trusted package flavor.")
         };
+        DistributionKind = fields.Length < 14 ? UpdateDistributionKind.Unknown : fields[13] switch
+        {
+            "Portable" => UpdateDistributionKind.Portable, "Installer" => UpdateDistributionKind.Installer,
+            "Unknown" => UpdateDistributionKind.Unknown, _ => throw new InvalidDataException(L.T("无法识别已验证的分发类型。"))
+        };
     }
     internal static string Decode(string text)
     {
@@ -41,6 +48,14 @@ public sealed class LauncherContext
 
 public static class LauncherContextReader
 {
+    internal static string DecodeDistributionRecord(string[] fields, string id, string originalHash)
+    {
+        if (fields.Length != 4 || fields[0] != "PKDIST1" || fields[1] != id || !UpdateTrustedFiles.ValidId(id) ||
+            !UpdateTrustedFiles.ValidHash(originalHash) || !fields[2].Equals(originalHash, StringComparison.OrdinalIgnoreCase) ||
+            fields[3] is not "Portable" and not "Installer" and not "Unknown")
+            throw new InvalidDataException(L.T("无法识别已验证的分发类型。"));
+        return fields[3];
+    }
     public static bool TryGetCurrent(out LauncherContext? context, out string error)
     {
         context = null;
@@ -49,14 +64,14 @@ public static class LauncherContextReader
             var id = Environment.GetEnvironmentVariable("PROCESSKEEPER_LAUNCH_CONTEXT") ?? "";
             if (!UpdateTrustedFiles.ValidId(id)) throw new InvalidDataException(L.T("请从原始单文件 EXE 启动 Process Keeper 后使用此功能。"));
             var directory = Path.Combine(UpdateTrustedFiles.CacheRoot, "sessions", id);
-            using var file = UpdateTrustedFiles.OpenRead(Path.Combine(directory, "context.txt"));
+            using var file = UpdateTrustedFiles.OpenRead(Path.Combine(directory, "context.txt"), requireSingleLink: true);
             if (file.Length > 300000) throw new InvalidDataException("Invalid launcher context size.");
             string[] fields;
             using (var reader = new StreamReader(file, new UTF8Encoding(false, true), false, 4096, true))
                 fields = reader.ReadToEnd().Replace("\r", "").TrimEnd('\n').Split('\n');
             using var process = Process.GetCurrentProcess();
             using var identity = WindowsIdentity.GetCurrent();
-            if ((fields.Length != 12 && fields.Length != 13) || fields[0] != "PKLC1" || fields[1] != id ||
+            if ((fields.Length != 12 && fields.Length != 13 && fields.Length != 14) || fields[0] != "PKLC1" || fields[1] != id ||
                 fields[9] != process.Id.ToString(CultureInfo.InvariantCulture) ||
                 fields[10] != process.StartTime.ToUniversalTime().ToFileTimeUtc().ToString(CultureInfo.InvariantCulture) ||
                 LauncherContext.Decode(fields[11]) != identity.User?.Value)
@@ -66,6 +81,16 @@ public static class LauncherContextReader
                 throw new InvalidDataException(L.T("可信启动信息不属于当前运行的应用。"));
             using var image = UpdateTrustedFiles.OpenRead(ownPath);
             UpdateTrustedFiles.RequireHash(image, fields[6]);
+            if (fields.Length == 13 && File.Exists(Path.Combine(directory, "distribution.txt")))
+            {
+                using var distribution = UpdateTrustedFiles.OpenRead(Path.Combine(directory, "distribution.txt"), requireSingleLink: true);
+                if (distribution.Length <= 0 || distribution.Length > 512 ||
+                    !Equals(file.GetAccessControl().GetOwner(typeof(SecurityIdentifier)), distribution.GetAccessControl().GetOwner(typeof(SecurityIdentifier))))
+                    throw new InvalidDataException(L.T("无法识别已验证的分发类型。"));
+                using var distributionReader = new StreamReader(distribution, new UTF8Encoding(false, true), false, 512, true);
+                var record = distributionReader.ReadToEnd().Replace("\r", "").TrimEnd('\n').Split('\n');
+                fields = fields.Concat(new[] { DecodeDistributionRecord(record, id, fields[3]) }).ToArray();
+            }
             var result = new LauncherContext(fields, directory);
             if (!UpdateTrustedFiles.ValidHash(result.OriginalSha256) || !UpdateVersion.TryParse(result.OriginalVersion, out _) ||
                 !UpdateTrustedFiles.SamePath(result.HelperPath, Path.Combine(Path.GetDirectoryName(ownPath)!, "ProcessKeeper.Updater.exe")))
@@ -78,7 +103,7 @@ public static class LauncherContextReader
     }
     internal static void RequireCurrent(LauncherContext context)
     {
-        if (!TryGetCurrent(out var live, out var error) || live!.Id != context.Id || live.OriginalSha256 != context.OriginalSha256 || live.PackageTarget != context.PackageTarget ||
+        if (!TryGetCurrent(out var live, out var error) || live!.Id != context.Id || live.OriginalSha256 != context.OriginalSha256 || live.PackageTarget != context.PackageTarget || live.DistributionKind != context.DistributionKind ||
             !UpdateTrustedFiles.SamePath(live.OriginalPath, context.OriginalPath)) throw new IOException(error.Length > 0 ? error : "Launcher context changed.");
     }
 }

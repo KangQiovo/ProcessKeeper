@@ -36,7 +36,7 @@ internal sealed class UpdateDownloadWindow : Window
         _source.SetResourceReference(ForegroundProperty, "InkBrush"); _source.SetResourceReference(BackgroundProperty, "PanelBrush"); body.Children.Add(_source);
         body.Children.Add(new TextBlock { Text = L.T("暂停后可切换更新源；返回应用后下载仍会继续。"), TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 0, 0, 12) });
         var actions = new WrapPanel { Margin = new Thickness(0, 0, 0, 12) };
-        _pause.Content = L.T("暂停下载"); _install.Content = L.T("更新并重新启动"); _cancel.Content = L.T("取消下载");
+        _pause.Content = L.T("暂停下载"); _install.Content = L.T(asset.DistributionKind == UpdateDistributionKind.Installer ? "退出并启动安装程序" : "更新并重新启动"); _cancel.Content = L.T("取消下载");
         foreach (var button in new[] { _pause, _install, _cancel }) { button.Style = (Style)owner.Resources[typeof(Button)]; actions.Children.Add(button); }
         body.Children.Add(actions);
         var back = new Button { Content = L.T("返回应用"), Style = (Style)owner.Resources[typeof(Button)], HorizontalAlignment = HorizontalAlignment.Left }; back.Click += (_, _) => Hide(); body.Children.Add(back);

@@ -28,6 +28,7 @@ internal static class Program
             Check(!UninstallPolicy.Same(entry, entry with { ExecutableIdentity = "changed" }), "file changes refused");
             RegistryMapping();
             UninstallApplicationIdentityVerification.Run(Check);
+            await UninstallEmptyDirectoryVerification.Run(Check);
             DisplayCases();
             UninstallGroupingVerification.Run(Check);
             Recommendations();
@@ -172,16 +173,21 @@ internal static class Program
         var titles = new[] { L.T("第 1 / 3 步 | 核对卸载清单"), L.T("第 2 / 3 步 | 风险与免责声明"), L.T("第 3 / 3 步 | 最终确认卸载") };
         for (int cancelAt = 1; cancelAt <= 3; cancelAt++)
         {
-            var backend = new BatchBackend(first, second); int confirmations = 0, executing = 0;
+            var backend = new BatchBackend(first, second); int confirmations = 0, executing = 0; bool cleanupDisclosed = true;
             var result = await new UninstallBatch(backend).RunAsync(Snapshot(), (title, text) =>
             {
                 Check(title == titles[confirmations], "mandatory three-confirmation order"); confirmations++;
                 if (confirmations == 1) Check(text.Contains(first.Name) && text.Contains(second.Name) && text.Contains(excluded.Name) && !text.Contains("Auradio"), "complete target and excluded names; normal software excluded");
                 if (confirmations == 2) Check(text.Contains("not a virus verdict") && text.Contains("Ignore risks") && text.Contains("restart"), "disclaimer and risk-mode-independent confirmations");
-                if (confirmations == 3) Check(backend.Reviews == 2 && text.Contains(new string('A', 64)) && text.Contains(first.Registration), "all targets and hashes reviewed before final confirmation");
+                if (confirmations >= 2) cleanupDisclosed &= text.Contains(L.T("卸载完成并核实注册项已移除后，只会清理已确认归属且为空的安装目录；其他文件和上级目录会保留。"));
+                if (confirmations == 3)
+                {
+                    Check(backend.Reviews == 2 && text.Contains(new string('A', 64)) && text.Contains(first.Registration), "all targets and hashes reviewed before final confirmation");
+                }
                 return Task.FromResult(confirmations != cancelAt);
             }, () => true, () => executing++);
             Check(confirmations == cancelAt && backend.Launches.Count == 0 && executing == 0 && result.Items.All(i => i.State == UninstallBatchState.NotStarted), "cancel step " + cancelAt + " never starts anything");
+            Check(cleanupDisclosed, "batch risk and final confirmation disclose safe empty-leaf cleanup");
         }
         var mutable = Snapshot().Entries.ToList(); var completeBackend = new BatchBackend(first, second); int count = 0;
         var complete = await new UninstallBatch(completeBackend).RunAsync(new() { Entries = mutable }, (_, _) =>
@@ -242,9 +248,10 @@ internal static class Program
         var second = first with { Id = "selected-two", Locator = new("HKCU", 64, "SelectedTwo") };
         async Task<UninstallBatchResult> Run(BatchBackend backend, Func<string, string, Task<bool>> confirm, Func<UninstallEntry, bool> allowed) =>
             await (Task<UninstallBatchResult>)method!.Invoke(new UninstallBatch(backend), new object[] { new UninstallSnapshot { Entries = new[] { first, second } }, confirm, (Func<bool>)(() => true), (Action)(() => { }), CancellationToken.None, allowed })!;
-        var backend = new BatchBackend(first, second); int dialogs = 0;
-        var completed = await Run(backend, (_, _) => { dialogs++; return Task.FromResult(true); }, _ => true);
+        var backend = new BatchBackend(first, second); int dialogs = 0; bool cleanupDisclosed = true;
+        var completed = await Run(backend, (_, text) => { dialogs++; if (dialogs >= 2) cleanupDisclosed &= text.Contains(L.T("卸载完成并核实注册项已移除后，只会清理已确认归属且为空的安装目录；其他文件和上级目录会保留。")); return Task.FromResult(true); }, _ => true);
         Check(dialogs == 3 && backend.Launches.SequenceEqual(new[] { first.Id, second.Id }) && completed.Items.All(item => item.State == UninstallBatchState.Completed), "two selected nonrecommended applications use three confirmations and registered ordinary uninstallers");
+        Check(cleanupDisclosed, "selected batch risk and final confirmation disclose safe empty-leaf cleanup");
         bool allowedNow = true; var changed = new BatchBackend(first, second); int changedDialogs = 0;
         var stopped = await Run(changed, (_, _) => { if (++changedDialogs == 3) allowedNow = false; return Task.FromResult(true); }, _ => allowedNow);
         Check(changed.Launches.Count == 0 && stopped.Items.All(item => item.State == UninstallBatchState.NotStarted), "whitelist protection enabled during final confirmation prevents all selected launches");

@@ -27,7 +27,6 @@ public sealed partial class UninstallView
         var container = ItemsControl.ContainerFromElement(_list, args.OriginalSource as DependencyObject) as ListBoxItem;
         var row = container?.DataContext as Row ?? (args.CursorLeft < 0 ? _list.SelectedItem as Row : null);
         if (row is null) { args.Handled = true; return; }
-        if (!_list.SelectedItems.Contains(row)) _list.SelectedItems.Add(row);
         if (row.IsGroup) { args.Handled = true; return; }
         _list.ContextMenu = BuildRowMenu(row);
     }
@@ -69,7 +68,7 @@ public sealed partial class UninstallView
     {
         if (_closed || IsBusy || !_canAct() || row.IsGroup || !_list.Items.Contains(row)) return;
         if (IsWhitelistProtected(row.Entry)) return;
-        _list.SelectedItems.Clear(); _list.SelectedItems.Add(row); await UninstallAsync(mode);
+        await UninstallEntryAsync(row.Entry, mode);
     }
     private void InvokeMenuAction(Action action) { if (_closed) return; try { action(); } catch (Exception ex) { _status.Text = ex.Message; } }
     private static void OpenApplicationLocation(string path)

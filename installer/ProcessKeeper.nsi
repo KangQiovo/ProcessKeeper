@@ -64,6 +64,10 @@ VIAddVersionKey "CompanyName" "KangQi"
 VIAddVersionKey "FileDescription" "Process Keeper Installer | ${PACKAGE_TARGET} | ${BUILD_CHANNEL}"
 VIAddVersionKey "FileVersion" "${APP_VERSION}"
 VIAddVersionKey "ProductVersion" "${APP_VERSION}"
+VIAddVersionKey "ProcessKeeperDistribution" "Installer"
+VIAddVersionKey "ProcessKeeperPackageTarget" "${PACKAGE_TARGET}"
+VIAddVersionKey "ProcessKeeperRepository" "${REPOSITORY}"
+VIAddVersionKey "ProcessKeeperInstallerContract" "1"
 VIAddVersionKey "LegalCopyright" "Copyright KangQi | MIT"
 !define MUI_ICON "${PRODUCT_ICON}"
 !define MUI_UNICON "${PRODUCT_ICON}"
@@ -111,12 +115,20 @@ LangString UninstallFailed ${LANG_TRADCHINESE} "部分所屬檔案或登錄未�
 LangString UninstallRollback ${LANG_ENGLISH} "Uninstallation failed and restoration was attempted. Any unrestored originals remain in the backup folder shown in the details. Keep that folder until you verify the installation."
 LangString UninstallRollback ${LANG_SIMPCHINESE} "卸载失败，已尝试恢复。未恢复的原文件将保留在详情显示的备份目录，请核实安装状态后再处理该目录。"
 LangString UninstallRollback ${LANG_TRADCHINESE} "解除安裝失敗，已嘗試復原。未復原的原檔案將保留於詳細資訊顯示的備份目錄，請核實安裝狀態後再處理該目錄。"
+LangString ConfirmMigration ${LANG_ENGLISH} "The installed package is $ActualTarget. This setup will change it to ${PACKAGE_TARGET} and replace the application, uninstaller and ownership records together. Cancelling keeps the current copy available. Continue?"
+LangString ConfirmMigration ${LANG_SIMPCHINESE} "当前已安装的包为 $ActualTarget。此向导将切换为 ${PACKAGE_TARGET}，并一起更换程序、卸载器和归属登记。取消后当前副本仍可使用。是否继续？"
+LangString ConfirmMigration ${LANG_TRADCHINESE} "目前已安裝的套件為 $ActualTarget。此精靈將切換為 ${PACKAGE_TARGET}，並一起更換程式、解除安裝器和歸屬登錄。取消後目前副本仍可使用。是否繼續？"
 
 Var RegisteredDirectory
 Var ShortcutPath
 Var ShortcutOwned
 Var SetupStage
 Var PreviousVersion
+Var PreviousTarget
+Var PreviousPayloadTarget
+Var PreviousPayloadTargetPresent
+Var ActualTarget
+Var MigrationAccepted
 Var MovedApp
 Var MovedUninstaller
 Var MovedMarker
@@ -178,7 +190,15 @@ Function ${Prefix}VerifyOwnership
   ReadRegStr $0 HKLM "${PRODUCT_KEY}" "URLInfoAbout"
   StrCmp $0 "https://github.com/${REPOSITORY}" 0 mismatch
   ReadRegStr $0 HKLM "${PRODUCT_KEY}" "ProcessKeeperPackageTarget"
+!if "${Prefix}" == ""
+  StrCmp $0 "Windows7Compat" ownerTargetKnown
+  StrCmp $0 "Windows10x64" ownerTargetKnown
+  StrCmp $0 "Windows10arm64" ownerTargetKnown mismatch
+ownerTargetKnown:
+  StrCpy $PreviousTarget $0
+!else
   StrCmp $0 "${PACKAGE_TARGET}" 0 mismatch
+!endif
   ReadRegDWORD $0 HKLM "${PRODUCT_KEY}" "ProcessKeeperInstallerContract"
   StrCmp $0 1 0 mismatch
   ReadRegStr $0 HKLM "${PRODUCT_KEY}" "UninstallString"
@@ -186,10 +206,36 @@ Function ${Prefix}VerifyOwnership
   ReadINIStr $0 "$INSTDIR\install.ini" "Installation" "Repository"
   StrCmp $0 "${REPOSITORY}" 0 mismatch
   ReadINIStr $0 "$INSTDIR\install.ini" "Installation" "PackageTarget"
+!if "${Prefix}" == ""
+  StrCmp $0 $PreviousTarget 0 mismatch
+!else
   StrCmp $0 "${PACKAGE_TARGET}" 0 mismatch
+!endif
   ReadINIStr $0 "$INSTDIR\install.ini" "Installation" "Contract"
   StrCmp $0 1 0 mismatch
   IfFileExists "$INSTDIR\Uninstall.exe" 0 mismatch
+!if "${Prefix}" == ""
+  ; Validate the locked original image itself, independently of historical uninstall
+  ; ownership metadata retained by an authorized portable package switch.
+  StrCpy $0 -1
+  System::Call '$PLUGINSDIR\ProcessKeeper.SetupGuard.dll::GetInstalledPackageTargetW(w "$INSTDIR\ProcessKeeper.exe")i.r0'
+  StrCmp $0 0 actualUniversal
+  StrCmp $0 1 actualCompat
+  StrCmp $0 2 actualIntel
+  StrCmp $0 3 actualArm mismatch
+actualUniversal:
+  StrCpy $ActualTarget "Universal"
+  Goto identityVerified
+actualCompat:
+  StrCpy $ActualTarget "Windows7Compat"
+  Goto identityVerified
+actualIntel:
+  StrCpy $ActualTarget "Windows10x64"
+  Goto identityVerified
+actualArm:
+  StrCpy $ActualTarget "Windows10arm64"
+identityVerified:
+!endif
   Return
 mismatch:
   MessageBox MB_OK|MB_ICONSTOP "$(OwnershipChanged)"
@@ -373,8 +419,20 @@ unsafe:
   Abort
 FunctionEnd
 
+Function ConfirmPackageMigration
+  ${If} $RegisteredDirectory != ""
+  ${AndIf} $ActualTarget != "${PACKAGE_TARGET}"
+  ${AndIf} $MigrationAccepted != "${PACKAGE_TARGET}"
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "$(ConfirmMigration)" IDYES migrationConfirmed
+    Abort
+migrationConfirmed:
+    StrCpy $MigrationAccepted "${PACKAGE_TARGET}"
+  ${EndIf}
+FunctionEnd
+
 Section "Process Keeper" SEC_APP
   Call VerifyDirectory
+  Call ConfirmPackageMigration
   Call RequireStopped
   StrCpy $MovedApp 0
   StrCpy $MovedUninstaller 0
@@ -388,6 +446,12 @@ Section "Process Keeper" SEC_APP
   CreateDirectory "$INSTDIR"
   IfErrors rollback 0
   ReadRegStr $PreviousVersion HKLM "${PRODUCT_KEY}" "DisplayVersion"
+  StrCpy $PreviousPayloadTargetPresent 0
+  ClearErrors
+  ReadRegStr $PreviousPayloadTarget HKLM "${PRODUCT_KEY}" "ProcessKeeperPayloadTarget"
+  ${IfNot} ${Errors}
+    StrCpy $PreviousPayloadTargetPresent 1
+  ${EndIf}
   System::Call 'kernel32::GetCurrentProcessId()i.r0'
   System::Call 'kernel32::GetTickCount()i.r1'
   StrCpy $SetupStage "$INSTDIR\.ProcessKeeper.setup-$0-$1"
@@ -468,6 +532,9 @@ Section "Process Keeper" SEC_APP
     !insertmacro CheckedWrite WriteRegDWORD NoModify 1
     !insertmacro CheckedWrite WriteRegDWORD NoRepair 1
   ${EndIf}
+  StrCpy $RegistrationChanged 1
+  !insertmacro CheckedWrite WriteRegStr ProcessKeeperPackageTarget "${PACKAGE_TARGET}"
+  !insertmacro CheckedWrite WriteRegStr ProcessKeeperPayloadTarget "${PACKAGE_TARGET}"
   !insertmacro CheckedWrite WriteRegStr DisplayVersion "${APP_VERSION}"
   StrCpy $RegistrationChanged 1
   ; Original backups are deleted only after all exact files/registry commit succeeded.
@@ -528,6 +595,12 @@ rollback:
         DeleteRegKey HKLM "${PRODUCT_KEY}"
       ${EndIf}
     ${Else}
+      WriteRegStr HKLM "${PRODUCT_KEY}" "ProcessKeeperPackageTarget" "$PreviousTarget"
+      ${If} $PreviousPayloadTargetPresent = 1
+        WriteRegStr HKLM "${PRODUCT_KEY}" "ProcessKeeperPayloadTarget" "$PreviousPayloadTarget"
+      ${Else}
+        DeleteRegValue HKLM "${PRODUCT_KEY}" "ProcessKeeperPayloadTarget"
+      ${EndIf}
       WriteRegStr HKLM "${PRODUCT_KEY}" "DisplayVersion" "$PreviousVersion"
     ${EndIf}
   ${EndIf}

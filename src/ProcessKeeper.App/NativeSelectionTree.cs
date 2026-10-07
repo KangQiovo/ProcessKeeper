@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace ProcessKeeper.App;
 
@@ -39,6 +40,19 @@ internal sealed class NativeSelectionTree
 
     internal static NativeSelectionTree? For(ListView list) => Trees.TryGetValue(list, out var tree) ? tree : null;
 
+    // Call only after an explicit Keep/Enable click has successfully applied its requested state.
+    // Binding updates, refresh, and programmatic Checked events never reach this path.
+    internal static void SetFromAction(CheckBox checkbox, bool selected)
+    {
+        ListViewItem? container = null;
+        for (var parent = VisualTreeHelper.GetParent(checkbox); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+        {
+            if (parent is ListViewItem item) container = item;
+            if (parent is not ListView list || container?.Content is not { } row || For(list) is not { } tree) continue;
+            tree.Capture(); tree.ChangeFamily(tree._key(row), selected); tree.Apply(); return;
+        }
+    }
+
     internal void Register(CheckBox checkbox, ListViewItem container)
     {
         _boxes[checkbox] = container;
@@ -53,6 +67,23 @@ internal sealed class NativeSelectionTree
     internal void Unregister(CheckBox checkbox) => _boxes.Remove(checkbox);
     internal bool IsSelected(string key) { Capture(); return _selected.Contains(key); }
 
+    internal void SelectRows(IEnumerable<object> rows, bool selected)
+    {
+        Capture();
+        var keys = rows.Select(_key).ToHashSet(StringComparer.Ordinal);
+        foreach (var key in keys)
+        {
+            var parent = _nodes.GetValueOrDefault(key)?.ParentKey;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            while (parent is not null && seen.Add(parent) && !keys.Contains(parent)) parent = _nodes.GetValueOrDefault(parent)?.ParentKey;
+            if (parent is null) ChangeFamily(key, selected);
+        }
+        Apply();
+    }
+
+    internal void ClearSelection()
+    { _selected.Clear(); _selectedFamilies.Clear(); Apply(); }
+
     internal void CheckboxChanged(CheckBox checkbox)
     {
         if (_applying || _updatingBoxes || !_boxes.TryGetValue(checkbox, out var container) || container.Content is null || !_list.Items.Contains(container.Content)) return;
@@ -64,19 +95,8 @@ internal sealed class NativeSelectionTree
     private void SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (_applying) return;
-        Capture();
-        foreach (var row in args.RemovedItems)
-        {
-            // A collapsed or moved native item can leave SelectedItems without being deselected by the user.
-            if (!_list.Items.Contains(row)) continue;
-            var key = _key(row); _selected.Remove(key); RemoveFamilyPolicies(key);
-            if (_nodes.TryGetValue(key, out var node) && node.HasSelector && _children.ContainsKey(key)) ChangeFamily(key, false);
-        }
-        foreach (var row in args.AddedItems)
-        {
-            var key = _key(row); _selected.Add(key);
-            if (_nodes.TryGetValue(key, out var node) && node.HasSelector && _children.ContainsKey(key)) ChangeFamily(key, true);
-        }
+        // Native keyboard, focus, item recycling, and context gestures are not selection
+        // commands. Only explicit checkboxes and bulk commands change the logical tree.
         QueueRefresh();
     }
 

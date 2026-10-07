@@ -23,8 +23,9 @@ public sealed partial class AutorunsView
     {
         var rows = _rows.Where(Selectable).ToArray();
         var clear = rows.Length > 0 && rows.All(EntriesList.SelectedItems.Contains);
-        EntriesList.SelectedItems.Clear();
-        if (!clear) foreach (var row in rows) EntriesList.SelectedItems.Add(row);
+        var tree = NativeSelectionTree.For(EntriesList);
+        tree?.ClearSelection();
+        if (!clear) tree?.SelectRows(rows, true);
         UpdateSelectionToggle();
     }
 

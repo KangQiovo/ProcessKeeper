@@ -23,6 +23,7 @@ public sealed class LegacyUpdateBackend
     public Action<UpdateDownloadSession>? DiscardSession { get; set; } = session =>
     { using var service = new UpdateService(); service.DiscardDownloadSession(session); };
     public Func<bool> HasTrustedLauncher { get; set; } = () => LauncherContextReader.TryGetCurrent(out _, out _);
+    public Func<UpdateRuntimeIdentity> RuntimeIdentity { get; set; } = UpdatePackagePolicy.Current;
     public Func<string> CreateStage { get; set; } = () => UpdateInstaller.CreateDownloadStage(CurrentContext());
     public Action<string> CleanupStage { get; set; } = stage => UpdateInstaller.DiscardDownloadStage(CurrentContext(), stage);
     public Func<UpdateDownloadResult, CancellationToken, Task<LegacyUpdateTransaction>> Prepare { get; set; } = (download, token) => Task.Run(() =>

@@ -36,7 +36,7 @@ internal sealed class UpdateDownloadWindow : Window
         _body.Children.Add(_source);
         _body.Children.Add(new TextBlock { Text = L.T("暂停后可切换更新源；返回应用后下载仍会继续。"), TextWrapping = TextWrapping.Wrap, FontSize = 12 });
         var actions = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Stretch };
-        _pause.Content = L.T("暂停下载"); _install.Content = L.T("更新并重新启动"); _cancel.Content = L.T("取消下载");
+        _pause.Content = L.T("暂停下载"); _install.Content = L.T(asset.DistributionKind == UpdateDistributionKind.Installer ? "退出并启动安装程序" : "更新并重新启动"); _cancel.Content = L.T("取消下载");
         actions.Children.Add(_pause); actions.Children.Add(_install); actions.Children.Add(_cancel);
         foreach (var button in new[] { _pause, _install, _cancel }) button.Margin = new Thickness(0, 0, 8, 4);
         actions.SizeChanged += (_, _) => NativeCommandLayout.Reflow(actions);

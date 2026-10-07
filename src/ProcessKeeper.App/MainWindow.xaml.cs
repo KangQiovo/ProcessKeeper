@@ -274,17 +274,13 @@ public sealed partial class MainWindow : Window
     }
 
 
-    private void AppItemClicked(object sender, ItemClickEventArgs e)
-    {
-        if (_working || e.ClickedItem is not AppRow row || row.IsPresentationGroup) return;
-        _selectedKey = row.Key; _selectedRowKey = row.RowKey; _selectedProcessId = row.ProcessId;
-        UpdateDetail(true);
-        if (row.ProcessId is { } id && _snapshot.Processes.FirstOrDefault(p => p.Id == id) is { } process) ShowProcess(process);
-        RefreshSelectionButtons();
-    }
     private void AppChevronClicked(object sender, RoutedEventArgs args)
     {
-        if (_working || (sender as FrameworkElement)?.DataContext is not AppRow row) return;
+        if ((sender as FrameworkElement)?.DataContext is AppRow row) ToggleAppRow(row);
+    }
+    private void ToggleAppRow(AppRow row)
+    {
+        if (_working || row.IsProcess) return;
         if (row.IsPresentationGroup)
         { if (!_collapsedRunningPlatforms.Add(row.PresentationPlatformId)) _collapsedRunningPlatforms.Remove(row.PresentationPlatformId); }
         else if (row.ProcessId is null)
@@ -451,16 +447,27 @@ public sealed partial class MainWindow : Window
         {
             if (_rendering || !_ready || _working || sender is not CheckBox box || box.Tag is not string key) return;
             var app = _snapshot.Applications.FirstOrDefault(a => a.Key == key);
-            if (app is not null && (box.IsChecked == true) != DirectlyWhitelisted(app)) ToggleApp(app, box.IsChecked == true);
+            if (app is null || clicked?.CanWhitelist != true) return;
+            var requested = box.IsChecked == true;
+            if (requested != DirectlyWhitelisted(app)) ToggleApp(app, requested);
+            if (DirectlyWhitelisted(app) == requested) NativeSelectionTree.SetFromAction(box, requested);
         }
-        finally { clicked?.NotifyWhitelistState(); }
+        finally
+        {
+            clicked?.NotifyWhitelistState();
+            if (sender is CheckBox checkbox) RestoreActionBinding(checkbox, nameof(AppRow.IsWhitelisted));
+        }
     }
     private void KeepSelected(object sender, RoutedEventArgs e) { if (SelectedApp is { } app) ToggleApp(app, !DirectlyWhitelisted(app)); }
     private void RuleToggled(object sender, RoutedEventArgs e)
     {
         if (!_ready || _rendering || _working || sender is not CheckBox toggle || toggle.Tag is not string id) return;
         var rule = _rules.FirstOrDefault(r => r.Id == id);
-        if (rule is not null && rule.Enabled != (toggle.IsChecked == true)) CommitRules(_rules.Select(r => r.Id == id ? r with { Enabled = toggle.IsChecked == true } : r).ToArray(), L.F($"{(toggle.IsChecked == true ? L.T("启用") : L.T("停用"))}规则：{WhitelistStore.GetDisplayName(rule)}"));
+        if (rule is null) return;
+        var requested = toggle.IsChecked == true;
+        if (rule.Enabled != requested) CommitRules(_rules.Select(r => r.Id == id ? r with { Enabled = requested } : r).ToArray(), L.F($"{(requested ? L.T("启用") : L.T("停用"))}规则：{WhitelistStore.GetDisplayName(rule)}"));
+        if (_rules.FirstOrDefault(r => r.Id == id)?.Enabled == requested) NativeSelectionTree.SetFromAction(toggle, requested);
+        else RestoreActionBinding(toggle, nameof(RuleRow.Enabled));
     }
     private void RemoveRule(object sender, RoutedEventArgs e)
     {
@@ -756,10 +763,7 @@ public sealed partial class MainWindow : Window
     private void AppSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (NativeSelectionTree.For(AppsList)?.IsApplying == true) return;
-        RefreshSelectionButtons(); if (_rendering || (e.AddedItems.LastOrDefault() ?? AppsList.SelectedItems.LastOrDefault()) is not AppRow row) return;
-        _selectedKey = row.Key; _selectedRowKey = row.RowKey;
-        _selectedProcessId = row.ProcessId;
-        UpdateDetail(true);
+        RefreshSelectionButtons();
     }
     private void ProcessInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
     {

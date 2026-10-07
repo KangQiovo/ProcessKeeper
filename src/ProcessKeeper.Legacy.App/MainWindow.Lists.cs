@@ -32,7 +32,7 @@ public partial class MainWindow
         {
             List<LegacyRow> result;
             await _rowBuildGate.WaitAsync(token);
-            try { result = await Task.Run(() => ApplyPresentation(CreateRows(page, query, category, sort, drive, systems, expanded, snapshot, installed, rules, autoruns, token, collapsed, autorunComplex, display, uninstallEntries), page, query, display, groupPlatforms, hideMicrosoft, collapsedPlatforms), token); }
+            try { result = await Task.Run(() => ApplyPresentation(CreateRows(page, query, category, sort, drive, systems, expanded, snapshot, installed, rules, autoruns, token, collapsed, autorunComplex, display, uninstallEntries), page, query, display, groupPlatforms, hideMicrosoft, collapsedPlatforms, collapsed), token); }
             finally { _rowBuildGate.Release(); }
             if (token.IsCancellationRequested || _page != page || version != _renderVersion) return;
             var selected = (List.SelectedItem as LegacyRow)?.Id;
@@ -118,8 +118,10 @@ public partial class MainWindow
                 {
                     var component = ExecutableRow(executable, app.Name, id, executableIdentity.Classify(app, executable));
                     if (app.Installations.Count > 1) component.Summary += " | " + Path.GetDirectoryName(executable.Path);
+                    var processes = search.ProcessesFor(executable).ToArray();
+                    component.HasChildren = processes.Length > 0; component.Expanded = component.HasChildren && Open(component.Id);
                     Add(component);
-                    foreach (var process in search.ProcessesFor(executable)) Add(ProcessRow(process, app.Name, app.ApplicationKey, snapshot, id));
+                    if (component.Expanded) foreach (var process in processes) Add(ProcessRow(process, app.Name, app.ApplicationKey, snapshot, component.Id));
                 }
             }
         }
@@ -137,7 +139,7 @@ public partial class MainWindow
                 var id = "rule:" + rule.Id;
                 var rulePath = matches.FirstOrDefault()?.Process.Path ?? (rule.Kind == RuleKind.ExecutablePath || rule.Kind == RuleKind.Directory ? rule.Value : "");
                 Add(new LegacyRow { Id = id, ParentId = grouped ? family.Key : "", IsChild = grouped, Name = WhitelistStore.GetDisplayName(rule), Summary = (rule.Enabled ? L.T("已启用") : L.T("已禁用")) + " | " + rule.Value, Path = rulePath, IconPath = display.ResolveGameIconPath(rulePath), Detail = rule.Kind + " | " + matches.Length + " " + L.T("进程"), Model = rule, Expanded = Open(id), HasAction = true, CanAct = !_busy && _rulesReadable, IsActionChecked = rule.Enabled, ActionLabel = rule.Enabled ? L.T("禁用此项") : L.T("启用此项") });
-                if (grouped ? Open(family.Key) : Open(id))
+                if (Open(id))
                 {
                     var children = 0;
                     var paths = new HashSet<string>(matches.Select(match => match.Process.Path), StringComparer.OrdinalIgnoreCase);
@@ -208,12 +210,12 @@ public partial class MainWindow
         Id = parentId + "|process:" + process.Id + ":" + process.StartTimeUtcTicks, Name = process.Name + " | PID " + process.Id,
         Summary = L.T("所属软件") + ": " + owner + " | " + Memory(process.MemoryBytes) + (process.Windows.Any(w => WindowActions.IsCandidate(process, w, true, key)) ? " | " + L.T("可显示窗口") : RecoveryBadge(process, snapshot)),
         Detail = process.Description + " | " + process.RoleDescription + "\n" + process.Path + "\n" + L.T("父进程") + ": " + process.ParentId + " | " + process.ParentEvidence,
-        Path = process.Path, Model = process, IsChild = true, Expanded = true, ApplicationKey = key
+        Path = process.Path, Model = process, ParentId = parentId, IsChild = true, Expanded = true, ApplicationKey = key
     };
     private static LegacyRow ExecutableRow(InstalledExecutable exe, string owner, string parentId, InstalledExecutableRoleIdentity? role = null) => new()
     {
         Id = parentId + "|exe:" + exe.Path.ToUpperInvariant(), Name = exe.Name, Summary = L.T("所属软件") + ": " + owner + " | " + L.T("可执行文件"),
-        Path = exe.Path, Detail = exe.Description + "\n" + exe.Path, IsChild = true, Model = exe,
+        Path = exe.Path, Detail = exe.Description + "\n" + exe.Path, ParentId = parentId, IsChild = true, Model = exe,
         RoleText = role is null ? "" : InstalledExecutableLabels.Text(role), RoleKind = role is null ? "Unknown" : InstalledExecutableLabels.Kind(role), RoleTooltip = role is null ? "" : InstalledExecutableLabels.Tooltip(role)
     };
     private async Task ApplyIconAsync(LegacyRow row, int version, CancellationToken token)
@@ -227,15 +229,29 @@ public partial class MainWindow
     { if (sender is FrameworkElement { DataContext: LegacyRow row } && row.Icon is null) await ApplyIconAsync(row, _renderVersion, _life.Token); }
     private static T? Ancestor<T>(DependencyObject? node) where T : DependencyObject
     { while (node is not null) { if (node is T result) return result; node = VisualTreeHelper.GetParent(node); } return null; }
-    private void RowClicked(object sender, MouseButtonEventArgs e) { }
+    private async void RowClicked(object sender, MouseButtonEventArgs e)
+    {
+        if (LegacyRowInteraction.BodyContainer(List, e)?.DataContext is not LegacyRow row) return;
+        e.Handled = true;
+        if (e.ClickCount == 1) await ToggleRowExpansionAsync(row);
+    }
     private async void RowChevronClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: LegacyRow row } || row.IsChild) return;
         e.Handled = true;
+        if (sender is FrameworkElement { DataContext: LegacyRow row }) await ToggleRowExpansionAsync(row);
+    }
+    private async Task ToggleRowExpansionAsync(LegacyRow row)
+    {
+        if (_closed || _busy || !row.CanExpand) return;
         if (row.IsPresentationGroup)
         {
-            var key = _page + ":" + row.PresentationPlatformId;
-            if (!_collapsedPlatforms.Add(key)) _collapsedPlatforms.Remove(key);
+            if (Search.Text.Trim().Length > 0)
+            { if (row.Expanded) _searchCollapsed.Add(row.Id); else _searchCollapsed.Remove(row.Id); }
+            else
+            {
+                var key = _page + ":" + row.PresentationPlatformId;
+                if (!_collapsedPlatforms.Add(key)) _collapsedPlatforms.Remove(key);
+            }
             await RenderAsync(); return;
         }
         if (Search.Text.Trim().Length > 0) { if (row.Expanded) _searchCollapsed.Add(row.Id); else _searchCollapsed.Remove(row.Id); }

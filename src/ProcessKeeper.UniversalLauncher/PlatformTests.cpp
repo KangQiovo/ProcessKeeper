@@ -10,6 +10,7 @@ void RunSecurityTests(const std::function<void(bool, const wchar_t*)>& check);
 void RunPayloadTests(const std::function<void(bool, const wchar_t*)>& check);
 void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check);
 void RunInstanceTests(const std::function<void(bool, const wchar_t*)>& check);
+void RunCacheCleanupTests(const std::function<void(bool, const wchar_t*)>& check);
 bool RunInstanceFixtureCommand(int argc, wchar_t** argv, int& result);
 
 int wmain(int argc, wchar_t** argv) {
@@ -108,6 +109,7 @@ int wmain(int argc, wchar_t** argv) {
         check(!injected && safePath && environment[environment.size()-2] == 0, L"explicit Unicode child environment has safe system PATH and double-NUL termination");
         RunSecurityTests(check);
         RunPayloadTests(check);
+        RunCacheCleanupTests(check);
         RunUpdateTests(check);
         RunInstanceTests(check);
         if (argc == 4) {

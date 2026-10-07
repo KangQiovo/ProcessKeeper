@@ -20,7 +20,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\ProcessKeeper.ico</ApplicationIcon>
     <AssemblyName>ProcessKeeper</AssemblyName>
-    <Version>1.7.0</Version>
+    <Version>1.7.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets\ProcessKeeper.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

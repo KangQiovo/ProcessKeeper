@@ -21,7 +21,11 @@ public sealed partial class MainWindow
 
     private void RuleChevronClicked(object sender, RoutedEventArgs args)
     {
-        if (_working || (sender as FrameworkElement)?.DataContext is not RuleRow { IsProcess: false } row) return;
+        if ((sender as FrameworkElement)?.DataContext is RuleRow row) ToggleRuleRow(row);
+    }
+    private void ToggleRuleRow(RuleRow row)
+    {
+        if (_working || row.IsProcess) return;
         if (row.IsExpanded)
         {
             _expandedRules.Remove(row.Id);
@@ -37,8 +41,6 @@ public sealed partial class MainWindow
             if (!_closed) RenderRules();
         })) _ruleRenderQueued = false;
     }
-
-    private void RuleItemClicked(object sender, ItemClickEventArgs args) => RefreshSelectionButtons();
 
     private async void EditRuleFromMenu(object sender, RoutedEventArgs args)
     {

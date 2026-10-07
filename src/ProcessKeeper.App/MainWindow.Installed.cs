@@ -259,6 +259,7 @@ public sealed partial class MainWindow
                 IconPath = display.ResolveIconPath(app, executableIdentity), IsKept = kept,
                 CanKeep = !kept && canKeep && (app.Executables.Count > 0 || app.ApplicationKey.Length > 0)
             };
+            if (kept) parent.Status = L.T("已保留") + " | " + parent.Status;
             next.Add(parent);
             if (!parent.IsExpanded) continue;
             if (app.Executables.Count == 0) continue;
@@ -273,16 +274,23 @@ public sealed partial class MainWindow
                     visibleProcesses = visibleProcesses.Where(p => InstalledApplicationSearch.MatchesProcess(p, query)).ToArray();
                 var componentKept = IsComponentKept(executable);
                 var role = executableIdentity.Classify(app, executable);
-                next.Add(new InstalledRow
+                var componentKey = InstalledExecutableRowKey(app.Id, executable.Path);
+                var componentExpanded = expanded.Contains(componentKey) || query.Length > 0 &&
+                    visibleProcesses.Any(process => InstalledApplicationSearch.MatchesProcess(process, query)) && !collapsedSearch.Contains(componentKey);
+                var component = new InstalledRow
                 {
-                    RowKey = InstalledExecutableRowKey(app.Id, executable.Path), ApplicationId = app.Id, ExecutablePath = executable.Path, Kind = InstalledRowKind.Executable,
+                    RowKey = componentKey, ApplicationId = app.Id, ExecutablePath = executable.Path, Kind = InstalledRowKind.Executable,
+                    HasChildren = visibleProcesses.Length > 0, IsExpanded = componentExpanded,
                     Name = executable.Name, Summary = (executable.Description.Length > 0 ? executable.Description : L.T("可执行文件")) +
                         (app.Installations.Count > 1 ? " | " + Path.GetDirectoryName(executable.Path) : ""),
                     Status = !hasSnapshot ? L.T("尚无进程快照（扫描时文件存在，未试运行）") : processes.Length > 0 ? L.F($"正在运行 | {processes.Length} 个进程") + (hiddenProcesses > 0 ? L.F($"（{hiddenProcesses} 个系统 / 服务已隐藏）") : "") : L.T("未运行（当前快照未匹配，文件未试运行）"),
                     Details = L.F($"可执行文件：{executable.Name}\n说明：{executable.Description}\n完整路径：{executable.Path}\n程序身份：{executable.ApplicationKey}\n\n发现文件不代表它正在运行。下方 PID 仅在当前快照中存在相同完整路径时显示。单独保留组件会添加完整路径规则。"),
                     IconPath = executable.Path, IsKept = componentKept, CanKeep = !componentKept && canKeep,
                     RoleText = InstalledExecutableLabels.Text(role), RoleKind = InstalledExecutableLabels.Kind(role), RoleTooltip = InstalledExecutableLabels.Tooltip(role)
-                });
+                };
+                if (componentKept) component.Status = L.T("已保留") + " | " + component.Status;
+                next.Add(component);
+                if (!componentExpanded) continue;
                 foreach (var process in visibleProcesses)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -338,7 +346,7 @@ public sealed partial class MainWindow
                     row.Name = incoming.Name; row.Summary = incoming.Summary; row.Status = incoming.Status; row.Details = incoming.Details;
                     row.RecoveryText = incoming.RecoveryText; row.RecoveryTooltip = incoming.RecoveryTooltip;
                     row.RoleText = incoming.RoleText; row.RoleKind = incoming.RoleKind; row.RoleTooltip = incoming.RoleTooltip;
-                    row.IsExpanded = incoming.IsExpanded; row.IsKept = incoming.IsKept; row.CanKeep = incoming.CanKeep;
+                    row.IsExpanded = incoming.IsExpanded; row.HasChildren = incoming.HasChildren; row.IsKept = incoming.IsKept; row.CanKeep = incoming.CanKeep;
                     row.IsPresentationGroup = incoming.IsPresentationGroup; row.PresentationDepth = incoming.PresentationDepth; row.PresentationPlatformId = incoming.PresentationPlatformId;
                 }
                 row.CanKeep = incoming.CanKeep && !_working && !_installedScanning;
@@ -369,24 +377,28 @@ public sealed partial class MainWindow
 
     private void InstalledChevronClicked(object sender, RoutedEventArgs args)
     {
-        if ((sender as FrameworkElement)?.DataContext is not InstalledRow row || _working || _renderingInstalled) return;
+        if ((sender as FrameworkElement)?.DataContext is InstalledRow row) ToggleInstalledRow(row);
+    }
+    private void ToggleInstalledRow(InstalledRow row)
+    {
+        if (_working || _renderingInstalled || row.Kind == InstalledRowKind.Process || row.Kind == InstalledRowKind.Executable && !row.HasChildren) return;
         if (row.IsPresentationGroup)
         {
             if (!_collapsedInstalledPlatforms.Add(row.PresentationPlatformId)) _collapsedInstalledPlatforms.Remove(row.PresentationPlatformId);
             RenderInstalled(); return;
         }
-        _installedSelectedRow = row.RowKey;
-        if (row.Kind == InstalledRowKind.Application)
+        if (row.Kind == InstalledRowKind.Application || row.HasChildren)
         {
+            var expansionKey = row.Kind == InstalledRowKind.Application ? row.ApplicationId : row.RowKey;
             if (row.IsExpanded)
             {
-                _expandedInstalled.Remove(row.ApplicationId);
-                _collapsedInstalledSearch.Add(row.ApplicationId);
+                _expandedInstalled.Remove(expansionKey);
+                _collapsedInstalledSearch.Add(expansionKey);
             }
             else
             {
-                _expandedInstalled.Add(row.ApplicationId);
-                _collapsedInstalledSearch.Remove(row.ApplicationId);
+                _expandedInstalled.Add(expansionKey);
+                _collapsedInstalledSearch.Remove(expansionKey);
             }
             if (_installedRenderQueued) return;
             _installedRenderQueued = DispatcherQueue.TryEnqueue(() =>
@@ -395,20 +407,12 @@ public sealed partial class MainWindow
                 if (!_closed) RenderInstalled();
             });
         }
-        else InstalledFacts.Text = row.Details;
     }
 
-    private void InstalledItemClicked(object sender, ItemClickEventArgs args)
-    {
-        if (args.ClickedItem is not InstalledRow row || _working) return;
-        _installedSelectedRow = row.RowKey; InstalledFacts.Text = row.Details; RefreshSelectionButtons();
-    }
     private void InstalledSelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (NativeSelectionTree.For(InstalledList)?.IsApplying == true) return;
-        RefreshSelectionButtons(); if (_renderingInstalled || (args.AddedItems.LastOrDefault() ?? InstalledList.SelectedItems.LastOrDefault()) is not InstalledRow row) return;
-        _installedSelectedRow = row.RowKey;
-        InstalledFacts.Text = row.Details;
+        RefreshSelectionButtons();
     }
 
     private void KeepInstalled(object sender, RoutedEventArgs args)
@@ -417,7 +421,8 @@ public sealed partial class MainWindow
         var previousRules = _rules;
         try
         {
-        if (!_installedInitialized || _renderingInstalled || _working || _installedScanning || !_configurationHealthy || sender is not CheckBox { Tag: string key }) return;
+        if (!_installedInitialized || _renderingInstalled || _working || _installedScanning || !_configurationHealthy || sender is not CheckBox { Tag: string key } checkbox || clicked?.CanKeep != true) return;
+        var requestedSelection = checkbox.IsChecked == true;
         var row = _installedRows.FirstOrDefault(r => r.RowKey == key);
         var app = row is null ? null : AllInstalledApplications().FirstOrDefault(a => a.Id == row.ApplicationId);
         if (app is null || row is null) return;
@@ -434,6 +439,7 @@ public sealed partial class MainWindow
                 else next.Add(rule with { Id = "installed-" + Guid.NewGuid().ToString("N"), Enabled = true });
             }
             CommitRules(next, L.T("从已安装应用加入白名单：") + row.Name);
+            if (!ReferenceEquals(previousRules, _rules)) NativeSelectionTree.SetFromAction(checkbox, requestedSelection);
         }
         catch (Exception ex) { ShowNotice(L.T("未添加白名单"), ex.Message, InfoBarSeverity.Warning); }
         RenderInstalled();
@@ -442,7 +448,11 @@ public sealed partial class MainWindow
         {
             // Restore rejected/no-op clicks immediately. A successful add is rendered asynchronously;
             // keep its just-checked visual state until that render publishes the updated model.
-            if (clicked is not null && (clicked.IsKept || ReferenceEquals(previousRules, _rules))) clicked.NotifyKeepState();
+            if (clicked is not null && (clicked.IsKept || ReferenceEquals(previousRules, _rules)))
+            {
+                clicked.NotifyKeepState();
+                if (sender is CheckBox checkbox) RestoreActionBinding(checkbox, nameof(InstalledRow.IsKept));
+            }
         }
     }
 

@@ -40,7 +40,7 @@ public static class InstanceRedirect
             if (!UpdateTrustedFiles.ValidId(contextId)) return false;
             var fields = ReadLines(Path.Combine(UpdateTrustedFiles.CacheRoot, "sessions", contextId, "context.txt"));
             using var owner = WindowsIdentity.GetCurrent();
-            if ((fields.Length != 12 && fields.Length != 13) || fields[0] != "PKLC1" || fields[1] != contextId ||
+            if ((fields.Length < 12 || fields.Length > 14) || fields[0] != "PKLC1" || fields[1] != contextId ||
                 LauncherContext.Decode(fields[11]) != owner.User?.Value || !UpdateVersion.TryParse(fields[4], out _) ||
                 !UpdateTrustedFiles.ValidHash(fields[3]) || !UpdateTrustedFiles.ValidHash(fields[6]) || !UpdateTrustedFiles.ValidHash(fields[8])) return false;
             var context = new LauncherContext(fields, Path.Combine(UpdateTrustedFiles.CacheRoot, "sessions", contextId));

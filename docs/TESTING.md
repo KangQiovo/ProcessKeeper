@@ -55,6 +55,14 @@ The update suite uses fake HTTP and isolated download files; it does not install
 
 See the dedicated [AVD](../src/ProcessKeeper.Avd.Tests/README.md), [launcher](../src/ProcessKeeper.Launcher.Tests/README.md), [search](../src/ProcessKeeper.Search.Tests/README.md) and [Legacy Core](../src/ProcessKeeper.Legacy.Core/README.md) notes.
 
+## 1.7.1 regression boundaries
+
+Exercise row-body, icon, description, keyboard and rapid repeated clicks separately from explicit checkbox actions. Check every application page in both interfaces, nested platform/application/executable/process/source/version rows, collapsed parent selection, partial deselection and state retained after refresh or search. Native selection events and cancelled or failed Keep/Enable operations must not change logical selection. Inspect light/dark colors and layout at narrow and wide window sizes.
+
+For Microsoft filtering, test the OS-registered Store Paint package and reject copied executables, mismatched roots, unhealthy or development packages and display-only publisher claims. Update candidates now include matching installers: verify exact target/distribution defaults, installed Universal payloads, missing matches, unknown identities, manual edition-change confirmation and explicit installer handoff. Keep old installer ownership markers readable across portable updates; validate migration and rollback against isolated metadata and inert packages.
+
+Uninstaller filename matches are labels, never commands. Use isolated folders and an injected uninstall backend to test successful empty-folder removal, registration remaining, cancellation, nonzero exit, incomplete inventory, shared directories, reparse points, replacement races, unexpected files and preservation of parent folders. Cache fixtures cover active sessions, running helpers/installers, locked files, unknown content and owned abandoned download/job stages. Do not perform real uninstalls or delete real application folders as part of routine gates.
+
 ## 1.7.0 regression boundaries
 
 Single-instance checks must span different package paths, versions and UI routes in one user/session. Verify that the winner's identity comes from its live process and protected launcher receipt, a losing launch cannot open a delayed onboarding/main window, and releasing a window or lease does not permit a successor before the previous process exits. A retained-instance exit is not update readiness. Use only isolated, owned fixture processes; do not close a user's real applications for this check.

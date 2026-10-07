@@ -137,7 +137,7 @@ public sealed partial class MainWindow
         if (!LauncherContextReader.TryGetCurrent(out var context, out var error))
         { ShowNotice(L.T("缓存清理未完成"), error, InfoBarSeverity.Warning); return; }
         if (await ShowDialog(NewDialog(L.T("清理应用缓存？"), new TextBlock
-            { Text = L.T("清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。"), TextWrapping = TextWrapping.Wrap, MaxWidth = 480 }, L.T("清理缓存"))) != ContentDialogResult.Primary || _closed) return;
+            { Text = L.T("清理旧版本缓存、遗留更新包与未完成下载；使用中的文件、白名单和设置会保留。"), TextWrapping = TextWrapping.Wrap, MaxWidth = 480 }, L.T("清理缓存"))) != ContentDialogResult.Primary || _closed) return;
         if (_working || HasPendingTool || _windowOperationRunning || _autorunsView?.IsChanging == true || _uninstallView?.IsBusy == true || _updatesView?.IsBusy == true) return;
         _working = true; ClearCacheButton.IsEnabled = false; ClearCacheButton.Content = L.T("正在清理…");
         try

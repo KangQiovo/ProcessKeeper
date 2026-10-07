@@ -20,6 +20,7 @@ public sealed class InstalledRow : INotifyPropertyChanged
     public bool IsPresentationGroup { get; set; }
     public int PresentationDepth { get; set; }
     public bool IsExpanded { get; set; }
+    public bool HasChildren { get; set; }
     public string Name { get; set; } = "";
     public string Summary { get; set; } = "";
     public string Status { get; set; } = "";
@@ -37,9 +38,10 @@ public sealed class InstalledRow : INotifyPropertyChanged
     public bool IsKept { get; set; }
     public bool CanKeep { get; set; }
     public string KeepText => IsKept ? L.T("已保留") : L.T("保留");
+    public string SelectionText => IsKept ? L.T("已保留") : L.T("选择");
     public string Chevron => IsExpanded ? "\uE70D" : "\uE76C";
-    public Visibility ChevronVisibility => Kind == InstalledRowKind.Application ? Visibility.Visible : Visibility.Collapsed;
-    public Visibility KeepVisibility => Kind == InstalledRowKind.Process || IsPresentationGroup ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility ChevronVisibility => Kind == InstalledRowKind.Application || HasChildren ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility KeepVisibility => Kind == InstalledRowKind.Process || IsPresentationGroup || !CanKeep ? Visibility.Collapsed : Visibility.Visible;
     public double IconSize => Kind == InstalledRowKind.Application ? 32 : 22;
     public Thickness RowMargin => new(((int)Kind + PresentationDepth) * 24, 0, 0, 0);
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -50,11 +52,11 @@ public sealed class InstalledRow : INotifyPropertyChanged
             (nameof(RowKey), RowKey), (nameof(ApplicationId), ApplicationId), (nameof(ExecutablePath), ExecutablePath),
             (nameof(ProcessId), ProcessId), (nameof(ProcessStartTicks), ProcessStartTicks), (nameof(Kind), Kind),
             (nameof(PresentationPlatformId), PresentationPlatformId), (nameof(IsPresentationGroup), IsPresentationGroup),
-            (nameof(PresentationDepth), PresentationDepth), (nameof(IsExpanded), IsExpanded), (nameof(Name), Name),
+            (nameof(PresentationDepth), PresentationDepth), (nameof(IsExpanded), IsExpanded), (nameof(HasChildren), HasChildren), (nameof(Name), Name),
             (nameof(Summary), Summary), (nameof(Status), Status), (nameof(Details), Details), (nameof(RecoveryText), RecoveryText),
             (nameof(RoleText), RoleText), (nameof(RoleKind), RoleKind), (nameof(RoleTooltip), RoleTooltip), (nameof(RoleVisibility), RoleVisibility),
             (nameof(RecoveryTooltip), RecoveryTooltip), (nameof(RecoveryVisibility), RecoveryVisibility), (nameof(IconPath), IconPath),
-            (nameof(IsKept), IsKept), (nameof(CanKeep), CanKeep), (nameof(KeepText), KeepText), (nameof(Chevron), Chevron),
+            (nameof(IsKept), IsKept), (nameof(CanKeep), CanKeep), (nameof(KeepText), KeepText), (nameof(SelectionText), SelectionText), (nameof(Chevron), Chevron),
             (nameof(ChevronVisibility), ChevronVisibility), (nameof(KeepVisibility), KeepVisibility), (nameof(IconSize), IconSize), (nameof(RowMargin), RowMargin));
     }
     public void NotifyKeepState()

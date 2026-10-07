@@ -19,19 +19,22 @@ public partial class MainWindow
         }
         catch (Exception ex) { Notice(ex.Message); }
     }
-    private void SaveRules(IReadOnlyList<WhitelistRule> rules)
+    private bool SaveRules(IReadOnlyList<WhitelistRule> rules)
     {
-        if (!_rulesReadable) { Notice(L.T("白名单配置无法读取，原文件未修改。")); return; }
-        try { new WhitelistStore(_directory).Save(rules); _rules = rules; NotifyProfilesRulesChanged(); Log(L.T("白名单已保存")); _ = RenderAsync(); }
-        catch (Exception ex) { Notice(ex.Message); }
+        if (!_rulesReadable) { Notice(L.T("白名单配置无法读取，原文件未修改。")); return false; }
+        try { new WhitelistStore(_directory).Save(rules); _rules = rules; NotifyProfilesRulesChanged(); Log(L.T("白名单已保存")); _ = RenderAsync(); return true; }
+        catch (Exception ex) { Notice(ex.Message); return false; }
     }
     private async void RowAction(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
-        if (sender is not FrameworkElement { DataContext: LegacyRow row }) return;
+        if (sender is not FrameworkElement { DataContext: LegacyRow row } element) return;
+        var requestedSelection = (sender as CheckBox)?.IsChecked;
         try
         {
-            await ExecuteRowActionAsync(row);
+            bool succeeded = await ExecuteRowActionAsync(row);
+            if (succeeded && requestedSelection.HasValue)
+                await SetRowSelectionAsync(element, row, requestedSelection.Value);
         }
         catch (Exception error) { if (!_closed) Notice(error.Message); }
         finally
@@ -42,31 +45,32 @@ public partial class MainWindow
             row.NotifyActionState();
         }
     }
-    private async Task ExecuteRowActionAsync(LegacyRow row)
+    private async Task<bool> ExecuteRowActionAsync(LegacyRow row)
     {
-        if (_busy || !row.CanAct) return;
+        if (_busy || !row.CanAct) return false;
         if (row.Model is AutorunEntry entry)
         {
-            if (entry.Enabled == true && IsAutorunWhitelisted(entry)) { Notice(L.T("白名单保护已阻止停用")); return; }
+            if (entry.Enabled == true && IsAutorunWhitelisted(entry)) { Notice(L.T("白名单保护已阻止停用")); return false; }
             if (!entry.CanChange || !entry.Enabled.HasValue)
             {
                 var detail = entry.Name + "\n" + entry.Location + "\n\n" + (string.IsNullOrWhiteSpace(entry.ReadOnlyReason) ? L.T("状态未知") : entry.ReadOnlyReason);
                 if (_backend.ShowInformation is not null) _backend.ShowInformation(L.T("查看原因"), detail);
                 else MessageBox.Show(this, detail, "Process Keeper | " + L.T("查看原因"), MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                return false;
             }
-            if (!entry.CanChange || !entry.Enabled.HasValue || !await Confirm(L.T("更改自启动"), entry.Name + "\n" + entry.Location + "\n" + L.T("更改下次触发时的启动行为，不结束当前进程。"))) return;
-            if (entry.Enabled == true && IsAutorunWhitelisted(entry)) { Notice(L.T("白名单保护已阻止停用")); return; }
+            if (!entry.CanChange || !entry.Enabled.HasValue || !await Confirm(L.T("更改自启动"), entry.Name + "\n" + entry.Location + "\n" + L.T("更改下次触发时的启动行为，不结束当前进程。"))) return false;
+            if (entry.Enabled == true && IsAutorunWhitelisted(entry)) { Notice(L.T("白名单保护已阻止停用")); return false; }
             _busy = true;
-            try { var result = await Task.Run(() => _backend.ChangeAutorun(entry, !entry.Enabled.Value, _life.Token)); Log(entry.Name + " | " + result.Message); Notice(result.Message, result.Success); await ScanAutorunsAsync(); }
-            catch (Exception ex) { Log(L.T("自启动更改未确认") + " | " + ex.Message); Notice(ex.Message); }
+            try { var result = await Task.Run(() => _backend.ChangeAutorun(entry, !entry.Enabled.Value, _life.Token)); Log(entry.Name + " | " + result.Message); Notice(result.Message, result.Success); await ScanAutorunsAsync(); return result.Success; }
+            catch (Exception ex) { Log(L.T("自启动更改未确认") + " | " + ex.Message); Notice(ex.Message); return false; }
             finally { _busy = false; await RenderAsync(); }
         }
         else if (row.Model is WhitelistRule rule)
         {
-            if (await Confirm(L.T("白名单"), rule.Name + " | " + row.ActionLabel)) SaveRules(_rules.Select(item => item.Id == rule.Id ? rule with { Enabled = !rule.Enabled } : item).ToArray());
+            return await Confirm(L.T("白名单"), rule.Name + " | " + row.ActionLabel) && SaveRules(_rules.Select(item => item.Id == rule.Id ? rule with { Enabled = !rule.Enabled } : item).ToArray());
         }
-        else if (!row.IsActionChecked) await KeepRow(row);
+        else if (!row.IsActionChecked) return await KeepRow(row);
+        return false;
     }
     private bool RowActionChecked(LegacyRow row) => row.Model switch
     {
@@ -79,17 +83,17 @@ public partial class MainWindow
     private static bool InstalledApplicationIsKept(InstalledApplication app, IReadOnlyList<WhitelistRule> rules) => app.Executables.Count > 0
         ? app.Executables.All(executable => ProtectionPolicy.IsDirectlyWhitelisted(new ProcessRecord { Name = Path.GetFileName(executable.Path), Path = executable.Path, ApplicationKey = executable.ApplicationKey }, rules))
         : app.ApplicationKey.Length > 0 && ProtectionPolicy.IsDirectlyWhitelisted(new ProcessRecord { ApplicationKey = app.ApplicationKey }, rules);
-    private async Task KeepRow(LegacyRow row)
+    private async Task<bool> KeepRow(LegacyRow row)
     {
-        if (!_rulesReadable) return;
+        if (!_rulesReadable) return false;
         IReadOnlyList<WhitelistRule> incoming;
         if (row.Model is InstalledApplication installed) incoming = InstalledApplicationCatalog.GetAppRules(installed);
         else if (row.Model is ApplicationGroup app) incoming = ApplicationPresentationGroups.GetRunningRules(app);
         else if (row.Model is ProcessRecord process) incoming = new[] { new WhitelistRule { Name = process.Name, Kind = RuleKind.ExecutablePath, Value = process.Path } };
-        else return;
-        if (incoming.Count == 0) { Notice(L.T("没有可加入白名单的可执行文件。")); return; }
-        if (!await Confirm(L.T("加入白名单"), string.Join("\n", incoming.Select(rule => rule.Name + " | " + rule.Value)))) return;
-        SaveRules(WhitelistStore.MergeRules(_rules, incoming));
+        else return false;
+        if (incoming.Count == 0) { Notice(L.T("没有可加入白名单的可执行文件。")); return false; }
+        if (!await Confirm(L.T("加入白名单"), string.Join("\n", incoming.Select(rule => rule.Name + " | " + rule.Value)))) return false;
+        return SaveRules(WhitelistStore.MergeRules(_rules, incoming));
     }
     private async void CloseClick(object sender, RoutedEventArgs e) => await CloseTargets(_snapshot.Processes);
     private async Task CloseTargets(IReadOnlyList<ProcessRecord> candidates, bool force = false)

@@ -40,8 +40,6 @@ public sealed partial class UninstallView
     {
         if (_restoringSelection || _closed) return;
         ConfigureTreeSelection();
-        foreach (var row in args.RemovedItems.OfType<Row>()) _treeSelection.Select(row.Key, false);
-        foreach (var row in args.AddedItems.OfType<Row>()) _treeSelection.Select(row.Key, true);
         SyncTreeSelection(); ShowSelection();
     }
     private void SelectionCheckboxClicked(object sender, RoutedEventArgs args)

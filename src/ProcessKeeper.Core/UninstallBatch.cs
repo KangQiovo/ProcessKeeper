@@ -53,7 +53,7 @@ public sealed class UninstallBatch
                 L.F($"已排除 {excluded.Length} 个只读或系统项目：") + "\n" + Names(excluded);
             if (snapshot.Truncated || snapshot.Warnings.Count > 0) inventory += "\n\n" + L.T("扫描结果可能不完整，仅处理下面明确列出的项目。") + "\n" + string.Join("\n", snapshot.Warnings);
             if (!Allowed() || !await confirm(L.T("第 1 / 3 步 | 核对卸载清单"), inventory) || !Allowed()) return Stopped(L.T("批量卸载已取消，未启动任何卸载程序。"));
-            if (!await confirm(L.T("第 2 / 3 步 | 风险与免责声明"), L.T("建议标签来自用户关注名单或历史公开报告，不是当前文件的病毒鉴定。请自行核对来源、版本及是否仍需使用，由你决定是否卸载。\n\n卸载可能永久移除文件、设置或关联功能，影响其他软件，要求重启，并可能保留残留文件。请先保存工作并备份重要数据。Process Keeper 不能保证厂商卸载器完整或安全地完成操作。\n\n本次只逐个运行已注册的普通卸载器，需要你完成软件自身的页面。不会强删文件、注册表或驱动。结果无法确认时停止后续项目；停止等待或关闭本应用不会终止已经启动的卸载器。\n\n即使处于无视风险模式，这三次确认也不会跳过。确认即表示你已阅读以上说明，并自主决定继续。")) || !Allowed())
+            if (!await confirm(L.T("第 2 / 3 步 | 风险与免责声明"), L.T("建议标签来自用户关注名单或历史公开报告，不是当前文件的病毒鉴定。请自行核对来源、版本及是否仍需使用，由你决定是否卸载。\n\n卸载可能永久移除文件、设置或关联功能，影响其他软件，要求重启，并可能保留残留文件。请先保存工作并备份重要数据。Process Keeper 不能保证厂商卸载器完整或安全地完成操作。\n\n本次只逐个运行已注册的普通卸载器，需要你完成软件自身的页面。不会强删文件、注册表或驱动。结果无法确认时停止后续项目；停止等待或关闭本应用不会终止已经启动的卸载器。\n\n即使处于无视风险模式，这三次确认也不会跳过。确认即表示你已阅读以上说明，并自主决定继续。") + "\n\n" + UninstallPresentation.EmptyDirectoryNotice) || !Allowed())
                 return Stopped(L.T("批量卸载已取消，未启动任何卸载程序。"));
             var reviews = new List<UninstallReview>();
             foreach (var target in targets)
@@ -67,7 +67,7 @@ public sealed class UninstallBatch
             }
             EnsurePreview(reviews.SelectMany(r => new[] { r.Entry.Name, r.Entry.Locator.Hive, r.Entry.Locator.Key,
                 r.Entry.Command!.Executable, r.Entry.Command.Arguments, r.Entry.ReviewedExecutableSha256, r.SignatureInformation }));
-            var final = L.T("以下清单、注册位置、卸载命令和 SHA-256 已固定。确认后逐个打开普通卸载器；每次启动前再次核验，任何变化或未确认结果都会停止后续。") + "\n\n" +
+            var final = L.T("以下清单、注册位置、卸载命令和 SHA-256 已固定。确认后逐个打开普通卸载器；每次启动前再次核验，任何变化或未确认结果都会停止后续。") + "\n\n" + UninstallPresentation.EmptyDirectoryNotice + "\n\n" +
                 string.Join("\n\n", reviews.Select(r => r.Entry.Name + "\n" + r.Entry.Registration + "\n" + r.Entry.Command!.Executable + "\n" + r.Entry.Command.Arguments + "\nSHA-256 | " + r.Entry.ReviewedExecutableSha256 + "\n" + r.SignatureInformation));
             if (!Allowed() || !await confirm(L.T("第 3 / 3 步 | 最终确认卸载"), final) || !Allowed()) return Stopped(L.T("批量卸载已取消，未启动任何卸载程序。"));
             executing();

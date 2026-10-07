@@ -12,7 +12,7 @@ public interface IMicrosoftPublisherProbe
     bool IsMicrosoft(string path, CancellationToken token);
 }
 
-/// <summary>Uses the actual signer selected by successful Windows trust verification. Display attribution only.</summary>
+/// <summary>Uses Windows protected-file, registered package or verified signer evidence. Display attribution only.</summary>
 public sealed class MicrosoftPublisherProbe : IMicrosoftPublisherProbe
 {
     public PublisherFileIdentity? ReadIdentity(string path)
@@ -37,6 +37,9 @@ public sealed class MicrosoftPublisherProbe : IMicrosoftPublisherProbe
             if (Identity(stream.SafeFileHandle) is null) return false;
             var windows = DisplayPath.Normalize(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
             if (windows.Length > 0 && DisplayPath.Under(path, windows) && SfcIsFileProtected(nint.Zero, path)) return true;
+            // Store payloads can be package-signed without a standalone Authenticode signature.
+            // Query only the exact OS registration for this file's package; never infer ownership from a folder name.
+            if (InstalledPackageCatalog.IsMicrosoftExecutable(path, token)) return true;
             var file = new TrustFile { Size = (uint)Marshal.SizeOf<TrustFile>(), Path = path, FileHandle = stream.SafeFileHandle.DangerousGetHandle() };
             var pointer = Marshal.AllocHGlobal(Marshal.SizeOf<TrustFile>());
             Marshal.StructureToPtr(file, pointer, false);
@@ -114,6 +117,26 @@ public sealed class MicrosoftPublisherProbe : IMicrosoftPublisherProbe
             return organizations == 1 && microsoft;
         }
         catch { return false; }
+    }
+    internal static bool HasTrustedMicrosoftPackagePublisher(string publisher, string publisherId, int signatureKind, bool healthy)
+    {
+        // PackageSignatureKind Store=3/System=4. Developer/enterprise registrations are not Microsoft trust evidence.
+        // These IDs are Microsoft's registered publisher identities, not package-name or display-label prefixes.
+        if (!healthy || signatureKind is not (3 or 4) || publisherId is not ("8wekyb3d8bbwe" or "cw5n1h2txyewy")) return false;
+        try { return HasMicrosoftOrganization(new X500DistinguishedName(publisher).RawData); }
+        catch { return false; }
+    }
+
+    internal static bool IsMicrosoftPackageFullName(string fullName)
+    {
+        if (fullName.Length is 0 or > 256) return false;
+        var parts = fullName.Split('_');
+        return parts.Length == 5 && parts[0].Length is > 0 and <= 50 &&
+            parts[0].All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '-') &&
+            parts[1].Count(character => character == '.') == 3 && Version.TryParse(parts[1], out _) &&
+            parts[2] is "x86" or "x64" or "arm" or "arm64" or "neutral" &&
+            parts[3].Length <= 30 && parts[3].All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '-') &&
+            parts[4] is "8wekyb3d8bbwe" or "cw5n1h2txyewy";
     }
     private static PublisherFileIdentity? Identity(SafeFileHandle handle)
     {

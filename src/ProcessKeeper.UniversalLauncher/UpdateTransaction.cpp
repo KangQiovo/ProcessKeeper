@@ -121,9 +121,12 @@ UpdateLaunchResult LaunchUpdated(const std::wstring& path) {
 }
 void ValidateUpdateJob(const std::vector<std::wstring>& job, const LaunchContext& context, const std::wstring& id) {
     // Consistency with the managed official-metadata authority, not a cryptographic signature.
-    if (job.size() != 6 || job[0] != L"PKUP2" || job[1] != context.id || job[2] != id || !ValidContextId(id) ||
+    if (job.size() != 8 || job[0] != L"PKUP3" || job[1] != context.id || job[2] != id || !ValidContextId(id) ||
         !ValidSha256(job[3]) || !IsNewerUpdateVersion(job[4], context.version) || job[5] != L"KangQiovo/ProcessKeeper")
         throw Failure(L"Invalid prepared update job or fixed official repository.");
+    if ((job[6] != L"Universal" && job[6] != L"Windows7Compat" && job[6] != L"Windows10x64" && job[6] != L"Windows10arm64") ||
+        (job[7] != L"Portable" && job[7] != L"Installer") || job[7] == L"Installer" && job[6] == L"Universal")
+        throw Failure(L"Invalid update package selection.");
 }
 UpdateTransactionResult InstallUpdate(const LaunchContext& context, const std::wstring& id) {
     if (!ValidContextId(id)) throw Failure(L"Invalid update job identifier.");
@@ -135,7 +138,10 @@ UpdateTransactionResult InstallUpdate(const LaunchContext& context, const std::w
     auto sourceParents = LockParents(context.original, false);
     auto original = OpenExact(context.original, GENERIC_READ); RequireHash(original.get(), context.originalHash);
     const auto candidate = directory + L"\\update.exe";
-    auto next = OpenProtectedFile(candidate); RequireHash(next.get(), job[3]); ValidateUpdateBundle(candidate, job[4], &context.target);
+    const auto selectedTarget = job[6] == L"Windows7Compat" ? PackageTarget::Windows7Compat : job[6] == L"Windows10x64" ? PackageTarget::Windows10x64 : job[6] == L"Windows10arm64" ? PackageTarget::Windows10arm64 : PackageTarget::Universal;
+    const bool installer = job[7] == L"Installer";
+    auto next = OpenProtectedFile(candidate); RequireHash(next.get(), job[3]);
+    if (installer) ValidateUpdateInstaller(candidate, job[4], selectedTarget); else ValidateUpdateBundle(candidate, job[4], &selectedTarget);
     const auto mutexName = L"Local\\ProcessKeeper.Update." + context.originalHash;
     Handle mutex(CreateMutexW(nullptr, TRUE, mutexName.c_str()));
     if (!mutex.valid() || GetLastError() == ERROR_ALREADY_EXISTS) throw Failure(L"Another update is already pending.");
@@ -146,13 +152,30 @@ UpdateTransactionResult InstallUpdate(const LaunchContext& context, const std::w
     const auto authorized = WaitMarker(directory, L"execute.txt", L"PKEXECUTE1", caller.get(), GetCurrentProcessId(), 200, ReadProtectedLines);
     if (!authorized) throw Failure(L"Update handoff was not completed. The original EXE was not changed.");
     if (WaitForSingleObject(caller.get(), 120000) != WAIT_OBJECT_0) throw Failure(L"The app did not exit. No process was killed and the original EXE was not changed.");
+    if (installer) {
+        RequireHash(original.get(), context.originalHash); original.reset();
+        RequireHash(next.get(), job[3]); ValidateUpdateInstaller(candidate, job[4], selectedTarget);
+        // Setup owns its interactive transaction. Removing only this helper's readiness marker
+        // lets the existing setup guard see that the explicitly consenting UI has exited.
+        if (!DeleteFileW((directory + L"\\ready.txt").c_str())) Fail(L"Cannot complete the interactive installer handoff.");
+        auto command = L"\"" + candidate + L"\"";
+        STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION process{};
+        auto environment = BuildChildEnvironment();
+        if (!CreateProcessW(candidate.c_str(), &command[0], nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT, environment.data(), directory.c_str(), &startup, &process))
+            Fail(L"The verified interactive installer could not start. The current EXE remains available.");
+        Handle setupProcess(process.hProcess), setupThread(process.hThread);
+        UpdateTransactionResult result; result.installerStarted = true;
+        result.message = L"The verified interactive installer was opened. Follow its pages to complete or cancel installation; no portable EXE replacement was performed.";
+        WriteProtectedLines(directory + L"\\status.txt", {L"PKSTATUS1", L"installer-started", EncodeContextText(result.message), L""});
+        ReleaseMutex(mutex.get()); return result;
+    }
     PayloadCleanupPlan cleanup;
     try { cleanup = CapturePayloadCleanup(context); } catch (const Failure&) { /* Updating may proceed while unverifiable old cache is retained. */ }
     RequireHash(original.get(), context.originalHash); original.reset(); next.reset();
     auto result = Replace(context.original, context.originalHash, candidate, job[3], id, LaunchUpdated, false);
     if (result.installed && result.confirmed) {
         try {
-            const auto registration = RefreshInstalledRegistration(context.original, job[3], job[4], context.target);
+            const auto registration = RefreshInstalledRegistration(context.original, job[3], job[4], selectedTarget);
             if (registration == L"conflict") result.message += L" An unrelated or unverified installed-app registration was preserved.";
         } catch (const Failure&) { result.message += L" The installed EXE is valid, but its installed-app version could not be refreshed."; }
         try {

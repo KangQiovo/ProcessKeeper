@@ -47,9 +47,51 @@ std::wstring RefreshInstalledRegistration(const std::wstring& original, const st
         VerifyHandlePath(image.get(), full, false); VerifyHandlePath(uninstaller.get(), directory + L"\\Uninstall.exe", false); VerifyHandlePath(ini.get(), marker, false);
         if (Hex(HashFile(image.get())) != sha256) throw Failure(L"Installed application changed before registration refresh.");
         record.markerRepository = Marker(marker, L"Repository"); record.markerTarget = Marker(marker, L"PackageTarget"); record.markerContract = Marker(marker, L"Contract");
-        if (!MatchesInstallation(record, full, target)) { RegCloseKey(key); return L"conflict"; }
+        if (!MatchesInstalledOwner(record, full, target)) { RegCloseKey(key); return L"conflict"; }
         const auto result = RegSetValueExW(key, L"DisplayVersion", 0, REG_SZ, reinterpret_cast<const BYTE*>(version.c_str()), static_cast<DWORD>((version.size() + 1) * sizeof(wchar_t)));
+        // The retained native uninstaller has its original ownership target compiled in.
+        // Keep that registry/marker contract intact; the current bundle manifest remains
+        // the authority for actual payload flavor even before this informational hint exists.
+        if (result == ERROR_SUCCESS) {
+            const auto payloadTarget = target == PackageTarget::Universal ? L"Universal" : TargetKey(target);
+            RegSetValueExW(key, L"ProcessKeeperPayloadTarget", 0, REG_SZ, reinterpret_cast<const BYTE*>(payloadTarget), static_cast<DWORD>((wcslen(payloadTarget) + 1) * sizeof(wchar_t)));
+        }
         RegCloseKey(key); return result == ERROR_SUCCESS ? L"updated" : L"conflict";
     } catch (...) { RegCloseKey(key); throw; }
+}
+bool MatchesInstalledOwner(const InstallationRecord& record, const std::wstring& original, PackageTarget actualTarget) {
+    if (actualTarget != PackageTarget::Universal && actualTarget != PackageTarget::Windows7Compat && actualTarget != PackageTarget::Windows10x64 && actualTarget != PackageTarget::Windows10arm64) return false;
+    const auto found = record.text.find(L"ProcessKeeperPackageTarget"); if (found == record.text.end()) return false;
+    PackageTarget ownerTarget;
+    if (found->second == L"Windows7Compat") ownerTarget = PackageTarget::Windows7Compat;
+    else if (found->second == L"Windows10x64") ownerTarget = PackageTarget::Windows10x64;
+    else if (found->second == L"Windows10arm64") ownerTarget = PackageTarget::Windows10arm64;
+    else return false;
+    return MatchesInstallation(record, original, ownerTarget);
+}
+std::wstring ReadInstalledDistribution(const std::wstring& original, const std::wstring& sha256, PackageTarget target) {
+    HKEY key = nullptr;
+    const auto opened = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ProcessKeeper", 0, KEY_QUERY_VALUE | KEY_WOW64_32KEY, &key);
+    if (opened == ERROR_FILE_NOT_FOUND) return L"Portable";
+    if (opened != ERROR_SUCCESS) return L"Unknown";
+    try {
+        const auto full = FullPath(original), directory = full.substr(0, full.find_last_of(L'\\'));
+        const auto registered = Value(key, L"InstallLocation");
+        if (!registered.empty() && CompareStringOrdinal(registered.c_str(), -1, directory.c_str(), -1, TRUE) != CSTR_EQUAL) { RegCloseKey(key); return L"Portable"; }
+        InstallationRecord record;
+        for (const auto* name : {L"DisplayName", L"Publisher", L"ProcessKeeperRepository", L"ProcessKeeperPackageTarget", L"InstallLocation", L"UninstallString", L"DisplayIcon", L"URLInfoAbout"}) record.text.emplace(name, Value(key, name));
+        DWORD type = 0, size = sizeof(record.contract);
+        if (RegQueryValueExW(key, L"ProcessKeeperInstallerContract", nullptr, &type, reinterpret_cast<BYTE*>(&record.contract), &size) != ERROR_SUCCESS || type != REG_DWORD || size != sizeof(record.contract)) record.contract = 0;
+        const auto marker = directory + L"\\install.ini";
+        auto parents = LockParents(full, false);
+        Handle image(CreateFileW(full.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
+        Handle uninstaller(CreateFileW((directory + L"\\Uninstall.exe").c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
+        Handle ini(CreateFileW(marker.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
+        if (!image.valid() || !uninstaller.valid() || !ini.valid()) { RegCloseKey(key); return L"Unknown"; }
+        VerifyHandlePath(image.get(), full, false); VerifyHandlePath(uninstaller.get(), directory + L"\\Uninstall.exe", false); VerifyHandlePath(ini.get(), marker, false);
+        if (Hex(HashFile(image.get())) != sha256) throw Failure(L"Installed application changed before distribution detection.");
+        record.markerRepository = Marker(marker, L"Repository"); record.markerTarget = Marker(marker, L"PackageTarget"); record.markerContract = Marker(marker, L"Contract");
+        const auto matched = MatchesInstalledOwner(record, full, target); RegCloseKey(key); return matched ? L"Installer" : L"Unknown";
+    } catch (...) { RegCloseKey(key); return L"Unknown"; }
 }
 }

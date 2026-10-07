@@ -26,6 +26,33 @@ internal static class InstalledPackageCatalog
         "http://schemas.microsoft.com/appx/2013/manifest"
     };
 
+    /// <summary>Exact registered package ownership for a readable file. Runs only inside the bounded publisher worker.</summary>
+    internal static bool IsMicrosoftExecutable(string path, CancellationToken token)
+    {
+        try
+        {
+            var normalized = DisplayPath.Normalize(path);
+            if (normalized.Length == 0) return false;
+            var directory = Path.GetDirectoryName(normalized);
+            for (var depth = 0; !string.IsNullOrEmpty(directory) && depth < 128; depth++, directory = Path.GetDirectoryName(directory))
+            {
+                token.ThrowIfCancellationRequested();
+                var fullName = Path.GetFileName(directory);
+                if (!MicrosoftPublisherProbe.IsMicrosoftPackageFullName(fullName)) continue;
+                // FindPackageForUser never activates the app and avoids enumerating all packages or a drive.
+                var package = new PackageManager().FindPackageForUser(string.Empty, fullName);
+                if (package is null || !package.Id.FullName.Equals(fullName, StringComparison.Ordinal) ||
+                    !DisplayPath.Normalize(package.InstalledLocation.Path).Equals(directory, StringComparison.OrdinalIgnoreCase) ||
+                    package.IsDevelopmentMode || package.IsFramework || package.IsResourcePackage) return false;
+                return MicrosoftPublisherProbe.HasTrustedMicrosoftPackagePublisher(package.Id.Publisher,
+                    package.Id.PublisherId, (int)package.SignatureKind, package.Status.VerifyIsOK());
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch { /* Missing registrations/native capabilities and unreadable package status stay visible. */ }
+        return false;
+    }
+
     internal static IReadOnlyList<InstalledPackageSeed> Read(
         ICollection<string> warnings, CancellationToken token = default, Func<bool>? budgetAvailable = null)
     {

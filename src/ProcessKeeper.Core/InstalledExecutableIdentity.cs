@@ -122,11 +122,11 @@ public sealed class InstalledExecutableIdentity
     {
         if(NameKey(value)==applicationName)return InstalledExecutableRole.Unknown;
         var stem=value.ToLowerInvariant();
-        if(stem.StartsWith("uninst",StringComparison.Ordinal)||stem.StartsWith("unins0",StringComparison.Ordinal)||stem.Contains("uninstaller")||stem.Contains("卸载")||stem.Contains("卸載"))return InstalledExecutableRole.PotentialUninstaller;
         if(new[]{"crashpad","crashreport","crashhandler","minidump","diagnostic","bugreport","errorreport"}.Any(marker=>stem.Contains(marker))
             ||stem is "reporter" or "dump"||stem.EndsWith("_reporter",StringComparison.Ordinal)||stem.EndsWith("reporter",StringComparison.Ordinal))return InstalledExecutableRole.Diagnostic;
-        if(new[]{"helper","cssdk","cefsubprocess","qtwebengineprocess","webview2","updater","maintenance","bootstrap"}.Any(marker=>stem.Contains(marker))
+        if(new[]{"helper","cssdk","cefsubprocess","qtwebengineprocess","webview2","updater","service","maintenance","bootstrap"}.Any(marker=>stem.Contains(marker))
             ||stem.EndsWith("_util",StringComparison.Ordinal)||stem is "util" or "setup" or "install" or "update" or "service" or "broker" or "host" or "repair")return InstalledExecutableRole.Helper;
+        if(UninstallExecutableNames.IsPossible(value,applicationName))return InstalledExecutableRole.PotentialUninstaller;
         return InstalledExecutableRole.Unknown;
     }
     private static string NameKey(string value)

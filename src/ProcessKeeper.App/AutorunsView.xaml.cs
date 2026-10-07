@@ -40,6 +40,7 @@ public sealed partial class AutorunsView : UserControl
         InitializeComponent();
         EntriesList.ItemsSource = _rows;
         NativeSelectionTree.Attach(EntriesList, row => ((AutorunRow)row).RowKey, SelectionNodes, UpdateSelectionToggle);
+        EntriesList.RowInvoked += row => { if (row is AutorunRow entry) ToggleEntryRow(entry); };
         DisplayOptions.Apply(true, false);
         DisplayOptions.Changed += (_, _) => { PresentationChanged?.Invoke(this, EventArgs.Empty); Render(); };
         SetSources();
@@ -250,7 +251,11 @@ public sealed partial class AutorunsView : UserControl
 
     private void ExpandEntryClicked(object sender, RoutedEventArgs args)
     {
-        if (sender is not Button { Tag: AutorunRow row } || row.IsProcess || _changing) return;
+        if (sender is Button { Tag: AutorunRow row }) ToggleEntryRow(row);
+    }
+    private void ToggleEntryRow(AutorunRow row)
+    {
+        if (row.IsProcess || _changing) return;
         if (row.IsPresentationGroup)
         {
             if (!_collapsedPlatforms.Add(row.PresentationPlatformId)) _collapsedPlatforms.Remove(row.PresentationPlatformId);

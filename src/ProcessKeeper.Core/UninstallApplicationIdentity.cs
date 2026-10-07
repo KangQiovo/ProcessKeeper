@@ -138,7 +138,7 @@ public sealed class UninstallApplicationIdentityResolver
     private static bool Within(string path,string root)=>path.Equals(root,StringComparison.OrdinalIgnoreCase)||path.StartsWith(root.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase);
     private static bool Utility(string value)
     {
-        var key=value.ToLowerInvariant();return key.StartsWith("uninst",StringComparison.Ordinal)||key.StartsWith("unins0",StringComparison.Ordinal)
+        var key=value.ToLowerInvariant();return UninstallExecutableNames.IsPossible(value,"")
             ||new[]{"uninstall","uninstaller","updater","crashpad","crashhandler","crashreporter","qtwebengineprocess","cefsubprocess","webview2","maintenance","bootstrap","helper","卸载","卸載","解除安裝"}.Any(marker=>key.Contains(marker))
             ||key is "setup" or "install" or "update" or "service" or "broker" or "host" or "repair";
     }

@@ -3,7 +3,7 @@
 #include <functional>
 namespace pk {
 enum class UpdateLaunchResult { Success, Failed, Unconfirmed };
-struct UpdateTransactionResult { bool installed = false, restored = false, confirmed = false; std::wstring backup, message; };
+struct UpdateTransactionResult { bool installed = false, restored = false, confirmed = false, installerStarted = false; std::wstring backup, message; };
 void ValidateUpdateJob(const std::vector<std::wstring>& job, const LaunchContext& context, const std::wstring& id);
 UpdateTransactionResult InstallUpdate(const LaunchContext& context, const std::wstring& jobId);
 #ifdef PK_FIXTURE_BUILD

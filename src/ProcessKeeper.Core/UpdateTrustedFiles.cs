@@ -64,14 +64,14 @@ internal static class UpdateTrustedFiles
         foreach (var sid in new[] { Admin, SystemAccount }) acl.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl, AccessControlType.Allow));
         return new FileInfo(path).Create(FileMode.CreateNew, FileSystemRights.FullControl, FileShare.None, 65536, FileOptions.WriteThrough, acl);
     }
-    internal static FileStream OpenRead(string path, bool requireProtected = true)
+    internal static FileStream OpenRead(string path, bool requireProtected = true, bool requireSingleLink = false)
     {
         ValidatePath(path);
         var handle = CreateFile(path, 0x80000000 | 0x20000, 1, nint.Zero, 3, 0x00200000, nint.Zero);
         if (handle.IsInvalid) { handle.Dispose(); throw new IOException("Cannot open a trusted update file."); }
         try
         {
-            if (!GetFileInformationByHandle(handle, out var info) || (info.Attributes & 0x410) != 0) throw new IOException("Linked update file refused.");
+            if (!GetFileInformationByHandle(handle, out var info) || (info.Attributes & 0x410) != 0 || requireSingleLink && info.Links != 1) throw new IOException("Linked update file refused.");
             var final = new System.Text.StringBuilder(32768);
             var length = GetFinalPathNameByHandle(handle, final, 32768, 0);
             if (length == 0 || length >= 32768 || !SamePath(final.ToString().Replace(@"\\?\", ""), path))

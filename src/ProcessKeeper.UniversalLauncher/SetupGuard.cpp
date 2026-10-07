@@ -1,4 +1,5 @@
 #include "SetupGuard.h"
+#include "LaunchContext.h"
 #include <shlobj.h>
 #include <sddl.h>
 #include <set>
@@ -62,7 +63,7 @@ bool PayloadPath(const std::wstring& root, const std::wstring& path, bool helper
 int Session(const std::wstring& root, const std::wstring& sid, const std::wstring& directory, const std::wstring& id, const std::wstring& original, bool fixture, unsigned& total) {
     if (++total > 2048) return 2;
     auto lock = Open(directory, true, fixture); const auto record = Read(directory + L"\\context.txt", fixture); const auto& fields = record.fields;
-    if ((fields.size() != 12 && fields.size() != 13) || fields[0] != L"PKLC1" || fields[1] != id || Decode(fields[11]) != sid || !Hash(fields[3]) || !Hash(fields[6]) || !Hash(fields[8])) return 2;
+    if ((fields.size() < 12 || fields.size() > 14) || fields[0] != L"PKLC1" || fields[1] != id || Decode(fields[11]) != sid || !Hash(fields[3]) || !Hash(fields[6]) || !Hash(fields[8])) return 2;
     const auto recordedOriginal = FullPath(Decode(fields[2]));
     if (!Equal(recordedOriginal, original)) return 0;
     const auto image = FullPath(Decode(fields[5])), helper = FullPath(Decode(fields[7]));
@@ -126,6 +127,14 @@ int CheckPortableFile(const std::wstring& path, const std::wstring& expectedHash
         return 0;
     } catch (...) { return 2; }
 }
+int GetInstalledPackageTarget(const std::wstring& path) {
+    try {
+        const auto full = FullPath(path); auto parents = LockParents(full, false); auto file = Open(full, false, true);
+        BY_HANDLE_FILE_INFORMATION info{}; if (!GetFileInformationByHandle(file.get(), &info) || info.nNumberOfLinks != 1) return -1;
+        return static_cast<int>(ValidateInstalledBundle(full));
+    } catch (...) { return -1; }
+}
+int CheckInstalledPackage(const std::wstring& path) { return GetInstalledPackageTarget(path) >= 0 ? 0 : 2; }
 #ifdef PK_FIXTURE_BUILD
 int CheckInstalledSessionFixture(const std::wstring& cache, const std::wstring& original) { try { return Check(FullPath(cache), FullPath(original), true); } catch (...) { return 2; } }
 #endif
@@ -133,4 +142,6 @@ int CheckInstalledSessionFixture(const std::wstring& cache, const std::wstring& 
 #ifdef PK_SETUP_GUARD_BUILD
 extern "C" __declspec(dllexport) int __stdcall CheckInstalledSessionW(const wchar_t* original) { return original ? pk::CheckInstalledSessions(original) : 2; }
 extern "C" __declspec(dllexport) int __stdcall CheckPortableFileW(const wchar_t* path, const wchar_t* expectedHash) { return path && expectedHash ? pk::CheckPortableFile(path, expectedHash) : 2; }
+extern "C" __declspec(dllexport) int __stdcall CheckInstalledPackageW(const wchar_t* path) { return path ? pk::CheckInstalledPackage(path) : 2; }
+extern "C" __declspec(dllexport) int __stdcall GetInstalledPackageTargetW(const wchar_t* path) { return path ? pk::GetInstalledPackageTarget(path) : -1; }
 #endif

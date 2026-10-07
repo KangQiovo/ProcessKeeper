@@ -22,7 +22,7 @@ public sealed partial class MainWindow
         Update(RunningSelectToggleButton, AppsList); Update(InstalledSelectToggleButton, InstalledList); Update(RulesSelectToggleButton, RulesList);
         NativeCommandLayout.Reflow(InstalledCommands); NativeCommandLayout.Reflow(RulesCommands);
     }
-    private async void ToggleAllSelectionClicked(object sender, RoutedEventArgs args)
+    private void ToggleAllSelectionClicked(object sender, RoutedEventArgs args)
     {
         if (_closed || _working || _selectingRows) return;
         var list = AppsPage.Visibility == Visibility.Visible ? AppsList : InstalledPage.Visibility == Visibility.Visible ? InstalledList : RulesPage.Visibility == Visibility.Visible ? RulesList : null;
@@ -30,17 +30,9 @@ public sealed partial class MainWindow
         _selectingRows = true; _rendering = _renderingInstalled = true; list.IsHitTestVisible = false;
         try
         {
-            if (list.Items.Count > 0 && list.SelectedItems.Count == list.Items.Count) list.SelectedItems.Clear();
-            else
-            {
-                var items = list.Items.ToArray();
-                var selected = list.SelectedItems.ToHashSet();
-                for (var index = 0; index < items.Length && !_closed; index++)
-                {
-                    if (!selected.Contains(items[index]) && list.Items.Contains(items[index])) list.SelectedItems.Add(items[index]);
-                    if ((index + 1) % 64 == 0) await Task.Yield();
-                }
-            }
+            var tree = NativeSelectionTree.For(list);
+            if (list.Items.Count > 0 && list.SelectedItems.Count == list.Items.Count) tree?.ClearSelection();
+            else tree?.SelectRows(list.Items.ToArray(), true);
         }
         finally
         {

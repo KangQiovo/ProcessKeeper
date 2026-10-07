@@ -40,7 +40,7 @@ public sealed partial class UpdateService
         ValidateDirectory(stagingDirectory);
         if (release.Repository != UpdatePolicy.Repository || !release.Assets.Any(candidate => candidate == asset) || !asset.CanAutoInstall ||
             asset.Restriction.Length > 0 || !ValidDigest(asset.Digest) || asset.Size <= 0 || asset.Size > MaximumDownloadBytes ||
-            asset.PackageTarget != UpdatePackagePolicy.Identify(asset.Name, release.Version) || !UpdatePackagePolicy.Supports(asset.PackageTarget, _runtime))
+            asset.PackageTarget != UpdatePackagePolicy.Identify(asset.Name, release.Version) || asset.DistributionKind != UpdatePackagePolicy.IdentifyDistribution(asset.Name, release.Version) || !UpdatePackagePolicy.Supports(asset, _runtime))
             throw Error("unsupported-asset", "所选更新文件不能在当前环境中安装。");
         return new(release, asset, Path.GetFullPath(stagingDirectory));
     }

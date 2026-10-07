@@ -51,12 +51,12 @@ public partial class MainWindow
                         " | " + (entry.Enabled == true ? L.T("已启用") : entry.Enabled == false ? L.T("已禁用") : L.T("状态未知")) +
                         " | " + string.Join(", ", owners),
                     Detail = entry.Location + "\n" + entry.Command + "\n" + entry.ReadOnlyReason,
-                    Path = entry.TargetPath, Model = entry, Expanded = grouped || Open(id),
+                    Path = entry.TargetPath, Model = entry, Expanded = Open(id),
                     HasAction = true, CanAct = !_busy && !protectedEntry, IsActionChecked = entry.Enabled == true,
                     ActionLabel = !entry.CanChange || !entry.Enabled.HasValue ? L.T("查看原因") :
                         entry.Enabled == true ? L.T("禁用此项") : L.T("启用此项")
                 };
-                if (grouped || Open(id)) foreach (var process in processes)
+                if (Open(id)) foreach (var process in processes)
                 {
                     var row = ProcessRow(process, process.ApplicationName, process.ApplicationKey, snapshot, id);
                     row.ParentId = id;

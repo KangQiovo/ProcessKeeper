@@ -18,12 +18,12 @@ public static class RowSelectionCheckBox
         if (value is not CheckBox checkbox) return;
         checkbox.Loaded -= Loaded;
         checkbox.Unloaded -= Unloaded;
-        checkbox.Checked -= Changed; checkbox.Unchecked -= Changed;
+        checkbox.Click -= Changed;
         if (args.NewValue is true)
         {
             checkbox.Loaded += Loaded;
             checkbox.Unloaded += Unloaded;
-            checkbox.Checked += Changed; checkbox.Unchecked += Changed;
+            checkbox.Click += Changed;
             if (checkbox.IsLoaded) Bind(checkbox);
         }
         else Unregister(checkbox);

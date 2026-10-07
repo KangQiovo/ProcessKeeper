@@ -65,7 +65,7 @@ public partial class MainWindow
         backup.Children.Add(Button(L.T("导出白名单"), () => ExportRulesClick(this, new RoutedEventArgs())));
         backup.Children.Add(Button(L.T("导入白名单"), () => ImportRulesClick(this, new RoutedEventArgs())));
         AddProfilesView(backup);
-        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(Text(CurrentAppVersion + " | .NET Framework 4.6.2 | " + L.T(Environment.Is64BitProcess ? "64 位" : "32 位")));
+        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(BuildAboutVersion());
         if (BuildInfo.IsPreviewBuild) about.Children.Add(Text(L.T("测试版本不代表最终品质"))); BuildUpdateSettings(about); about.Children.Add(Text(L.T("作者信息"), 20)); AddAuthorAvatar(about); about.Children.Add(Text("KangQi"));
         var links = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left }; links.Children.Add(AuthorButton("GitHub", AuthorIcons.Github, "https://github.com/KangQiovo")); links.Children.Add(AuthorButton(L.T("酷安"), AuthorIcons.Coolapk, "https://www.coolapk.com/u/21241695", true)); links.Children.Add(AuthorButton(L.T("B站"), AuthorIcons.Bilibili, "https://space.bilibili.com/329073257")); about.Children.Add(links);
         about.Children.Add(Text(L.T("引用项目"), 20));
@@ -84,7 +84,7 @@ public partial class MainWindow
         about.Children.Add(Button(L.T("清理应用缓存"), async () => await ClearAppCacheAsync()));
         about.Children.Add(Button(L.T("打开配置与记录目录"), () =>
         { try { Process.Start(new ProcessStartInfo(_directory) { UseShellExecute = true }); } catch (Exception ex) { Notice(ex.Message); } }));
-        about.Children.Add(Text(L.T("清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。"), 12));
+        about.Children.Add(Text(L.T("清理旧版本缓存、遗留更新包与未完成下载；使用中的文件、白名单和设置会保留。"), 12));
         var diagnostics = Text(L.T("正在读取运行环境…")); about.Children.Add(diagnostics);
         about.Children.Add(Button(L.T("刷新诊断信息"), async () => await LoadDiagnostics()));
         _ = LoadDiagnostics();
@@ -113,7 +113,7 @@ public partial class MainWindow
     {
         if (_closed || _busy || HasPendingTool || _updateDownloading || _updateDialogOpen) return;
         if (!LauncherContextReader.TryGetCurrent(out var context, out var error)) { Notice(L.T("缓存清理未完成") + " | " + error); return; }
-        if (!await Confirm(L.T("清理应用缓存？"), L.T("清理已验证的旧版本缓存；使用中的文件、更新下载、白名单和设置会保留。")) || _closed) return;
+        if (!await Confirm(L.T("清理应用缓存？"), L.T("清理旧版本缓存、遗留更新包与未完成下载；使用中的文件、白名单和设置会保留。")) || _closed) return;
         if (_busy || HasPendingTool || _updateDownloading) return;
         _busy = true;
         try { var result = await Task.Run(() => AppCacheCleanupService.Clear(context!)); if (!_closed) Notice(L.T(result.Success ? "缓存清理完成" : "缓存清理未完成") + " | " + result.Message); }

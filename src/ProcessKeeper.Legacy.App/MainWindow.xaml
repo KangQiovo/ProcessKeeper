@@ -10,7 +10,7 @@
   <DataTemplate x:Key="RowTemplate">
    <Grid Margin="4,6" Background="Transparent">
     <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="36"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <Button Content="{Binding Chevron}" Click="RowChevronClicked" Background="Transparent" BorderThickness="0" Padding="0" MinWidth="0" MinHeight="22" Width="22" Height="22" Margin="0" VerticalAlignment="Top"/>
+    <Button Content="{Binding Chevron}" Visibility="{Binding ChevronVisibility}" Click="RowChevronClicked" Background="Transparent" BorderThickness="0" Padding="0" MinWidth="0" MinHeight="22" Width="22" Height="22" Margin="0" VerticalAlignment="Top"/>
     <Image Grid.Column="1" Source="{Binding Icon}" Width="28" Height="28" VerticalAlignment="Top" Margin="0,2,8,0" Loaded="RowIconLoaded"/>
     <StackPanel Grid.Column="2" Margin="{Binding Indent}">
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
@@ -27,7 +27,7 @@
     <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10,0,0,0">
      <Button Content="{Binding ActionLabel}" IsEnabled="{Binding CanAct}" Visibility="{Binding ActionButtonVisibility}" Click="RowAction" Margin="0,0,10,0"/>
      <CheckBox Content="{Binding ActionCheckboxLabel}" IsChecked="{Binding IsActionChecked,Mode=OneWay}" IsEnabled="{Binding CanToggleAction}" Visibility="{Binding ToggleActionVisibility}" Click="RowAction" MinWidth="0" MinHeight="0" Padding="0" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,0,0" Foreground="{DynamicResource InkBrush}" ToolTip="{Binding ActionLabel}"/>
-     <CheckBox IsChecked="{Binding SelectionState,Mode=OneWay}" IsThreeState="True" Click="RowSelectionClicked" Visibility="{Binding SelectionVisibility}" Width="20" Height="20" MinWidth="0" MinHeight="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,0,0" ToolTip="{Binding Name}"/>
+     <CheckBox Content="{Binding SelectionCheckboxLabel}" IsChecked="{Binding SelectionState,Mode=OneWay}" IsThreeState="True" Click="RowSelectionClicked" Visibility="{Binding SelectionVisibility}" MinWidth="20" Height="20" MinHeight="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,0,0" ToolTip="{Binding Name}"/>
     </StackPanel>
    </Grid>
    <DataTemplate.Triggers><DataTrigger Binding="{Binding IsSelected,RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True"><Setter TargetName="RowSummary" Property="Foreground" Value="{Binding Foreground,RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/></DataTrigger></DataTemplate.Triggers>

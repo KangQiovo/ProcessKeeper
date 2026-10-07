@@ -14,14 +14,11 @@ public partial class MainWindow
     private async void LegacySelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (_restoringTreeSelection || _selectingRows || _closed || sender is not ListBox list) return;
-        var added = args.AddedItems.OfType<LegacyRow>().ToArray(); var removed = args.RemovedItems.OfType<LegacyRow>().ToArray();
         await _selectionGate.WaitAsync();
         try
         {
             if (_closed) return;
             var selection = await PrepareTreeSelectionAsync(list);
-            foreach (var row in removed) selection.Select(row.Id, false);
-            foreach (var row in added) selection.Select(row.Id, true);
             await SyncTreeSelectionAsync(list, selection);
         }
         catch (OperationCanceledException) { }
@@ -32,8 +29,11 @@ public partial class MainWindow
     {
         args.Handled = true;
         if (sender is not FrameworkElement { DataContext: LegacyRow row } element) return;
+        await SetRowSelectionAsync(element, row, row.SelectionState != true);
+    }
+    private async Task SetRowSelectionAsync(FrameworkElement element, LegacyRow row, bool selected)
+    {
         var list = Ancestor<ListBox>(element); if (list is null) return;
-        bool selected = row.SelectionState != true;
         await _selectionGate.WaitAsync();
         try
         {
@@ -59,7 +59,9 @@ public partial class MainWindow
             var rules = page == 0 ? RunningRules : page == 1 && !_whitelistScope.Installed ? Array.Empty<WhitelistRule>() : _rules;
             var display = _displayCatalog;
             var expanded = new HashSet<string>(snapshot.Applications.Select(app => "app:" + app.Key)
-                .Concat(installed.Select(app => "installed:" + app.Id)).Concat(rules.Select(rule => "rule:" + rule.Id))
+                .Concat(installed.Select(app => "installed:" + app.Id))
+                .Concat(installed.SelectMany(app => app.Executables.Select(exe => "installed:" + app.Id + "|exe:" + exe.Path.ToUpperInvariant())))
+                .Concat(rules.Select(rule => "rule:" + rule.Id))
                 .Concat(autoruns.Entries.Select(entry => "autorun:" + entry.Id))
                 .Concat(ApplicationPresentationGroups.GroupAutoruns(autoruns.Entries, installed, snapshot).Select(group => group.Key)), StringComparer.Ordinal);
             expanded.UnionWith(ApplicationPresentationGroups.GroupRules(rules, installed, snapshot).Select(group => group.Key));

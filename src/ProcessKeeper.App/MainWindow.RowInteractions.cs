@@ -26,6 +26,9 @@ public sealed partial class MainWindow
     private void InitializeRowInteractions()
     {
         InitializeSelectionTrees();
+        AppsList.RowInvoked += row => { if (row is AppRow app) ToggleAppRow(app); };
+        InstalledList.RowInvoked += row => { if (row is InstalledRow installed) ToggleInstalledRow(installed); };
+        RulesList.RowInvoked += row => { if (row is RuleRow rule) ToggleRuleRow(rule); };
         foreach (var list in new[] { AppsList, InstalledList, RulesList })
         {
             // Keep native virtualization. Only realized containers request icons.
@@ -33,6 +36,9 @@ public sealed partial class MainWindow
             list.ContextRequested += RowContextRequested;
         }
     }
+
+    private static void RestoreActionBinding(CheckBox checkbox, string property) => checkbox.SetBinding(CheckBox.IsCheckedProperty,
+        new Microsoft.UI.Xaml.Data.Binding { Path = new PropertyPath(property), Mode = Microsoft.UI.Xaml.Data.BindingMode.OneWay });
 
     private void RowContainerChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {

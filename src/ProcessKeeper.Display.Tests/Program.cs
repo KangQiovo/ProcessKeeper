@@ -11,6 +11,8 @@ ApplicationGroup Group(params string[] paths) => new() { Key = "fixture:group", 
 InstalledApplication Installed(params string[] paths) => new() { Id = "fixture:installed", Name = "Microsoft alleged", Publisher = "Microsoft Corporation", Executables = paths.Select(path => new InstalledExecutable { Path = path }).ToArray() };
 AutorunEntry Autorun(string path, AutorunSourceKind source = AutorunSourceKind.RegistryRun) => new() { Id = "fixture:autorun", Name = "Microsoft alleged", SourceKind = source, TargetPath = path, Command = "\"" + path + "\"", IsSystem = true };
 
+MicrosoftPackageVerification.Run(Check, args);
+
 string Manifest(string id = "123", string name = "Example Game", string directory = "Example", string state = "4") =>
     "\"AppState\" { \"appid\" \"" + id + "\" \"name\" \"" + name + "\" \"installdir\" \"" + directory + "\" \"StateFlags\" \"" + state + "\" }";
 var parsed = SteamLibraryCatalog.ReadAppManifest(Manifest(), @"D:\SteamLibrary", "appmanifest_123.acf");

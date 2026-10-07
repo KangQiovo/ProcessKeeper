@@ -9,7 +9,7 @@ namespace ProcessKeeper.Core;
 
 public sealed record AppCacheCleanupResult(bool Success, int RemovedFiles, long RemovedBytes, int RetainedTrees, string Message);
 
-/// <summary>Requests exact verified old-payload cleanup. Never traverses settings, downloads or the active payload.</summary>
+/// <summary>Clears verified old payloads and inactive owned update stages, preserving settings and the active payload.</summary>
 public static class AppCacheCleanupService
 {
     public static AppCacheCleanupResult Clear(LauncherContext context)
@@ -27,7 +27,9 @@ public static class AppCacheCleanupService
             };
             start.EnvironmentVariables["PROCESSKEEPER_HELPER_LANGUAGE"] = L.Language;
             using var process = Process.Start(start) ?? throw new IOException(L.T("无法启动已验证的缓存清理助手。"));
-            if (!process.WaitForExit(15000)) throw new IOException(L.T("缓存清理尚未完成，使用中的文件会保留。"));
+            // Keep the UI operation guard held until the owned helper actually exits.
+            // Releasing it on a timeout could race a new/resumed current-session update.
+            process.WaitForExit();
             using var stream = UpdateTrustedFiles.OpenRead(Path.Combine(context.DirectoryPath, "cache-" + id + ".txt"));
             if (stream.Length > 1024) throw new InvalidDataException(L.T("缓存清理结果无效。"));
             using var reader = new StreamReader(stream, new UTF8Encoding(false, true));
@@ -45,6 +47,6 @@ public static class AppCacheCleanupService
             !int.TryParse(fields[4], NumberStyles.None, CultureInfo.InvariantCulture, out var retained) || retained > 1000000)
             throw new InvalidDataException(L.T("缓存清理结果无效。"));
         var detail = L.F($"已清理 {files} 个缓存文件 | {bytes / 1048576d:0.00} MiB | 保留 {retained} 组缓存。");
-        return new(true, files, bytes, retained, files == 0 && retained == 0 ? L.T("没有可清理的已验证旧版本缓存。") : detail);
+        return new(true, files, bytes, retained, files == 0 && retained == 0 ? L.T("没有可清理的应用缓存或更新包。") : detail);
     }
 }

@@ -11,7 +11,9 @@ public sealed class UninstallManager
 {
     private readonly IUninstallBackend _backend;
     private static readonly SemaphoreSlim ExecutionGate = new(1, 1);
-    public UninstallManager(IUninstallBackend? backend = null) => _backend = backend ?? new UninstallWindowsBackend();
+    private readonly IUninstallEmptyDirectoryCleanup _emptyDirectoryCleanup;
+    public UninstallManager(IUninstallBackend? backend = null, IUninstallEmptyDirectoryCleanup? emptyDirectoryCleanup = null)
+    { _backend = backend ?? new UninstallWindowsBackend(); _emptyDirectoryCleanup = emptyDirectoryCleanup ?? new UninstallEmptyDirectoryCleanup(); }
     public Task<UninstallReview> ReviewAsync(UninstallEntry entry, UninstallMode mode, CancellationToken token = default) =>
         Task.Run(() => _backend.Review(entry, mode, token), token);
     public async Task<UninstallResult> RunAsync(UninstallEntry entry, UninstallMode mode, CancellationToken token = default, Func<UninstallEntry, bool>? canUninstall = null)
@@ -63,6 +65,14 @@ public sealed class UninstallManager
                 return new(UninstallOutcome.NotStarted, current.ReadOnlyReason.Length > 0 ? current.ReadOnlyReason : L.T("没有可验证的注册卸载命令。"));
             token.ThrowIfCancellationRequested();
             if (canUninstall?.Invoke(entry) == false || canUninstall?.Invoke(current) == false) return new(UninstallOutcome.NotStarted, L.T("白名单保护"));
+            using var directory = await Task.Run(() =>
+            {
+                try { return _emptyDirectoryCleanup.Capture(entry, () => _backend.Scan(token)); }
+                catch (OperationCanceledException) { throw; }
+                catch { return null; } // Cleanup uncertainty must not change the registered uninstall route.
+            }, token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            if (canUninstall?.Invoke(entry) == false || canUninstall?.Invoke(current) == false) return new(UninstallOutcome.NotStarted, L.T("白名单保护"));
             execution = await _backend.ExecuteAsync(entry, mode, token).ConfigureAwait(false);
             if (!execution.Started) return new(UninstallOutcome.NotStarted, L.T("卸载程序未启动。"));
             // Once started, cancellation stops observation only. Never kill an installer or claim rollback.
@@ -71,7 +81,21 @@ public sealed class UninstallManager
             UninstallEntry? after;
             try { after = await Task.Run(() => _backend.Read(entry.Locator, CancellationToken.None)).ConfigureAwait(false); }
             catch { return new(UninstallOutcome.VerificationUnavailable, L.T("卸载程序已运行，但无法核实注册项状态。请重新扫描。"), true, execution.ExitCode); }
-            if (after is null) return new(UninstallOutcome.RegistrationRemoved, L.T("原卸载注册项已移除。此结果不代表所有残留文件均已清理。"), true, execution.ExitCode);
+            if (after is null)
+            {
+                bool removed = false;
+                if (execution.ExitCode == 0 && !token.IsCancellationRequested && directory is not null)
+                {
+                    try
+                    {
+                        var inventory = await Task.Run(() => _backend.Scan(CancellationToken.None)).ConfigureAwait(false);
+                        if (!token.IsCancellationRequested) removed = directory.RemoveIfStillOwned(inventory);
+                    }
+                    catch { /* Keep the directory when inventory/identity cannot be revalidated. */ }
+                }
+                return new(UninstallOutcome.RegistrationRemoved, L.T("原卸载注册项已移除。此结果不代表所有残留文件均已清理。") + "\n" +
+                    L.T(removed ? "已移除经核实为空的安装目录。" : "未额外清理安装目录；无法确认归属、共享或非空的目录会保留。"), true, execution.ExitCode, removed);
+            }
             return new(UninstallOutcome.StillRegistered, L.T("卸载注册项仍存在。请完成软件卸载页面，或重新扫描确认；未执行额外清理。"), true, execution.ExitCode);
         }
         catch (OperationCanceledException) when (execution is null) { throw; }

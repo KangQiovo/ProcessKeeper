@@ -21,7 +21,9 @@ public static class UpdateSources
         new UpdateSource("gh-proxy-org", "gh-proxy.org", "https://gh-proxy.org/", false)
     });
 }
-public sealed record UpdateAsset(long Id, string Name, long Size, string DownloadUrl, string Digest, bool CanAutoInstall, string Restriction, UpdatePackageTarget PackageTarget = UpdatePackageTarget.Universal);
+public enum UpdateDistributionKind { Unknown, Portable, Installer }
+public sealed record UpdateAsset(long Id, string Name, long Size, string DownloadUrl, string Digest, bool CanAutoInstall, string Restriction,
+    UpdatePackageTarget PackageTarget = UpdatePackageTarget.Universal, UpdateDistributionKind DistributionKind = UpdateDistributionKind.Portable);
 public sealed record UpdateRelease(string Repository, string Tag, string Version, string Name, DateTimeOffset? PublishedAt,
     string Body, string HtmlUrl, bool Prerelease, IReadOnlyList<UpdateAsset> Assets);
 public sealed record UpdateCheckResult(string CurrentVersion, UpdateRelease? LatestRelease, IReadOnlyList<UpdateRelease> Releases,

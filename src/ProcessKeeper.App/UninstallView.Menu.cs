@@ -35,7 +35,7 @@ public sealed partial class UninstallView
         if (row is null && !args.TryGetPosition(_list, out _) && _list.SelectedItem is Row selected)
         { row = selected; anchor = _list.ContainerFromItem(selected) as FrameworkElement; }
         if (row is null || anchor is null) return;
-        args.Handled = true; if (!_list.SelectedItems.Contains(row)) _list.SelectedItems.Add(row);
+        args.Handled = true;
         if (row.IsGroup) return;
         var menu = BuildRowMenu(row);
         if (args.TryGetPosition(anchor, out var position)) menu.ShowAt(anchor, new FlyoutShowOptions { Position = position });
@@ -95,7 +95,7 @@ public sealed partial class UninstallView
     {
         if (_closed || IsBusy || !_canAct() || row.IsGroup || !_list.Items.Contains(row)) return;
         if (IsWhitelistProtected(row.Entry)) return;
-        _list.SelectedItems.Clear(); _list.SelectedItems.Add(row); await UninstallAsync(mode);
+        await UninstallEntryAsync(row.Entry, mode);
     }
     private void InvokeMenuAction(Action action) { if (_closed) return; try { action(); } catch (Exception ex) { _status.Text = ex.Message; } }
     private static void CopyMenuText(string text)

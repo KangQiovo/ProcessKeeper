@@ -76,6 +76,12 @@ public sealed partial class UninstallView
         else if (!_expandedGroups.Add(row.ExpansionKey)) _expandedGroups.Remove(row.ExpansionKey);
         _ = RenderAsync();
     }
+    private void UninstallRowClicked(object sender, System.Windows.Input.MouseButtonEventArgs args)
+    {
+        if (LegacyRowInteraction.BodyContainer(_list, args)?.DataContext is not Row row) return;
+        args.Handled = true;
+        if (args.ClickCount == 1) ToggleGroup(row);
+    }
 
     private sealed class Row(UninstallEntry entry, UninstallApplicationGroup? group = null, bool expanded = false, int count = 0,
         int depth = 0, GamePlatform? platform = null, string expansionKey = "", string? iconPath = null) : System.ComponentModel.INotifyPropertyChanged

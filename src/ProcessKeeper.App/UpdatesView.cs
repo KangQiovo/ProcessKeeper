@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using ProcessKeeper.Core;
 
@@ -15,6 +16,7 @@ internal sealed class UpdateUiBackend
     internal required Func<UpdateDownloadResult, CancellationToken, Task> Install { get; init; }
     internal required Func<CancellationToken, Task<string>> Shortcut { get; init; }
     internal Func<string?> UnavailableReason { get; init; } = () => null;
+    internal Func<UpdateRuntimeIdentity> Runtime { get; init; } = UpdatePackagePolicy.Current;
     internal Func<string, Task<bool>>? ConfirmExternalLink { get; init; }
     internal Func<UpdateRelease, UpdateAsset, string, UpdateDownloadSession>? CreateSession { get; init; }
     internal Func<UpdatePreferences, UpdateDownloadSession, IProgress<UpdateProgress>, CancellationToken, Task<UpdateDownloadResult>>? ResumeDownload { get; init; }
@@ -35,13 +37,12 @@ internal sealed class UpdatesView : UserControl
     private static bool _startupChecked, _startupShortcutAttempted;
     private static readonly HashSet<string> AnnouncedVersions = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _currentVersion = ResolveCurrentVersion();
-    private static string ResolveCurrentVersion()
+    internal static string ResolveCurrentVersion()
     {
         var assembly = typeof(MainWindow).Assembly;
         var information = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)?.InformationalVersion;
-        return UpdateVersion.TryParse(information, out var parsed) ? parsed!.Value : assembly.GetName().Version?.ToString(3) ?? "1.7.0";
+        return UpdateVersion.TryParse(information, out var parsed) ? parsed!.Value : assembly.GetName().Version?.ToString(3) ?? "1.7.1";
     }
-    private readonly TextBlock _repository = new() { Text = UpdatePolicy.Repository, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
     private readonly ComboBox _source = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox _node = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly CheckBox _onStartup = new(), _desktop = new();
@@ -67,7 +68,7 @@ internal sealed class UpdatesView : UserControl
         _backend = backend; _store = new UpdatePreferencesStore(settingsDirectory);
         var panel = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
         panel.Children.Add(new TextBlock { Text = L.T("检查更新"), FontSize = 19, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        panel.Children.Add(Text(L.F($"当前版本：{_currentVersion}")));
+        panel.Children.Add(BuildAboutVersion(_currentVersion, _backend.Runtime()));
         void RefreshBuildDate() => _buildDate.Text = L.F($"构建时间：{BuildInfo.DisplayBuildDate}");
         RefreshBuildDate(); panel.Children.Add(_buildDate);
         _buildDateTimer.Tick += (_, _) => RefreshBuildDate();
@@ -79,7 +80,6 @@ internal sealed class UpdatesView : UserControl
         _check.HorizontalContentAlignment = _shortcut.HorizontalContentAlignment = HorizontalAlignment.Center;
         _check.HorizontalAlignment = _shortcut.HorizontalAlignment = HorizontalAlignment.Stretch;
         checks.Children.Add(_check); Grid.SetColumn(_shortcut, 1); checks.Children.Add(_shortcut); panel.Children.Add(checks);
-        panel.Children.Add(Text(L.T("GitHub 仓库"), 12)); panel.Children.Add(_repository);
         _source.Header = L.T("更新源");
         foreach (var name in new[] { "自动选择最低延迟", "官方 GitHub", "第三方加速" }) _source.Items.Add(L.T(name));
         _node.Header = L.T("第三方节点"); _node.Items.Add(L.T("自动选择最低延迟"));
@@ -110,7 +110,7 @@ internal sealed class UpdatesView : UserControl
         _loading = true;
         try
         {
-            _repository.Text = UpdatePolicy.Repository; _source.SelectedIndex = (int)Preferences.SourceMode;
+            _source.SelectedIndex = (int)Preferences.SourceMode;
             _node.SelectedIndex = _nodeIds.IndexOf(Preferences.ThirdPartySourceId);
             _onStartup.IsChecked = Preferences.CheckOnStartup; _desktop.IsChecked = Preferences.AutoDesktopShortcut;
             _node.IsEnabled = Preferences.SourceMode == UpdateSourceMode.ThirdParty && !IsBusy;
@@ -205,6 +205,7 @@ internal sealed class UpdatesView : UserControl
 
     private async Task<UpdateAsset?> ChooseReleaseAssetAsync(UpdateRelease release, CancellationToken token)
     {
+        var runtime = _backend.Runtime();
         var panel = new StackPanel { Spacing = 12, MaxWidth = 520 };
         panel.Children.Add(Text(release.Name + " | " + release.Tag));
         if (release.PublishedAt is { } published) panel.Children.Add(Text(TimeDisplay.Format(published.ToLocalTime()), 12));
@@ -215,8 +216,8 @@ internal sealed class UpdatesView : UserControl
         var assets = new ComboBox { Header = L.T("发布文件"), HorizontalAlignment = HorizontalAlignment.Stretch };
         foreach (var asset in release.Assets)
             assets.Items.Add(new ComboBoxItem { Content = Text($"{asset.Name} | {UpdatePackageDescription.Text(asset)} | {asset.Size / 1048576d:F2} MiB", 12), Tag = asset });
-        assets.SelectedIndex = release.Assets.ToList().FindIndex(item => item.CanAutoInstall);
-        if (assets.SelectedIndex < 0 && assets.Items.Count > 0) assets.SelectedIndex = 0;
+        var preferred = UpdatePackagePolicy.DefaultAsset(release, runtime);
+        assets.SelectedIndex = preferred is null ? -1 : release.Assets.ToList().IndexOf(preferred);
         panel.Children.Add(assets);
         var reason = Text("", 12); panel.Children.Add(reason);
         var probe = new Button { Content = Text(L.T("检测节点延迟")) }; panel.Children.Add(probe);
@@ -234,9 +235,12 @@ internal sealed class UpdatesView : UserControl
         {
             var asset = (assets.SelectedItem as ComboBoxItem)?.Tag as UpdateAsset;
             var unavailable = _backend.UnavailableReason();
-            reason.Text = unavailable ?? (asset is null ? L.T("没有可用发布文件。") : asset.Restriction);
-            dialog.IsPrimaryButtonEnabled = !probingNow && unavailable is null && asset?.CanAutoInstall == true;
-            probe.IsEnabled = !probingNow && asset?.CanAutoInstall == true;
+            var eligible = asset?.CanAutoInstall == true && UpdatePackagePolicy.Supports(asset, runtime);
+            reason.Text = unavailable ?? (asset is null ? L.T("请选择发布文件。") : asset.Restriction.Length > 0 ? asset.Restriction :
+                PreservesInstallation(asset, runtime) ? L.T("当前安装目录会继续更新，原有卸载入口与安装状态会保留。") + "\n" + L.T("如需独立的免安装副本，请另外手动下载到其他目录。") :
+                UpdatePackagePolicy.IsPackageChange(asset, runtime) ? L.T("所选文件与当前版本类型不同，更新后将切换版本类型。") : "");
+            dialog.IsPrimaryButtonEnabled = !probingNow && unavailable is null && eligible;
+            probe.IsEnabled = !probingNow && eligible;
         }
         probe.Click += async (_, _) =>
         {
@@ -257,7 +261,21 @@ internal sealed class UpdatesView : UserControl
         };
         assets.SelectionChanged += (_, _) => Selection(); Selection();
         if (await ShowCancellableDialog(dialog, token) != ContentDialogResult.Primary || token.IsCancellationRequested) return null;
-        return (assets.SelectedItem as ComboBoxItem)?.Tag as UpdateAsset is { CanAutoInstall: true } selected ? selected : null;
+        if ((assets.SelectedItem as ComboBoxItem)?.Tag is not UpdateAsset { CanAutoInstall: true } selected || !UpdatePackagePolicy.Supports(selected, runtime)) return null;
+        if (UpdatePackagePolicy.IsPackageChange(selected, runtime))
+        {
+            var warning = new StackPanel { Spacing = 12, MaxWidth = 500 };
+            warning.Children.Add(Text(L.T("所选更新包与当前运行的包类型不同，可能改变安装方式或兼容界面。确认后继续。")));
+            if (PreservesInstallation(selected, runtime))
+            {
+                warning.Children.Add(Text(L.T("当前安装目录会继续更新，原有卸载入口与安装状态会保留。"), 12));
+                warning.Children.Add(Text(L.T("如需独立的免安装副本，请另外手动下载到其他目录。"), 12));
+            }
+            warning.Children.Add(BuildAboutVersion(_currentVersion, runtime));
+            warning.Children.Add(Text(selected.Name, 12));
+            if (await ShowCancellableDialog(NewDialog(L.T("切换更新包类型？"), warning, L.T("下载并更新")), token) != ContentDialogResult.Primary || token.IsCancellationRequested) return null;
+        }
+        return selected;
     }
 
     private async Task DownloadAndInstallAsync(UpdatePreferences settings, UpdateRelease release, UpdateAsset asset, CancellationToken token)
@@ -288,12 +306,15 @@ internal sealed class UpdatesView : UserControl
                 installChoice = null;
                 if (!CanPresent())
                 { installChoice = new(TaskCreationOptions.RunContinuationsAsynchronously); transfer.SetPhase(UpdateTransferPhase.Ready, L.T("请等待当前操作完成")); continue; }
-                transfer.SetPhase(UpdateTransferPhase.Confirming, L.T("请确认更新并重新启动。"));
+                var installer = download.Asset.DistributionKind == UpdateDistributionKind.Installer;
+                var installAction = L.T(installer ? "退出并启动安装程序" : "更新并重新启动");
+                transfer.SetPhase(UpdateTransferPhase.Confirming, installAction);
                 var body = new StackPanel { Spacing = 12, MaxWidth = 500 };
-                body.Children.Add(Text(L.T("点击“更新并重新启动”后，Process Keeper 将退出并安装已下载的更新，然后重新启动。其他应用不会因此退出；请先完成本应用中的其他操作。")));
+                body.Children.Add(Text(L.T(installer ? "点击“退出并启动安装程序”后，Process Keeper 将退出并打开标准安装向导。请在安装向导中确认安装位置并完成更新。其他应用不会因此退出。" : "点击“更新并重新启动”后，Process Keeper 将退出并安装已下载的更新，然后重新启动。其他应用不会因此退出；请先完成本应用中的其他操作。")));
+                if (installer) body.Children.Add(Text(L.T("安装向导中的完成或取消由你决定；取消后原有 EXE 会保留。"), 12));
                 body.Children.Add(Text(download.Asset.Name + " | " + download.Release.Tag));
                 body.Children.Add(Text("SHA-256 | " + download.Sha256, 12));
-                if (await ShowCancellableDialog(NewDialog(L.T("更新并重新启动"), body, L.T("更新并重新启动")), token) != ContentDialogResult.Primary)
+                if (await ShowCancellableDialog(NewDialog(installAction, body, installAction), token) != ContentDialogResult.Primary)
                 { installChoice = new(TaskCreationOptions.RunContinuationsAsynchronously); transfer.SetPhase(UpdateTransferPhase.Ready, L.T("下载完成")); continue; }
                 if (!CanPresent())
                 { installChoice = new(TaskCreationOptions.RunContinuationsAsynchronously); transfer.SetPhase(UpdateTransferPhase.Ready, L.T("请等待当前操作完成")); continue; }
@@ -346,6 +367,43 @@ internal sealed class UpdatesView : UserControl
         return await Present(dialog);
     }
     private static TextBlock Text(string value, double size = 14) => new() { Text = value, TextWrapping = TextWrapping.Wrap, FontSize = size };
+
+    private static bool PreservesInstallation(UpdateAsset asset, UpdateRuntimeIdentity runtime) =>
+        runtime.DistributionKind == UpdateDistributionKind.Installer && asset.DistributionKind == UpdateDistributionKind.Portable;
+
+    internal static IReadOnlyList<string> DistributionBadges(UpdateRuntimeIdentity runtime)
+    {
+        var labels = new List<string>();
+        if (runtime.PackageFlavor == UpdatePackageTarget.Universal) labels.Add(L.T("合包"));
+        labels.Add(L.T(runtime.DistributionKind switch
+        {
+            UpdateDistributionKind.Installer => runtime.CompatibilityUi ? "兼容安装版" : "安装版",
+            UpdateDistributionKind.Portable => runtime.CompatibilityUi ? "兼容免安装版" : "免安装版",
+            _ => "运行方式未验证"
+        }));
+        if (runtime.DistributionKind == UpdateDistributionKind.Unknown && runtime.CompatibilityUi) labels.Add(L.T("兼容界面"));
+        return labels;
+    }
+
+    private static RichTextBlock BuildAboutVersion(string version, UpdateRuntimeIdentity runtime)
+    {
+        var line = new RichTextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 14 };
+        var paragraph = new Paragraph(); paragraph.Inlines.Add(new Run { Text = L.F($"当前版本：{version}") + "  " });
+        foreach (var label in DistributionBadges(runtime))
+        {
+            var badge = (Border)Microsoft.UI.Xaml.Markup.XamlReader.Load("""
+                <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                        Background="{ThemeResource ControlFillColorSecondaryBrush}" BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
+                    <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Border>
+                """);
+            ((TextBlock)badge.Child).Text = label;
+            paragraph.Inlines.Add(new InlineUIContainer { Child = badge });
+            paragraph.Inlines.Add(new Run { Text = " " });
+        }
+        line.Blocks.Add(paragraph); return line;
+    }
     private async Task OpenReleaseLinkAsync(string url)
     {
         if (_closed || !ReleaseNotesParser.SafeLink(url)) return;

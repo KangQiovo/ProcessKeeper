@@ -109,7 +109,7 @@ std::unique_ptr<Peer> ReadPeer(const std::wstring& root, const std::wstring& id,
     if (GetFileAttributesW((directory + L"\\context.txt").c_str()) == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_FILE_NOT_FOUND) return nullptr;
     auto parents = LockParents(directory + L"\\context.txt", false);
     auto fields = Lines(directory + L"\\context.txt");
-    if ((fields.size() != 12 && fields.size() != 13) || fields[0] != L"PKLC1" || fields[1] != id || DecodeContextText(fields[11]) != UserSid() ||
+    if ((fields.size() < 12 || fields.size() > 14) || fields[0] != L"PKLC1" || fields[1] != id || DecodeContextText(fields[11]) != UserSid() ||
         !ValidSha256(fields[3]) || !ValidSha256(fields[6]) || !ValidSha256(fields[8])) return nullptr;
     auto result = std::make_unique<Peer>(); auto& context = result->context;
     context.id = id; context.directory = directory; context.version = fields[4]; context.original = FullPath(DecodeContextText(fields[2])); context.originalHash = fields[3];
@@ -117,7 +117,7 @@ std::unique_ptr<Peer> ReadPeer(const std::wstring& root, const std::wstring& id,
     ULONGLONG pid = 0; if (!Number(fields[9], MAXDWORD, pid) || pid <= 4 || !Number(fields[10], MAXLONGLONG, context.created)) return nullptr; context.pid = static_cast<DWORD>(pid);
     result->route = PayloadRoute(context.payload, root); if (!Eligible(host, result->route)) return nullptr;
     if (!Equal(context.helper, context.payload.substr(0, context.payload.find_last_of(L'\\')) + L"\\ProcessKeeper.Updater.exe")) return nullptr;
-    if (fields.size() == 13) {
+    if (fields.size() >= 13) {
         if (fields[12] == L"Windows7Compat" && result->route != Route::Legacy || fields[12] == L"Windows10arm64" && result->route != Route::ModernArm64 ||
             fields[12] == L"Windows10x64" && result->route == Route::ModernArm64 || fields[12] != L"Universal" && fields[12] != L"Windows7Compat" && fields[12] != L"Windows10x64" && fields[12] != L"Windows10arm64") return nullptr;
     }

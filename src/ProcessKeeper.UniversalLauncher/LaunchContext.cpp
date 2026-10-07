@@ -1,4 +1,5 @@
 #include "LaunchContext.h"
+#include "InstalledRegistration.h"
 #include <objbase.h>
 #include <sstream>
 #include <winver.h>
@@ -119,6 +120,9 @@ void WriteLaunchContext(const SourceLock& source, const PreparedPayload& payload
     auto image = OpenProtectedFile(executable), updater = OpenProtectedFile(helper);
     source.Verify();
     WriteProtectedLines(directory + L"\\instance-request.txt", {L"PKREQUEST1", std::to_wstring(GetCurrentProcessId()), std::to_wstring(ProcessCreated(GetCurrentProcess()))});
+    // Keep the canonical context readable by the 1.7.0 uninstaller's retained guard.
+    // Distribution metadata is a separate protected record bound to this exact source.
+    WriteProtectedLines(directory + L"\\distribution.txt", {L"PKDIST1", id, source.sha256(), ReadInstalledDistribution(source.path(), source.sha256(), payload.target)});
     WriteProtectedLines(directory + L"\\context.txt", {L"PKLC1", id, EncodeContextText(source.path()), source.sha256(), ProductVersion,
         EncodeContextText(executable), Hex(HashFile(image.get())), EncodeContextText(helper), Hex(HashFile(updater.get())),
         std::to_wstring(pid), std::to_wstring(ProcessCreated(process)), EncodeContextText(UserSid()),
@@ -132,13 +136,14 @@ LaunchContext ReadLaunchContext(const std::wstring& id) {
 LaunchContext ParseLaunchContext(const std::vector<std::wstring>& fields, const std::wstring& id, const std::wstring& directory) {
     if (!ValidContextId(id)) throw Failure(L"Invalid launch context identifier.");
     LaunchContext result; result.id = id; result.directory = directory;
-    if ((fields.size() != 12 && fields.size() != 13) || fields[0] != L"PKLC1" || fields[1] != id || DecodeContextText(fields[11]) != UserSid()) throw Failure(L"Invalid launch context.");
-    if (fields.size() == 13) {
+    if ((fields.size() < 12 || fields.size() > 14) || fields[0] != L"PKLC1" || fields[1] != id || DecodeContextText(fields[11]) != UserSid()) throw Failure(L"Invalid launch context.");
+    if (fields.size() >= 13) {
         if (fields[12] == L"Windows7Compat") result.target = PackageTarget::Windows7Compat;
         else if (fields[12] == L"Windows10x64") result.target = PackageTarget::Windows10x64;
         else if (fields[12] == L"Windows10arm64") result.target = PackageTarget::Windows10arm64;
         else if (fields[12] != L"Universal") throw Failure(L"Unknown trusted package flavor.");
     }
+    if (fields.size() == 14 && fields[13] != L"Portable" && fields[13] != L"Installer" && fields[13] != L"Unknown") throw Failure(L"Unknown trusted distribution kind.");
     result.original = FullPath(DecodeContextText(fields[2])); result.originalHash = fields[3]; result.version = fields[4];
     result.payload = FullPath(DecodeContextText(fields[5])); result.payloadHash = fields[6]; result.helper = FullPath(DecodeContextText(fields[7])); result.helperHash = fields[8];
     if (fields[9].empty() || fields[10].empty() || fields[9].find_first_not_of(L"0123456789") != std::wstring::npos || fields[10].find_first_not_of(L"0123456789") != std::wstring::npos)
@@ -157,8 +162,9 @@ Handle ContextProcess(const LaunchContext& context, bool fixture) {
     if (Hex(HashFile(image.get())) != context.payloadHash) throw Failure(L"The application identity changed.");
     return process;
 }
-void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersion, bool fixture, const PackageTarget* expectedTarget = nullptr) {
-    const auto semanticVersion = ParseVersion(expectedVersion);
+PackageTarget ValidateBundle(const std::wstring& path, const std::wstring& expectedVersion, bool fixture, const PackageTarget* expectedTarget = nullptr, bool installer = false, bool existingInstallation = false) {
+    auto semanticVersion = ParseVersion(expectedVersion);
+    auto validatedTarget = expectedTarget ? *expectedTarget : PackageTarget::Universal;
     auto locked = fixture ? Handle(CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr)) : OpenProtectedFile(path);
     if (!locked.valid()) Fail(L"Cannot verify the update package."); VerifyHandlePath(locked.get(), path, false);
     IMAGE_DOS_HEADER dos{}; DWORD read = 0;
@@ -174,11 +180,13 @@ void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersio
     HMODULE module = LoadLibraryExW(path.c_str(), nullptr, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
     if (!module) Fail(L"The update is not a readable native Process Keeper package.");
     try {
+        if (!installer) {
         auto resource = [&](int id) { const auto item = FindResourceW(module, MAKEINTRESOURCEW(id), RT_RCDATA); if (!item) throw Failure(L"The update does not contain a universal Process Keeper payload."); const auto size = SizeofResource(module, item); const auto data = LockResource(LoadResource(module, item)); if (!size || !data) throw Failure(L"Invalid update payload."); return std::make_pair(data, size); };
         const auto manifestResource = resource(101), archive = resource(102);
         if (manifestResource.second > 16 * 1024 * 1024) throw Failure(L"Invalid update manifest size.");
         const auto manifest = ParseManifest(std::string(static_cast<const char*>(manifestResource.first), manifestResource.second));
-        if (expectedTarget && manifest.target != *expectedTarget) throw Failure(L"The update package flavor differs from the trusted current application.");
+        validatedTarget = manifest.target;
+        if (expectedTarget && manifest.target != *expectedTarget) throw Failure(L"The update package flavor differs from the explicitly selected package.");
         if (Hex(HashBytes(archive.first, archive.second)) != manifest.archiveHash || manifest.target == PackageTarget::Universal &&
             (!manifest.files.count(L"modern/ProcessKeeper.Updater.exe") || !manifest.files.count(L"legacy/ProcessKeeper.Updater.exe") ||
             !manifest.files.count(L"modern/arm64/ProcessKeeper.exe") || !manifest.files.count(L"modern/arm64/ProcessKeeper.Updater.exe")))
@@ -186,6 +194,12 @@ void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersio
         if (!fixture) {
             const auto route = ChoosePackageRoute(DetectHost(), manifest.target);
             if (route == Route::Unsupported || route == Route::MissingFramework) throw Failure(L"The update package does not support this operating system or processor architecture.");
+        }
+        } else {
+            if (!expectedTarget || *expectedTarget == PackageTarget::Universal) throw Failure(L"Installer package identity is missing.");
+            const auto host = DetectHost(); const auto route = ChoosePackageRoute(host, *expectedTarget);
+            if (!fixture && (route == Route::Unsupported || route == Route::MissingFramework || *expectedTarget == PackageTarget::Windows10x64 && host.major < 10))
+                throw Failure(L"The installer does not support this operating system or processor architecture.");
         }
         const auto versionResource = FindResourceW(module, MAKEINTRESOURCEW(1), RT_VERSION);
         const auto raw = versionResource ? LockResource(LoadResource(module, versionResource)) : nullptr;
@@ -195,19 +209,34 @@ void ValidateBundle(const std::wstring& path, const std::wstring& expectedVersio
         VS_FIXEDFILEINFO* version = nullptr; UINT size = 0;
         if (!query || !query(raw, L"\\", reinterpret_cast<void**>(&version), &size) || size < sizeof(*version) || version->dwSignature != 0xFEEF04BD) throw Failure(L"Invalid update product version.");
         const auto text = std::to_wstring(HIWORD(version->dwFileVersionMS)) + L"." + std::to_wstring(LOWORD(version->dwFileVersionMS)) + L"." + std::to_wstring(HIWORD(version->dwFileVersionLS));
-        if (text != semanticVersion.core || LOWORD(version->dwFileVersionLS) != 0) throw Failure(L"The downloaded EXE version does not match its verified release.");
         wchar_t* product = nullptr; wchar_t* productVersion = nullptr;
         if (!query(raw, L"\\StringFileInfo\\040904b0\\ProductName", reinterpret_cast<void**>(&product), &size) || !product || std::wstring(product) != L"Process Keeper" ||
-            !query(raw, L"\\StringFileInfo\\040904b0\\ProductVersion", reinterpret_cast<void**>(&productVersion), &size) || !productVersion || std::wstring(productVersion) != semanticVersion.full)
+            !query(raw, L"\\StringFileInfo\\040904b0\\ProductVersion", reinterpret_cast<void**>(&productVersion), &size) || !productVersion)
             throw Failure(L"The update product identity does not match its verified release.");
+        if (existingInstallation) semanticVersion = ParseVersion(productVersion);
+        if (text != semanticVersion.core || LOWORD(version->dwFileVersionLS) != 0) throw Failure(L"The downloaded EXE version does not match its verified release.");
+        if (std::wstring(productVersion) != semanticVersion.full) throw Failure(L"The update product identity does not match its verified release.");
+        if (installer) {
+            auto exact = [&](const wchar_t* key, const std::wstring& expected) {
+                wchar_t* value = nullptr; const auto location = L"\\StringFileInfo\\040904b0\\" + std::wstring(key);
+                return query(raw, location.c_str(), reinterpret_cast<void**>(&value), &size) && value && std::wstring(value) == expected;
+            };
+            const auto target = *expectedTarget == PackageTarget::Windows7Compat ? L"Windows7Compat" : *expectedTarget == PackageTarget::Windows10x64 ? L"Windows10x64" : L"Windows10arm64";
+            if (!exact(L"ProcessKeeperDistribution", L"Installer") || !exact(L"ProcessKeeperPackageTarget", target) ||
+                !exact(L"ProcessKeeperRepository", L"KangQiovo/ProcessKeeper") || !exact(L"ProcessKeeperInstallerContract", L"1"))
+                throw Failure(L"The update installer ownership contract is missing or differs from its verified release.");
+        }
     } catch (...) { FreeLibrary(module); throw; }
-    FreeLibrary(module);
+    FreeLibrary(module); return validatedTarget;
 }
 }
 Handle OpenContextProcess(const LaunchContext& context) { return ContextProcess(context, false); }
 void ValidateUpdateBundle(const std::wstring& path, const std::wstring& version, const PackageTarget* expectedTarget) { ValidateBundle(path, version, false, expectedTarget); }
+void ValidateUpdateInstaller(const std::wstring& path, const std::wstring& version, PackageTarget expectedTarget) { ValidateBundle(path, version, false, &expectedTarget, true); }
+PackageTarget ValidateInstalledBundle(const std::wstring& path) { return ValidateBundle(path, L"0.0.0", true, nullptr, false, true); }
 #ifdef PK_FIXTURE_BUILD
 Handle OpenContextProcessFixture(const LaunchContext& context) { return ContextProcess(context, true); }
 void ValidateUpdateBundleFixture(const std::wstring& path, const std::wstring& version) { ValidateBundle(path, version, true); }
+void ValidateUpdateInstallerFixture(const std::wstring& path, const std::wstring& version, PackageTarget target) { ValidateBundle(path, version, true, &target, true); }
 #endif
 }

@@ -1,0 +1,22 @@
+[
+  {
+    "source": "单击展开或折叠 | 勾选保留或选择",
+    "en": "Click to expand or collapse | Use the checkbox to keep or select"
+  },
+  {
+    "source": "单击展开或折叠 | 勾选保留或选择 | 推断标签可能有误，请谨慎甄别",
+    "en": "Click to expand or collapse | Use the checkbox to keep or select | Inferred labels may be incorrect; check carefully"
+  },
+  {
+    "source": "单击展开或折叠 | 勾选启用或选择 | 规则自动保存",
+    "en": "Click to expand or collapse | Use the checkbox to enable or select | Rules save automatically"
+  },
+  {
+    "source": "单击展开或折叠 | 勾选启用或选择",
+    "en": "Click to expand or collapse | Use the checkbox to enable or select"
+  },
+  {
+    "source": "单击展开或折叠 | 勾选选择卸载项目",
+    "en": "Click to expand or collapse | Use the checkbox to select uninstall entries"
+  }
+]

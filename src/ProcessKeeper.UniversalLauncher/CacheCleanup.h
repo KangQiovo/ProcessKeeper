@@ -10,5 +10,6 @@ PayloadCleanupResult ClearPendingPayloadCache(const LaunchContext& context, cons
 #ifdef PK_FIXTURE_BUILD
 void SchedulePayloadCleanupFixture(const std::wstring& cache, const Manifest& manifest, Route route);
 void RunPendingPayloadCleanupFixture(const std::wstring& cache, const std::wstring& activeIdentity);
+PayloadCleanupResult ClearDownloadCacheFixture(const std::wstring& cache, const std::wstring& currentSession);
 #endif
 }

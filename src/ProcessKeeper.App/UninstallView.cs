@@ -34,7 +34,7 @@ public sealed partial class UninstallView : UserControl, IDisposable
     private readonly Button _batch = new() { Content = new TextBlock { Text = L.T("卸载所有建议卸载的应用"), TextWrapping = TextWrapping.Wrap }, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left,
         Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255,196,43,28)), Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White), IsEnabled = false };
     private readonly Button _coverage = new() { Content = L.T("扫描详情") };
-    private readonly ListView _list = new() { SelectionMode = ListViewSelectionMode.Multiple, IsMultiSelectCheckBoxEnabled = false, HorizontalAlignment = HorizontalAlignment.Stretch };
+    private readonly ExpansionListView _list = new() { SelectionMode = ListViewSelectionMode.Multiple, IsMultiSelectCheckBoxEnabled = false, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly System.Collections.ObjectModel.ObservableCollection<Row> _rows = new();
     private bool _updatingRows;
     private readonly TextBlock _details = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, FontSize = 12 };
@@ -53,6 +53,7 @@ public sealed partial class UninstallView : UserControl, IDisposable
         _backend = backend ?? new UninstallWindowsBackend(); _confirm = confirm; _log = log; _canAct = canAct ?? (() => true);
         _list.ItemsSource = _rows;
         NativeSelectionTree.Attach(_list, row => ((Row)row).Key, SelectionNodes, ShowSelection);
+        _list.RowInvoked += row => { if (row is Row entry) ToggleGroup(entry); };
         _openLocation = openLocation ?? OpenApplicationLocation; _copyText = copyText ?? CopyMenuText;
         _catalog = dataDirectory is null ? null : new CatalogUpdater(dataDirectory);
         var root = new Grid { RowSpacing = 10 };
@@ -259,7 +260,11 @@ public sealed partial class UninstallView : UserControl, IDisposable
     {
         var selected = SelectedEntries().Where(item => !IsWhitelistProtected(item) && item.CanUninstall).ToArray();
         if (selected.Length > 1 && mode == UninstallMode.Normal) { await UninstallSelectedAsync(selected); return; }
-        var entry = selected.Length == 1 ? selected[0] : null; if (_closed || IsBusy || !_canAct() || entry is null) return;
+        if (selected.Length == 1) await UninstallEntryAsync(selected[0], mode);
+    }
+    private async Task UninstallEntryAsync(UninstallEntry entry, UninstallMode mode)
+    {
+        if (_closed || IsBusy || !_canAct() || IsWhitelistProtected(entry) || !entry.CanUninstall) return;
         _confirming = true; _operation = CancellationTokenSource.CreateLinkedTokenSource(_life.Token); SetBusy();
         try
         {

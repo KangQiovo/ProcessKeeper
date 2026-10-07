@@ -54,8 +54,7 @@ public static class UpdateInstaller
         CancellationToken cancellationToken = default)
     {
         ValidateDownloadIdentity(download);
-        if (context.PackageTarget != download.Asset.PackageTarget) throw new InvalidDataException(L.T("更新文件类型与当前应用包不一致。"));
-        return PrepareVerified(context, download.FilePath, download.Sha256, download.Release.Version, download.Asset.Size, cancellationToken);
+        return PrepareVerified(context, download, cancellationToken);
     }
 
     // The result is provenance data, not execution authority: the trusted stage, current
@@ -68,7 +67,8 @@ public static class UpdateInstaller
         if (!string.Equals(release.Repository, UpdatePolicy.Repository, StringComparison.Ordinal) ||
             !UpdateVersion.TryParse(release.Tag, out var tagVersion) || tagVersion!.Value != release.Version ||
             !UpdateService.PortableVersion(release.Version) || !UpdateService.PortableAssetName(asset.Name) || !asset.CanAutoInstall || asset.Restriction.Length != 0 || asset.Id <= 0 ||
-            asset.PackageTarget != UpdatePackagePolicy.Identify(asset.Name, release.Version) || !UpdatePackagePolicy.Supports(asset.PackageTarget, UpdatePackagePolicy.Current()) ||
+            asset.PackageTarget != UpdatePackagePolicy.Identify(asset.Name, release.Version) || asset.DistributionKind != UpdatePackagePolicy.IdentifyDistribution(asset.Name, release.Version) ||
+            !UpdatePackagePolicy.Supports(asset, UpdatePackagePolicy.Current()) ||
             asset.Size < 4096 || asset.Size > 536870912 || !UpdateTrustedFiles.ValidHash(download.Sha256) ||
             !UpdateService.ValidDigest(asset.Digest) || !asset.Digest.Substring(7).Equals(download.Sha256, StringComparison.OrdinalIgnoreCase) ||
             !UpdateSources.All.Any(source => source.Id == download.SourceId) || release.Assets is null ||
@@ -80,9 +80,9 @@ public static class UpdateInstaller
             throw new InvalidDataException(L.T("更新下载身份与固定官方发布不一致，已拒绝安装。"));
     }
 
-    private static PreparedUpdate PrepareVerified(LauncherContext context, string filePath, string sha256, string version,
-        long expectedLength, CancellationToken cancellationToken)
+    private static PreparedUpdate PrepareVerified(LauncherContext context, UpdateDownloadResult downloadResult, CancellationToken cancellationToken)
     {
+        var filePath = downloadResult.FilePath; var sha256 = downloadResult.Sha256; var version = downloadResult.Release.Version; var expectedLength = downloadResult.Asset.Size;
         LauncherContextReader.RequireCurrent(context);
         if (!UpdateVersion.TryParse(version, out var next) || !UpdateVersion.TryParse(context.OriginalVersion, out var current) || next!.CompareTo(current) <= 0)
             throw new InvalidDataException(L.T("更新版本必须高于当前原始 EXE 的版本。"));
@@ -112,7 +112,8 @@ public static class UpdateInstaller
         using (var job = UpdateTrustedFiles.Create(Path.Combine(directory, "job.txt")))
         using (var writer = new StreamWriter(job, new UTF8Encoding(false), 4096, true))
         {
-            writer.Write("PKUP2\n" + context.Id + "\n" + id + "\n" + sha256.ToLowerInvariant() + "\n" + next + "\n" + UpdatePolicy.Repository + "\n");
+            writer.Write("PKUP3\n" + context.Id + "\n" + id + "\n" + sha256.ToLowerInvariant() + "\n" + next + "\n" + UpdatePolicy.Repository + "\n" +
+                downloadResult.Asset.PackageTarget + "\n" + downloadResult.Asset.DistributionKind + "\n");
             writer.Flush(); job.Flush(true);
         }
             return prepared;

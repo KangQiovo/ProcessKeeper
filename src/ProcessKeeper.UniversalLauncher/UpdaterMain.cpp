@@ -27,12 +27,12 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t*, int) {
         if (action == L"--clear-cache") { pk::ClearPendingPayloadCache(context, request); return 0; }
         statusPath = context.directory + L"\\job-" + request + L"\\status.txt";
         const auto result = pk::InstallUpdate(context, request);
-        if (!result.installed || result.message.find(L"not confirmed") != std::wstring::npos) {
+        if (!result.installerStarted && (!result.installed || result.message.find(L"not confirmed") != std::wstring::npos)) {
             const auto summary = result.installed ? pk::HelperText(L"The new EXE was written, but its application window was not confirmed. The original backup is retained.", L"新版 EXE 已写入，但尚未确认应用窗口。原版备份已保留。", L"新版 EXE 已寫入，但尚未確認應用程式視窗。原版備份已保留。") :
                 result.restored ? pk::HelperText(L"The update failed. The original EXE was restored; start it again.", L"更新失败，已恢复原始 EXE，请重新启动。", L"更新失敗，已還原原始 EXE，請重新啟動。") : failureSummary;
             MessageBoxW(nullptr, (summary + L"\r\n\r\n" + result.message).c_str(), title.c_str(), MB_OK | MB_ICONWARNING);
         }
-        return result.installed ? 0 : 1;
+        return result.installed || result.installerStarted ? 0 : 1;
     } catch (const pk::Failure& error) {
         if (!statusPath.empty()) { try { pk::WriteProtectedLines(statusPath, {L"PKSTATUS1", L"failed", pk::EncodeContextText(error.message), L""}); } catch (...) {} }
         MessageBoxW(nullptr, (failureSummary + L"\r\n\r\n" + error.message).c_str(), title.c_str(), MB_OK | MB_ICONERROR); return 1;

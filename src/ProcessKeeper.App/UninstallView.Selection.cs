@@ -26,8 +26,9 @@ public sealed partial class UninstallView
         if (_closed || IsBusy) return;
         var selectable = _rows.ToArray();
         bool all = selectable.Length > 0 && selectable.All(row => _list.SelectedItems.Contains(row));
-        if (all) _list.SelectedItems.Clear();
-        else foreach (var row in selectable) if (!_list.SelectedItems.Contains(row)) _list.SelectedItems.Add(row);
+        var tree = NativeSelectionTree.For(_list);
+        if (all) tree?.ClearSelection();
+        else tree?.SelectRows(selectable, true);
         ShowSelection();
     }
     private async Task UninstallSelectedAsync(UninstallEntry[] entries)

@@ -17,7 +17,7 @@ These are implementation targets. **Windows 7, Windows 8.1, Windows 10 and ARM64
 
 On ARM64, the package selects the native ARM64 modern payload; the x86 compatibility fallback is not offered. The x64-specific AVD environment reader is disabled on ARM64. Cross-compilation and native route tests on x64 are not ARM device validation.
 
-**For 1.6.x in-app upgrades, select ProcessKeeper-v1.7.0.exe (Universal).** The old updater accepts PK14 and rejects PK17 split editions or installers safely. To switch to a smaller edition or an installed copy, download its corresponding EXE manually. From 1.7.0, updates select the same portable package flavor; setup files are never passed to the automatic update helper.
+**For 1.6.x in-app upgrades, select ProcessKeeper-v1.7.1.exe (Universal).** The old updater accepts PK14 and rejects PK17 split editions or installers safely. To switch to a smaller edition or an installed copy, download its corresponding EXE manually. From 1.7.1, defaults match the verified package target and portable/installed type. A different compatible edition requires confirmation. Installer updates open a standard setup wizard after explicit consent.
 
 ## Feature differences
 

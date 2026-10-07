@@ -29,15 +29,20 @@ public sealed class LegacyRow : INotifyPropertyChanged
         Model is AutorunEntry { CanChange: true, Enabled: not null });
     public bool CanToggleAction => CanAct && (!(Model is ApplicationGroup or InstalledApplication) || !IsActionChecked);
     public string ActionCheckboxLabel => Model is WhitelistRule or AutorunEntry ? L.T("启用") : ActionLabel;
-    public System.Windows.Visibility ToggleActionVisibility => HasToggleAction ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-    public System.Windows.Visibility SelectionVisibility => HasToggleAction ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
+    public string SelectionCheckboxLabel => !HasToggleAction ? "" : Model is WhitelistRule or AutorunEntry ?
+        L.T(IsActionChecked ? "已启用" : "已禁用") : IsActionChecked ? ActionLabel : L.T("选择");
+    public System.Windows.Visibility ToggleActionVisibility => HasToggleAction && CanToggleAction ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+    public System.Windows.Visibility SelectionVisibility => HasToggleAction && CanToggleAction ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
     public System.Windows.Visibility ActionButtonVisibility => HasAction && !HasToggleAction ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public bool IsChild { get; set; }
     public string PresentationPlatformId { get; set; } = "";
     public bool IsPresentationGroup { get; set; }
     public int PresentationDepth { get; set; }
     public bool Expanded { get; set; }
-    public string Chevron => IsChild ? "" : Expanded ? "⌄" : "›";
+    public bool HasChildren { get; set; }
+    public bool CanExpand => !IsChild || Model is WhitelistRule or AutorunEntry || HasChildren;
+    public System.Windows.Visibility ChevronVisibility => CanExpand ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
+    public string Chevron => !CanExpand ? "" : Expanded ? "⌄" : "›";
     public System.Windows.Thickness Indent => new((IsChild ? 24 : 0) + PresentationDepth * 24, 0, 0, 0);
     public object? Model { get; set; }
     public string ApplicationKey { get; set; } = "";
@@ -56,7 +61,7 @@ public sealed class LegacyRow : INotifyPropertyChanged
         ActionLabel = next.ActionLabel; HasAction = next.HasAction; CanAct = next.CanAct; IsChild = next.IsChild;
         IsActionChecked = next.IsActionChecked;
         PresentationPlatformId = next.PresentationPlatformId; IsPresentationGroup = next.IsPresentationGroup;
-        PresentationDepth = next.PresentationDepth; Expanded = next.Expanded; Model = next.Model; ApplicationKey = next.ApplicationKey;
+        PresentationDepth = next.PresentationDepth; Expanded = next.Expanded; HasChildren = next.HasChildren; Model = next.Model; ApplicationKey = next.ApplicationKey;
         RoleText = next.RoleText; RoleKind = next.RoleKind; RoleTooltip = next.RoleTooltip;
         Notify();
     }
@@ -65,9 +70,11 @@ public sealed class LegacyRow : INotifyPropertyChanged
         (nameof(ActionLabel), ActionLabel), (nameof(HasAction), HasAction), (nameof(CanAct), CanAct), (nameof(IsChild), IsChild),
         (nameof(IsActionChecked), IsActionChecked), (nameof(HasToggleAction), HasToggleAction), (nameof(CanToggleAction), CanToggleAction),
         (nameof(ActionCheckboxLabel), ActionCheckboxLabel), (nameof(ToggleActionVisibility), ToggleActionVisibility),
+        (nameof(SelectionCheckboxLabel), SelectionCheckboxLabel),
         (nameof(SelectionVisibility), SelectionVisibility), (nameof(ActionButtonVisibility), ActionButtonVisibility),
         (nameof(PresentationPlatformId), PresentationPlatformId), (nameof(IsPresentationGroup), IsPresentationGroup),
-        (nameof(PresentationDepth), PresentationDepth), (nameof(Expanded), Expanded), (nameof(Chevron), Chevron), (nameof(Indent), Indent),
+        (nameof(PresentationDepth), PresentationDepth), (nameof(Expanded), Expanded), (nameof(HasChildren), HasChildren),
+        (nameof(CanExpand), CanExpand), (nameof(ChevronVisibility), ChevronVisibility), (nameof(Chevron), Chevron), (nameof(Indent), Indent),
         (nameof(RoleText), RoleText), (nameof(RoleKind), RoleKind), (nameof(RoleTooltip), RoleTooltip), (nameof(RoleVisibility), RoleVisibility));
     // A native OneWay checkbox changes its target before confirmation. Reset that target even when
     // cancellation leaves the source value unchanged; PresentationChanges deliberately coalesces it.
