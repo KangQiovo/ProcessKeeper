@@ -4,6 +4,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.System;
+using Microsoft.UI.Windowing;
+using System.Runtime.InteropServices;
 
 namespace ProcessKeeper.App;
 
@@ -18,6 +21,9 @@ public sealed partial class MainWindow
     private bool _appearanceSavePending;
     private bool _updatingMaterialControls;
     private bool? _micaSupported, _acrylicSupported;
+    private ThemeSettings? _captionThemeSettings;
+    private Microsoft.UI.Dispatching.DispatcherQueue? _captionThemeDispatcher;
+    private bool _captionThemeClosed;
 
     private AppearancePreferences CurrentAppearance => _appearance;
 
@@ -35,15 +41,73 @@ public sealed partial class MainWindow
         _appearance = _appearanceStore.Load(out _appearancePersistenceWarning);
         SetAppearanceControls();
         Root.ActualThemeChanged += AppearanceActualThemeChanged;
+        InitializeCaptionTheme();
         _appearanceSaveTimer.Tick += (_, _) => FlushAppearanceSave();
         Closed += (_, _) =>
         {
+            _captionThemeClosed = true;
+            _captionThemeDispatcher = null;
+            var captionSettings = _captionThemeSettings;
+            _captionThemeSettings = null;
+            try { if (captionSettings is not null) captionSettings.Changed -= CaptionThemeSettingsChanged; }
+            catch (Exception ex) when (IsCaptionInteropFailure(ex)) { }
             FlushAppearanceSave();
             _appearanceReady = false;
             Root.ActualThemeChanged -= AppearanceActualThemeChanged;
         };
         ApplyAppearance();
         _appearanceReady = true;
+    }
+
+    private static bool IsCaptionInteropFailure(Exception exception) =>
+        exception is COMException or InvalidOperationException or NotSupportedException or ArgumentException;
+
+    private void InitializeCaptionTheme()
+    {
+        try
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported()) return;
+            _captionThemeDispatcher = Root.DispatcherQueue;
+            _captionThemeSettings = ThemeSettings.CreateForWindowId(AppWindow.Id);
+            _captionThemeSettings.Changed += CaptionThemeSettingsChanged;
+        }
+        catch (Exception ex) when (IsCaptionInteropFailure(ex))
+        {
+            _captionThemeSettings = null;
+        }
+    }
+
+    private void CaptionThemeSettingsChanged(ThemeSettings sender, object args)
+    {
+        if (_captionThemeClosed) return;
+        try
+        {
+            _captionThemeDispatcher?.TryEnqueue(() =>
+            {
+                if (!_captionThemeClosed && ReferenceEquals(sender, _captionThemeSettings)) UpdateCaptionTheme();
+            });
+        }
+        catch (Exception ex) when (IsCaptionInteropFailure(ex)) { }
+    }
+
+    private void UpdateCaptionTheme()
+    {
+        if (_captionThemeClosed || _closed) return;
+        try
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported()) return;
+            // Keep the system palette in high contrast or when theme information is unavailable.
+            // Native button colors remain unset so Windows owns hover, pressed and inactive states.
+            var theme = TitleBarTheme.Legacy;
+            try
+            {
+                if (_captionThemeSettings is { HighContrast: false })
+                    theme = Root.ActualTheme == ElementTheme.Light ? TitleBarTheme.Light : TitleBarTheme.Dark;
+            }
+            catch (Exception ex) when (IsCaptionInteropFailure(ex)) { }
+            AppWindow.TitleBar.PreferredTheme = theme;
+        }
+        catch (Exception ex) when (IsCaptionInteropFailure(ex)) { /* Retain native caption behavior. */ }
     }
 
     private void SetAppearanceControls()
@@ -161,6 +225,7 @@ public sealed partial class MainWindow
             AppearanceTheme.Dark => ElementTheme.Dark,
             _ => ElementTheme.Default
         };
+        UpdateCaptionTheme();
         BackdropChoice.IsEnabled = _appearance.BackdropEnabled;
         var materialReady = false;
         try
@@ -248,6 +313,7 @@ public sealed partial class MainWindow
 
     private void AppearanceActualThemeChanged(FrameworkElement sender, object args)
     {
+        UpdateCaptionTheme();
         Root.DispatcherQueue.TryEnqueue(() => { if (!_closed) TextFlyoutTheme.Refresh(Root); });
         if (!_appearanceReady || _closed) return;
         if (_appearance.BackdropEnabled && _appearance.CustomBackdropEnabled && SystemBackdrop is NativeMaterialBackdrop custom && custom.Material == _appearance.Material)
