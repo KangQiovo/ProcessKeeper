@@ -1,7 +1,7 @@
 #pragma once
 #include "Payload.h"
 namespace pk {
-constexpr const wchar_t* ProductVersion = L"1.7.1";
+constexpr const wchar_t* ProductVersion = L"1.7.2";
 bool ValidContextId(const std::wstring& value);
 bool ValidSha256(const std::wstring& value);
 bool IsNewerUpdateVersion(const std::wstring& candidate, const std::wstring& current);

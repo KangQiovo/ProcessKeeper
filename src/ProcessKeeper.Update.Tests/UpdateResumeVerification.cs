@@ -20,16 +20,33 @@ internal static class UpdateResumeVerification
         var settings = new UpdatePreferences(SourceMode: UpdateSourceMode.Official);
         var release = (await service.CheckAsync(settings, "1.6.0")).LatestRelease!; var asset = release.Assets.Single();
         string Stage(string name) { var value = Path.Combine(root, name); Directory.CreateDirectory(value); return value; }
-        async Task Pause(UpdateDownloadSession session)
+        async Task Pause(UpdateDownloadSession session, UpdatePreferences? selected = null)
         {
             handler.Slow = true; using var cancel = new CancellationTokenSource();
             try
             {
-                await service.DownloadResumableAsync(settings, session, new ProgressLog(progress => { if (progress.Stage == "downloading" && progress.BytesReceived > 0) cancel.Cancel(); }), cancel.Token);
+                await service.DownloadResumableAsync(selected ?? settings, session, new ProgressLog(progress => { if (progress.Stage == "downloading" && progress.BytesReceived > 0) cancel.Cancel(); }), cancel.Token);
                 throw new Exception("Expected owned session pause");
             }
             catch (OperationCanceledException) { check(session.BytesReceived > 0 && session.BytesReceived < session.TotalBytes && !session.IsComplete, "pause retains real partial bytes and never reports completion"); }
             handler.Slow = false;
+        }
+        foreach (bool officialOffline in new[] { false, true })
+        {
+            var autoStage = Stage(officialOffline ? "auto-mirror-fallback" : "auto-return-official");
+            var auto = service.CreateDownloadSession(release, asset, autoStage);
+            await Pause(auto, new UpdatePreferences(SourceMode: UpdateSourceMode.ThirdParty, ThirdPartySourceId: "llkk"));
+            long retainedOffset = auto.BytesReceived;
+            using var resumeHandler = new Handler(binary) { OfficialOffline = officialOffline, PreferFastMirror = true };
+            using var resumeService = Create(resumeHandler);
+            var completed = await resumeService.DownloadResumableAsync(new UpdatePreferences(), auto);
+            string expectedHost = officialOffline ? "ghfast.top" : "github.com";
+            check(completed.SourceId == (officialOffline ? "ghfast" : "official"), "Auto resume reselects official first and only falls back when unavailable: " + officialOffline);
+            check(resumeHandler.Ranges.Any(range => range.Host == expectedHost && range.Start == retainedOffset), "Auto source switch resumes exact receipt-verified offset: " + officialOffline);
+            check(resumeHandler.Ranges.First().Host == "github.com", "Auto resume probes official before any mirrors: " + officialOffline);
+            check(officialOffline || resumeHandler.Ranges.All(range => range.Host == "github.com"), "successful official resume never contacts faster mirrors");
+            check(auto.IsComplete && File.ReadAllBytes(completed.FilePath).SequenceEqual(binary) && Directory.EnumerateFiles(autoStage).Count() == 1, "Auto resume completes only byte-exact official-digest file: " + officialOffline);
+            resumeService.DiscardDownloadSession(auto);
         }
         var firstStage = Stage("switch-source"); var first = service.CreateDownloadSession(release, asset, firstStage); await Pause(first);
         long offset = first.BytesReceived; int requests = handler.Ranges.Count;
@@ -80,26 +97,28 @@ internal static class UpdateResumeVerification
     private sealed class ProgressLog(Action<UpdateProgress> action) : IProgress<UpdateProgress> { public void Report(UpdateProgress progress) => action(progress); }
     private sealed class Handler(byte[] binary) : HttpMessageHandler
     {
-        public bool Slow, IgnoreResumeRange, WrongRange, ChangedDigest, CorruptBinary;
+        public bool Slow, IgnoreResumeRange, WrongRange, ChangedDigest, CorruptBinary, OfficialOffline, PreferFastMirror;
         public List<(string Host, long Start)> Ranges = new(); public List<(string Host, long Start)>? SharedRanges;
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             string digest; using (var hash = SHA256.Create()) digest = BitConverter.ToString(hash.ComputeHash(binary)).Replace("-", "").ToLowerInvariant();
             if (request.RequestUri!.Host == "api.github.com")
             {
                 var release = new { tag_name = "v1.7.0", name = "ProcessKeeper", draft = false, prerelease = false, html_url = "https://github.com/KangQiovo/ProcessKeeper/releases/tag/v1.7.0", body = "", published_at = "2026-10-03T00:00:00Z",
                     assets = new[] { new { id = 42, name = "ProcessKeeper.exe", size = binary.Length, state = "uploaded", digest = "sha256:" + (ChangedDigest ? new string('a', 64) : digest), browser_download_url = "https://github.com/KangQiovo/ProcessKeeper/releases/download/v1.7.0/ProcessKeeper.exe" } } };
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(request.RequestUri.AbsolutePath.Contains("/tags/") ? (object)release : new[] { release })) });
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(request.RequestUri.AbsolutePath.Contains("/tags/") ? (object)release : new[] { release })) };
             }
             var range = request.Headers.Range?.Ranges.Single(); long start = range?.From ?? 0, end = range?.To ?? binary.Length - 1;
-            (SharedRanges ?? Ranges).Add((request.RequestUri.Host, start));
+            var ranges = SharedRanges ?? Ranges; lock (ranges) ranges.Add((request.RequestUri.Host, start));
             bool probe = range is not null && start == 0 && end == 4095;
+            if (OfficialOffline && request.RequestUri.Host == "github.com") throw new HttpRequestException("Fixture official source unavailable");
+            if (probe && PreferFastMirror) await Task.Delay(request.RequestUri.Host == "ghfast.top" ? 10 : 100, token);
             bool partial = range is not null && (probe || !IgnoreResumeRange);
             var data = binary.ToArray(); if (CorruptBinary && !probe) data[100000] ^= 1;
             if (partial) data = data.Skip((int)start).Take((int)(end - start + 1)).ToArray();
             HttpContent content = Slow && !probe ? new StreamContent(new SlowStream(data)) : new ByteArrayContent(data); content.Headers.ContentLength = data.Length;
             if (partial) content.Headers.ContentRange = new ContentRangeHeaderValue(WrongRange && !probe ? start + 1 : start, end, binary.Length);
-            return Task.FromResult(new HttpResponseMessage(partial ? HttpStatusCode.PartialContent : HttpStatusCode.OK) { Content = content });
+            return new HttpResponseMessage(partial ? HttpStatusCode.PartialContent : HttpStatusCode.OK) { Content = content };
         }
     }
     private sealed class SlowStream(byte[] data) : MemoryStream(data, false)

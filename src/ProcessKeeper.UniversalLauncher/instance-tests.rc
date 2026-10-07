@@ -1,7 +1,7 @@
 #include <windows.h>
 1 VERSIONINFO
-FILEVERSION 1,7,1,0
-PRODUCTVERSION 1,7,1,0
+FILEVERSION 1,7,2,0
+PRODUCTVERSION 1,7,2,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -12,7 +12,7 @@ BEGIN
     BLOCK "040904b0"
     BEGIN
       VALUE "ProductName", "Process Keeper\0"
-      VALUE "ProductVersion", "1.7.1+fixture\0"
+      VALUE "ProductVersion", "1.7.2+fixture\0"
       VALUE "OriginalFilename", "ProcessKeeper.exe\0"
     END
   END

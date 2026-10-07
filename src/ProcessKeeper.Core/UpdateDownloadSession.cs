@@ -92,33 +92,34 @@ public sealed partial class UpdateService
                 session.SetBytes(retained.Length);
             }
             Report(progress, "resuming", session.SourceId, session.BytesReceived, session.TotalBytes, L.T("继续下载已验证身份的更新文件。"));
-            var probes = await ProbeSources(preferences, verified.Asset, progress, timeout.Token).ConfigureAwait(false);
-            var available = probes.Where(probe => probe.Success).OrderBy(probe => probe.LatencyMilliseconds).ToArray();
-            if (available.Length == 0) throw Error("no-source", "所有候选下载源均不可用。请查看各源检测结果。");
             Exception? last = null;
-            foreach (var probe in available)
+            foreach (var plan in DownloadPlans(preferences))
             {
-                timeout.Token.ThrowIfCancellationRequested();
-                var source = UpdateSources.All.Single(candidate => candidate.Id == probe.SourceId);
-                session.SourceId = source.Id;
-                try { return await ResumeSource(session, source, verified.Release, verified.Asset, progress, timeout.Token).ConfigureAwait(false); }
-                catch (Exception error) when (error is UpdateException or HttpRequestException or IOException)
+                var probes = await ProbeSources(plan, verified.Asset, progress, timeout.Token).ConfigureAwait(false);
+                foreach (var probe in probes.Where(probe => probe.Success).OrderBy(probe => probe.LatencyMilliseconds))
                 {
-                    timeout.Token.ThrowIfCancellationRequested(); last = error;
-                    if (error is UpdateException { Code: "digest" or "executable" })
+                    timeout.Token.ThrowIfCancellationRequested();
+                    var source = UpdateSources.All.Single(candidate => candidate.Id == probe.SourceId);
+                    session.SourceId = source.Id;
+                    try { return await ResumeSource(session, source, verified.Release, verified.Asset, progress, timeout.Token).ConfigureAwait(false); }
+                    catch (Exception error) when (error is UpdateException or HttpRequestException or IOException)
                     {
-                        if (File.Exists(session.ActivePath))
+                        timeout.Token.ThrowIfCancellationRequested(); last = error;
+                        if (error is UpdateException { Code: "digest" or "executable" })
                         {
-                            using (var corrupt = _openResumeFile(session.ActivePath)) RequireReceipt(session, session.ActivePath, corrupt);
-                            File.Delete(session.ActivePath); session.Receipts.Remove(session.ActivePath);
+                            if (File.Exists(session.ActivePath))
+                            {
+                                using (var corrupt = _openResumeFile(session.ActivePath)) RequireReceipt(session, session.ActivePath, corrupt);
+                                File.Delete(session.ActivePath); session.Receipts.Remove(session.ActivePath);
+                            }
+                            var retained = session.ActivePath == session.PartialPath ? session.RestartPath : session.PartialPath;
+                            session.ActivePath = retained; session.SetBytes(session.Receipts.TryGetValue(retained, out var receipt) ? receipt.Length : 0);
                         }
-                        var retained = session.ActivePath == session.PartialPath ? session.RestartPath : session.PartialPath;
-                        session.ActivePath = retained; session.SetBytes(session.Receipts.TryGetValue(retained, out var receipt) ? receipt.Length : 0);
+                        Report(progress, "source-failed", source.Id, session.BytesReceived, session.TotalBytes, source.Name + " | " + error.Message);
                     }
-                    Report(progress, "source-failed", source.Id, session.BytesReceived, session.TotalBytes, source.Name + " | " + error.Message);
                 }
             }
-            throw last ?? Error("download", "更新下载失败。");
+            throw last ?? Error("no-source", "所有候选下载源均不可用。请查看各源检测结果。");
         }
         catch (Exception) when (cancellationToken.IsCancellationRequested)
         {

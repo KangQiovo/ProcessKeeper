@@ -32,6 +32,7 @@ internal static class Program
         AppCacheCleanupVerification.Run(Check);
         InstanceRedirectVerification.Run(Check);
         await UpdatePackageVerification.Run(Check);
+        await SourcePreferences();
         await UpdateResumeVerification.Run(Check);
         await Metadata(); await Sources(); await Downloads(); await Boundaries(); await AdditionalBoundaries();
         Console.WriteLine($"PASS: {_checks} update assertions | fake HTTP only | no executable launched | fixtures: {Root}");
@@ -165,11 +166,64 @@ internal static class Program
         fake.BadProbeHost = "ghfast.top";
         probes = await service.ProbeAsync(new UpdatePreferences(), release, release.Assets[0], log);
         Check(!probes.Single(p => p.SourceId == "ghfast").Success && log.Items.Any(p => p.Stage == "source-failed" && p.SourceId == "ghfast"), "failed probe visible and excluded");
-        fake.BadProbeHost = null; var directory = Folder("fastest");
+        fake.BadProbeHost = null; fake.Requests.Clear(); var directory = Folder("official-first");
         var result = await service.DownloadAsync(new UpdatePreferences(), release, release.Assets[0], directory, log);
-        Check(result.SourceId == "ghfast" && File.ReadAllBytes(result.FilePath).SequenceEqual(Binary), "actual lowest successful latency selected");
+        Check(result.SourceId == "official" && File.ReadAllBytes(result.FilePath).SequenceEqual(Binary), "Auto prefers reachable official source over faster mirrors");
+        Check(fake.Requests.All(uri => uri.Host is "api.github.com" or "github.com"), "successful Auto download never probes or contacts mirrors");
         Check(result.Sha256 == Digest.Substring(7) && log.Items.Any(p => p.Stage == "completed"), "official SHA256 and completed progress");
         Check(fake.Requests.Where(r => r.AbsolutePath.Contains("/releases/tags/")).All(r => r.Host == "api.github.com"), "every probe/download rechecks official tag metadata");
+    }
+    private static async Task SourcePreferences()
+    {
+        foreach (var mode in new[] { "", "official-offline", "official-transfer-offline", "official-corrupt" })
+        {
+            using var fake = new DownloadFake { Mode = mode }; using var service = Service(fake);
+            var release = (await service.CheckAsync(Official, "1.5.0")).LatestRelease!; var log = new Log();
+            var result = await service.DownloadAsync(new UpdatePreferences(ThirdPartySourceId: "llkk"), release, release.Assets[0], Folder("preference-" + mode), log);
+            Check(result.SourceId == (mode.Length == 0 ? "official" : "ghfast"), "Auto official priority and fastest mirror fallback: " + mode);
+            Check(fake.Requests.First(uri => uri.Host != "api.github.com").Host == "github.com", "Auto always attempts official binary before mirror candidates: " + mode);
+            Check(File.ReadAllBytes(result.FilePath).SequenceEqual(Binary) && result.Sha256 == Digest.Substring(7), "every Auto transport uses unchanged official digest: " + mode);
+            Check(Directory.EnumerateFiles(Path.GetDirectoryName(result.FilePath)!).Count() == 1, "Auto fallback leaves only verified file: " + mode);
+            if (mode.Length == 0) Check(fake.Requests.All(uri => uri.Host is "api.github.com" or "github.com"), "reachable official avoids all mirror requests");
+            else
+            {
+                var events = log.Items.ToArray();
+                int failed = Array.FindIndex(events, item => item.Stage == "source-failed" && item.SourceId == "official");
+                int mirror = Array.FindIndex(events, item => item.Stage == "probing" && item.SourceId != "official");
+                Check(failed >= 0 && mirror > failed, "mirrors are probed only after visible official failure: " + mode);
+            }
+        }
+        using (var fake = new DownloadFake())
+        using (var service = Service(fake))
+        {
+            var release = (await service.CheckAsync(Official, "1.5.0")).LatestRelease!; fake.Mode = "metadata-offline";
+            var stage = Folder("official-metadata-offline");
+            await Error(() => service.DownloadAsync(new UpdatePreferences(), release, release.Assets[0], stage), "network", "Auto fallback cannot bypass unavailable official metadata authority");
+            Check(fake.BinaryRequests == 0 && !Directory.EnumerateFiles(stage).Any(), "official metadata failure contacts no binary transports and creates no partial files");
+        }
+        using (var fake = new DownloadFake { Mode = "official-offline" })
+        using (var service = Service(fake))
+        {
+            var release = (await service.CheckAsync(Official, "1.5.0")).LatestRelease!;
+            await Error(() => service.DownloadAsync(Official, release, release.Assets[0], Folder("explicit-official-offline")), "no-source", "explicit Official does not fall back");
+            Check(fake.Requests.All(uri => uri.Host is "api.github.com" or "github.com"), "explicit Official never contacts mirrors after failure");
+        }
+        foreach (var source in new[] { "auto", "llkk" })
+        {
+            using var fake = new DownloadFake(); using var service = Service(fake);
+            var release = (await service.CheckAsync(Official, "1.5.0")).LatestRelease!;
+            var result = await service.DownloadAsync(new UpdatePreferences(SourceMode: UpdateSourceMode.ThirdParty, ThirdPartySourceId: source), release, release.Assets[0], Folder("explicit-third-party-" + source));
+            Check(result.SourceId == (source == "auto" ? "ghfast" : "llkk"), "explicit ThirdParty honors selected node or mirror latency: " + source);
+            Check(fake.Requests.All(uri => uri.Host != "github.com"), "explicit ThirdParty does not request official binary: " + source);
+        }
+        using (var fake = new DownloadFake { Mode = "timeout" })
+        using (var service = Service(fake))
+        using (var cancel = new CancellationTokenSource())
+        {
+            var release = (await service.CheckAsync(Official, "1.5.0")).LatestRelease!; cancel.CancelAfter(40);
+            await Cancelled(() => service.DownloadAsync(new UpdatePreferences(), release, release.Assets[0], Folder("cancel-official"), cancellationToken: cancel.Token), "Auto cancellation stops instead of falling back");
+            Check(fake.Requests.All(uri => uri.Host is "api.github.com" or "github.com"), "Auto cancellation never contacts fallback mirrors");
+        }
     }
     private static async Task Downloads()
     {
@@ -250,7 +304,7 @@ internal static class Program
         using (var service = Service(fake))
         {
             var release = (await service.CheckAsync(Official, "1.5.0")).LatestRelease!; var log = new Log();
-            var result = await service.DownloadAsync(new UpdatePreferences(), release, release.Assets[0], Folder("fallback"), log);
+            var result = await service.DownloadAsync(new UpdatePreferences(SourceMode: UpdateSourceMode.ThirdParty), release, release.Assets[0], Folder("fallback"), log);
             Check(result.SourceId != "ghfast" && log.Items.Any(p => p.Stage == "source-failed" && p.SourceId == "ghfast"), "corrupt fastest source visibly falls back");
             Check(Directory.EnumerateFiles(Path.GetDirectoryName(result.FilePath)!).Count() == 1 && File.ReadAllBytes(result.FilePath).SequenceEqual(Binary), "fallback retains only verified executable");
         }
@@ -300,10 +354,13 @@ internal static class Program
             var uri = request.RequestUri!; Requests.Enqueue(uri);
             if (uri.Host == "api.github.com")
             {
+                if (Mode == "metadata-offline") throw new HttpRequestException("Fixture official metadata unavailable");
                 var body = Release(digest: Mode is "changed" or "missing-digest" ? Mode == "missing-digest" ? "" : "sha256:" + new string('a', 64) : Mode == "wrong-machine" ? "sha256:" + Convert.ToHexString(SHA256.HashData(WrongMachine())).ToLowerInvariant() : null);
                 return Json(uri.AbsolutePath.Contains("/tags/") ? body : new[] { body });
             }
             Interlocked.Increment(ref BinaryRequests);
+            if (uri.Host == "github.com" && (Mode == "official-offline" || Mode == "official-transfer-offline" && request.Headers.Range is null))
+                throw new HttpRequestException("Fixture official source unavailable");
             if (Mode == "loop") { var r = new HttpResponseMessage(HttpStatusCode.Redirect); r.Headers.Location = uri; return r; }
             if (Redirect is not null && uri.Host == "github.com") { var r = new HttpResponseMessage(HttpStatusCode.Redirect); r.Headers.Location = new Uri(Redirect); return r; }
             if (request.Headers.Range is not null)
@@ -320,6 +377,7 @@ internal static class Program
                 finally { Interlocked.Decrement(ref ActiveProbes); }
             }
             var bytes = Mode == "wrong-machine" ? WrongMachine() : Binary.ToArray(); if (Mode == "digest" || Mode == "fallback" && uri.Host == "ghfast.top") bytes[7000] ^= 1;
+            if (Mode == "official-corrupt" && uri.Host == "github.com") bytes[7000] ^= 1;
             if (Mode == "truncated") bytes = bytes.Take(bytes.Length - 1).ToArray(); if (Mode == "oversized") bytes = bytes.Concat(new byte[] { 1 }).ToArray();
             HttpContent content = Mode == "slow-stream" ? new StreamContent(new SlowStream(bytes)) : new ByteArrayContent(bytes); content.Headers.ContentLength = Binary.Length;
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };

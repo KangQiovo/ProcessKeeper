@@ -2,6 +2,7 @@ using ProcessKeeper.Core;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 
 namespace ProcessKeeper.App;
@@ -13,11 +14,16 @@ public sealed partial class MainWindow
     private bool _appearanceReady;
     private string _appearanceResult = "";
     private string? _appearancePersistenceWarning;
+    private readonly DispatcherTimer _appearanceSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private bool _appearanceSavePending;
+    private bool _updatingMaterialControls;
+    private bool? _micaSupported, _acrylicSupported;
 
     private AppearancePreferences CurrentAppearance => _appearance;
 
     private void ApplyImportedAppearance(AppearancePreferences value)
     {
+        CancelPendingAppearanceSave();
         _appearance = value;
         _appearancePersistenceWarning = null;
         SetAppearanceControls();
@@ -29,8 +35,10 @@ public sealed partial class MainWindow
         _appearance = _appearanceStore.Load(out _appearancePersistenceWarning);
         SetAppearanceControls();
         Root.ActualThemeChanged += AppearanceActualThemeChanged;
+        _appearanceSaveTimer.Tick += (_, _) => FlushAppearanceSave();
         Closed += (_, _) =>
         {
+            FlushAppearanceSave();
             _appearanceReady = false;
             Root.ActualThemeChanged -= AppearanceActualThemeChanged;
         };
@@ -47,6 +55,10 @@ public sealed partial class MainWindow
             BackdropEnabled.IsChecked = _appearance.BackdropEnabled;
             BackdropChoice.SelectedIndex = (int)_appearance.Material;
             ThemeChoice.SelectedIndex = (int)_appearance.Theme;
+            CustomBackdropEnabled.IsChecked = _appearance.CustomBackdropEnabled;
+            TintOpacitySlider.Value = _appearance.TintOpacity * 100;
+            LuminosityOpacitySlider.Value = _appearance.LuminosityOpacity * 100;
+            UpdateMaterialControlValues();
         }
         finally { _appearanceReady = ready; }
     }
@@ -57,8 +69,9 @@ public sealed partial class MainWindow
     private void ChangeAppearance()
     {
         if (!_appearanceReady || _closed || BackdropChoice.SelectedIndex is < 0 or > 1 || ThemeChoice.SelectedIndex is < 0 or > 2) return;
-        _appearance = new AppearancePreferences(BackdropEnabled.IsChecked == true,
-            (BackdropMaterial)BackdropChoice.SelectedIndex, (AppearanceTheme)ThemeChoice.SelectedIndex);
+        _appearance = _appearance with { BackdropEnabled = BackdropEnabled.IsChecked == true,
+            Material = (BackdropMaterial)BackdropChoice.SelectedIndex, Theme = (AppearanceTheme)ThemeChoice.SelectedIndex,
+            CustomBackdropEnabled = CustomBackdropEnabled.IsChecked == true };
         ApplyAppearance();
         SaveAppearance();
     }
@@ -72,6 +85,74 @@ public sealed partial class MainWindow
         SaveAppearance();
     }
 
+    private void MaterialOpacityChanged(object sender, RangeBaseValueChangedEventArgs args)
+    {
+        if (!_appearanceReady || _closed || _updatingMaterialControls) return;
+        _appearance = _appearance with { TintOpacity = TintOpacitySlider.Value / 100, LuminosityOpacity = LuminosityOpacitySlider.Value / 100 };
+        ApplyAppearance();
+        _appearanceSavePending = true;
+        _appearanceSaveTimer.Stop(); _appearanceSaveTimer.Start();
+    }
+
+    private void MaterialColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+    {
+        if (!_appearanceReady || _closed || _updatingMaterialControls) return;
+        _appearance = _appearance with { TintColor = $"#{args.NewColor.R:X2}{args.NewColor.G:X2}{args.NewColor.B:X2}" };
+        ApplyAppearance();
+        _appearanceSavePending = true;
+        _appearanceSaveTimer.Stop(); _appearanceSaveTimer.Start();
+    }
+
+    private void ApplyMaterialColor(object sender, RoutedEventArgs args)
+    {
+        if (!_appearanceReady || _closed || !TintColorPicker.IsEnabled) return;
+        var color = TintColorPicker.Color;
+        _appearance = _appearance with { TintColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}" };
+        ApplyAppearance(); SaveAppearance(); TintColorButton.Flyout.Hide();
+    }
+    private void FollowMaterialTheme(object sender, RoutedEventArgs args)
+    {
+        if (!_appearanceReady || _closed) return;
+        _appearance = _appearance with { TintColor = null };
+        ApplyAppearance(); SaveAppearance();
+    }
+
+    private void RestoreNativeMaterial(object sender, RoutedEventArgs args)
+    {
+        if (!_appearanceReady || _closed) return;
+        _appearance = _appearance with { CustomBackdropEnabled = false, TintOpacity = .8, LuminosityOpacity = .85, TintColor = null };
+        SetAppearanceControls(); ApplyAppearance(); SaveAppearance();
+    }
+
+    private void CancelPendingAppearanceSave() { _appearanceSaveTimer.Stop(); _appearanceSavePending = false; }
+    private void FlushAppearanceSave() { if (_appearanceSavePending) SaveAppearance(); else _appearanceSaveTimer.Stop(); }
+
+    private void UpdateMaterialControlValues()
+    {
+        _updatingMaterialControls = true;
+        try
+        {
+            TintOpacityValue.Text = (_appearance.TintOpacity * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+            LuminosityOpacityValue.Text = (_appearance.LuminosityOpacity * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+            if (_appearance.TintColor is { } value)
+            {
+                var color = Windows.UI.Color.FromArgb(255, Convert.ToByte(value.Substring(1, 2), 16), Convert.ToByte(value.Substring(3, 2), 16), Convert.ToByte(value.Substring(5, 2), 16));
+                TintColorPicker.Color = color; TintColorPreview.Background = new SolidColorBrush(color);
+            }
+            else
+            {
+                TintColorPreview.ClearValue(Border.BackgroundProperty);
+                // This native theme swatch is a picker starting point, not the material's effective RGB.
+                // Clearing an explicit color must also clear the picker's stale selection, so selecting
+                // a different former color raises ColorChanged; Apply also commits the current initial RGB.
+                if (TintColorPreview.Background is SolidColorBrush themeSwatch)
+                    TintColorPicker.Color = Windows.UI.Color.FromArgb(255, themeSwatch.Color.R, themeSwatch.Color.G, themeSwatch.Color.B);
+            }
+            TintColorValue.Text = _appearance.TintColor ?? L.T("跟随主题");
+        }
+        finally { _updatingMaterialControls = false; }
+    }
+
     private void ApplyAppearance()
     {
         Root.RequestedTheme = _appearance.Theme switch
@@ -81,6 +162,7 @@ public sealed partial class MainWindow
             _ => ElementTheme.Default
         };
         BackdropChoice.IsEnabled = _appearance.BackdropEnabled;
+        var materialReady = false;
         try
         {
             if (!_appearance.BackdropEnabled)
@@ -91,7 +173,7 @@ public sealed partial class MainWindow
             else
             {
                 var mica = _appearance.Material == BackdropMaterial.Mica;
-                var supported = mica ? MicaController.IsSupported() : DesktopAcrylicController.IsSupported();
+                var supported = IsBackdropSupported(_appearance.Material);
                 if (!supported)
                 {
                     UseSolidAppearance();
@@ -99,10 +181,22 @@ public sealed partial class MainWindow
                 }
                 else
                 {
-                    if (mica && SystemBackdrop is not MicaBackdrop) SystemBackdrop = new MicaBackdrop();
+                    if (_appearance.CustomBackdropEnabled)
+                    {
+                        if (SystemBackdrop is NativeMaterialBackdrop custom && custom.Material == _appearance.Material) custom.Update(_appearance);
+                        else
+                        {
+                            var backdrop = new NativeMaterialBackdrop(_appearance);
+                            backdrop.AppearanceChanged += () => Root.DispatcherQueue.TryEnqueue(() =>
+                            { if (!_closed && ReferenceEquals(SystemBackdrop, backdrop)) UpdateMaterialControlValues(); });
+                            SystemBackdrop = backdrop;
+                        }
+                    }
+                    else if (mica && SystemBackdrop is not MicaBackdrop) SystemBackdrop = new MicaBackdrop();
                     else if (!mica && SystemBackdrop is not DesktopAcrylicBackdrop) SystemBackdrop = new DesktopAcrylicBackdrop();
                     // A local transparent brush reveals the native material beneath the XAML content.
-                    Root.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                    if (Root.Background is not SolidColorBrush { Color.A: 0 }) Root.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                    materialReady = true;
                     _appearanceResult = L.F($"已启用 {(mica ? L.T("Mica 云母") : L.T("Acrylic 亚克力"))}。Windows 会根据透明效果、对比度和电源等系统设置自动调整材质。");
                 }
             }
@@ -112,8 +206,17 @@ public sealed partial class MainWindow
             UseSolidAppearance();
             _appearanceResult = L.T("当前环境无法启用背景材质，已回退为纯色背景。");
         }
+        CustomBackdropEnabled.IsEnabled = _appearance.BackdropEnabled && materialReady;
+        var parametersEnabled = CustomBackdropEnabled.IsEnabled && _appearance.CustomBackdropEnabled;
+        TintOpacitySlider.IsEnabled = LuminosityOpacitySlider.IsEnabled = TintColorButton.IsEnabled = TintColorPicker.IsEnabled = TintApplyButton.IsEnabled = TintThemeButton.IsEnabled = parametersEnabled;
+        NativeDefaultsButton.IsEnabled = CustomBackdropEnabled.IsEnabled;
+        UpdateMaterialControlValues();
         UpdateAppearanceStatus();
     }
+
+    private bool IsBackdropSupported(BackdropMaterial material) => material == BackdropMaterial.Mica
+        ? (_micaSupported ??= MicaController.IsSupported())
+        : (_acrylicSupported ??= DesktopAcrylicController.IsSupported());
 
     private void UseSolidAppearance()
     {
@@ -128,11 +231,23 @@ public sealed partial class MainWindow
     {
         Root.DispatcherQueue.TryEnqueue(() => { if (!_closed) TextFlyoutTheme.Refresh(Root); });
         if (!_appearanceReady || _closed) return;
+        if (_appearance.BackdropEnabled && _appearance.CustomBackdropEnabled && SystemBackdrop is NativeMaterialBackdrop custom && custom.Material == _appearance.Material)
+        {
+            try { custom.Update(_appearance); }
+            catch (Exception)
+            {
+                UseSolidAppearance();
+                CustomBackdropEnabled.IsEnabled = TintOpacitySlider.IsEnabled = LuminosityOpacitySlider.IsEnabled = TintColorButton.IsEnabled = TintColorPicker.IsEnabled = TintApplyButton.IsEnabled = TintThemeButton.IsEnabled = NativeDefaultsButton.IsEnabled = false;
+                _appearanceResult = L.T("当前环境无法启用背景材质，已回退为纯色背景。");
+            }
+        }
+        UpdateMaterialControlValues();
         UpdateAppearanceStatus();
     }
 
     private void SaveAppearance()
     {
+        CancelPendingAppearanceSave();
         try
         {
             _appearanceStore.Save(_appearance);

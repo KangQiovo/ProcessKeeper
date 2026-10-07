@@ -5,6 +5,10 @@ internal static class BuildInfoVerification
 {
     internal static void Run(Action<bool, string> check)
     {
+        check(ReleaseIdentity.DisplayVersion("1.7.2") == "1.7.1v2", "v2 revision has a friendly label with numeric update identity");
+        check(ReleaseIdentity.DisplayVersion("1.7.2+source") == "1.7.1v2", "source hash metadata does not change the friendly revision label");
+        check(ReleaseIdentity.DisplayVersion("1.7.1") == "1.7.1" && ReleaseIdentity.DisplayVersion("1.7.2-preview") == "1.7.2-preview", "unrelated and preview versions retain their own identity");
+        check(UpdateVersion.TryParse(ReleaseIdentity.NumericVersion, out var numeric) && UpdateVersion.TryParse("1.7.1", out var prior) && numeric!.CompareTo(prior) > 0, "v2 numeric version is newer for retained strict SemVer update clients");
         var utc = DateTimeOffset.ParseExact(BuildInfo.BuildDateUtc, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
         var utc8 = DateTimeOffset.ParseExact(BuildInfo.BuildDateUtc8, "yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
         check(utc == utc8 && utc8.Offset == TimeSpan.FromHours(8), "UTC and default UTC+8 build metadata describe the same second");

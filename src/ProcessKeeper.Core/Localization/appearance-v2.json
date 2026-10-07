@@ -1,0 +1,15 @@
+[
+  { "source": "自定义材质参数", "en": "Custom material parameters" },
+  { "source": "启用自定义材质参数", "en": "Customize material parameters" },
+  { "source": "色调不透明度", "en": "Tint opacity" },
+  { "source": "亮度层不透明度", "en": "Luminosity opacity" },
+  { "source": "色调颜色", "en": "Tint color" },
+  { "source": "应用颜色", "en": "Apply color" },
+  { "source": "跟随主题", "en": "Follow theme" },
+  { "source": "恢复原生默认", "en": "Restore native defaults" },
+  { "source": "更改即时预览并自动保存；材质效果遵循 Windows 的透明度与节能设置。", "en": "Changes preview immediately and save automatically. Materials follow Windows transparency and power-saving settings." },
+  { "source": "参数仅影响背景；Mica 不是真实窗后透明，系统限制时会降级。", "en": "These parameters affect only the background. Mica does not reveal windows behind it; system restrictions may use a fallback." },
+  { "source": "此兼容界面不支持原生材质参数，设置保留供现代界面使用。", "en": "This compatibility interface does not support native material parameters. Settings are retained for the modern interface." },
+  { "source": "材质不透明度必须是 0 到 1 之间的有限数值。", "en": "Material opacity must be a finite number between 0 and 1." },
+  { "source": "材质颜色必须是 #RRGGBB，或使用随主题颜色。", "en": "Material color must use #RRGGBB or follow the theme." }
+]

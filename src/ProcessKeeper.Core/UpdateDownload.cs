@@ -14,6 +14,15 @@ public sealed partial class UpdateService
         UpdateSourceMode.ThirdParty => !source.IsOfficial && (preferences.ThirdPartySourceId == "auto" || preferences.ThirdPartySourceId == source.Id),
         _ => true
     });
+    private static IEnumerable<UpdatePreferences> DownloadPlans(UpdatePreferences preferences)
+    {
+        if (preferences.SourceMode != UpdateSourceMode.Auto) { yield return preferences; yield break; }
+        // Auto contacts mirrors only after the official source cannot provide a
+        // verified download. Explicit source selection and diagnostic probes keep
+        // their original candidate set; latency ranks mirrors within the fallback.
+        yield return preferences with { SourceMode = UpdateSourceMode.Official };
+        yield return preferences with { SourceMode = UpdateSourceMode.ThirdParty, ThirdPartySourceId = "auto" };
+    }
     private async Task<IReadOnlyList<UpdateProbeResult>> ProbeSources(UpdatePreferences preferences, UpdateAsset asset, IProgress<UpdateProgress>? progress, CancellationToken token)
     {
         // A source's latency starts after its slot is acquired, so queueing is not

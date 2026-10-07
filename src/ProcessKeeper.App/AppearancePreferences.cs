@@ -1,6 +1,5 @@
 using ProcessKeeper.Core;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ProcessKeeper.App;
 
@@ -10,17 +9,16 @@ public enum AppearanceTheme { System, Light, Dark }
 public sealed record AppearancePreferences(
     bool BackdropEnabled = true,
     BackdropMaterial Material = BackdropMaterial.Mica,
-    AppearanceTheme Theme = AppearanceTheme.System);
+    AppearanceTheme Theme = AppearanceTheme.System,
+    bool CustomBackdropEnabled = false,
+    double TintOpacity = 0.8,
+    double LuminosityOpacity = 0.85,
+    string? TintColor = null);
 
 /// <summary>Appearance is independent of the whitelist; a damaged file only resets visual preferences.</summary>
 internal sealed class AppearancePreferencesStore
 {
     private const int MaximumFileBytes = 16 * 1024;
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
-    };
 
     public string FilePath { get; }
 
@@ -51,31 +49,10 @@ internal sealed class AppearancePreferencesStore
 
     public void Save(AppearancePreferences preferences)
     {
-        ArgumentNullException.ThrowIfNull(preferences);
-        if (!Enum.IsDefined(preferences.Material) || !Enum.IsDefined(preferences.Theme))
-            throw new ArgumentException(L.T("外观设置包含未知选项。"), nameof(preferences));
-        var directory = Path.GetDirectoryName(FilePath)!;
-        Directory.CreateDirectory(directory);
-        var temporary = Path.Combine(directory, $".appearance-{Guid.NewGuid():N}.tmp");
-        try
-        {
-            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            {
-                JsonSerializer.Serialize(stream, new
-                {
-                    Version = 1,
-                    preferences.BackdropEnabled,
-                    preferences.Material,
-                    preferences.Theme
-                }, Options);
-                stream.Flush(flushToDisk: true);
-            }
-            if (File.Exists(FilePath)) File.Replace(temporary, FilePath, FilePath + ".bak", ignoreMetadataErrors: false);
-            else File.Move(temporary, FilePath);
-        }
-        finally
-        {
-            if (File.Exists(temporary)) File.Delete(temporary);
-        }
+        if (preferences is null) throw new ArgumentNullException(nameof(preferences));
+        byte[] data;
+        try { data = SettingsJson.AppearanceBytes(preferences); }
+        catch (InvalidDataException error) { throw new ArgumentException(error.Message, nameof(preferences), error); }
+        SettingsJson.AtomicWrite(FilePath, data);
     }
 }

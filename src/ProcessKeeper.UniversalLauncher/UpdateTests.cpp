@@ -85,7 +85,7 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
             const auto name = target == PackageTarget::Windows7Compat ? L"Windows7Compat" : target == PackageTarget::Windows10x64 ? L"Windows10x64" : L"Windows10arm64";
             const auto file = fixtureRoot + L"\\" + name + L"-inert-171.exe";
             check(!rejects([&] { ValidateUpdateInstallerFixture(file, ProductVersion, target); }), L"real NSIS installer metadata validates as data without executing setup");
-            check(rejects([&] { ValidateUpdateInstallerFixture(file, L"1.7.2", target); }), L"installer VERSIONINFO cannot authorize another release version");
+            check(rejects([&] { ValidateUpdateInstallerFixture(file, L"1.7.3", target); }), L"installer VERSIONINFO cannot authorize another release version");
             const auto otherTarget = target == PackageTarget::Windows10x64 ? PackageTarget::Windows7Compat : PackageTarget::Windows10x64;
             check(rejects([&] { ValidateUpdateInstallerFixture(file, ProductVersion, otherTarget); }) &&
                 rejects([&] { ValidateUpdateInstallerFixture(file, ProductVersion, PackageTarget::Universal); }), L"installer resource identity rejects another target or invented Universal setup");
@@ -309,7 +309,7 @@ void RunUpdateTests(const std::function<void(bool, const wchar_t*)>& check) {
         oldGuardModule = LoadLibraryW(FullPath(oldGuardFixture).c_str()); if (!oldGuardModule) Fail(L"Cannot load the explicitly supplied original guard fixture.");
         oldGuardCheck = reinterpret_cast<int(__stdcall*)(const wchar_t*, const wchar_t*)>(GetProcAddress(oldGuardModule, "CheckInstalledSessionFixtureW"));
         check(oldGuardCheck && oldGuardCheck(guardCache.c_str(), installed.c_str()) == 1,
-            L"actual 1.7.0 guard recognizes a current 1.7.1 canonical thirteen-field running session");
+            L"actual 1.7.0 guard recognizes a current canonical thirteen-field running session");
         guardFields.push_back(L"Installer"); saveGuard();
         check(oldGuardCheck(guardCache.c_str(), installed.c_str()) == 2, L"original guard control proves a fourteen-field context would break retained uninstaller compatibility");
         guardFields.pop_back(); saveGuard();

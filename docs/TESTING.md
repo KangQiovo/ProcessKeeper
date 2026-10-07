@@ -4,6 +4,16 @@
 
 Read [BUILDING.md](BUILDING.md) for toolchain requirements and [COMPATIBILITY.md](COMPATIBILITY.md) for supported routes and limitations. Commands below run from the repository root on Windows with PowerShell 7 and the required .NET SDK. Do not run multiple builds against the same project's `obj` directory at once.
 
+## 1.7.1v2 (numeric 1.7.2) update revision
+
+Verify automatic ordinary and resumed downloads choose GitHub first, fallback only after official failure, retain explicit source selections, and never fetch release authority from mirrors. Test official timeout, invalid content, cancellation, resumed range offsets and checksum validation with bounded fake HTTP handlers.
+
+For both UI routes, verify the progress-window checkbox starts unchecked, downloading and Ready do not create or reveal a window, explicit viewing preserves state, the dedicated icon/title are used, and the main-app Update and restart action requires the selected digest-bound verified download. Cancelled confirmation must retain Ready; only confirmed manual action may prepare/start an update. Inspect the new controls at minimum width in light/dark themes. About hash and version must be separate, the footer unchanged, and the project-home link must request browser confirmation.
+
+Keep retained 1.7.1 metadata tests: its real published Core library accepts standard tag v1.7.2 and matching numeric filenames, but cannot recognize the nonstandard v1.7.1v2 tag. This is why the friendly release name and update identity differ. Binary/container verification and isolated WPF/WinUI fixtures do not certify real Windows 7/ARM64 installation or replacement.
+
+Native backdrop tuning must retain automatic Windows defaults until customization is enabled. Check version-1 appearance migration, strict version-2 numeric/color validation, settings backup round trips and preservation while changing theme or material. In isolated WinUI windows, exercise live slider changes, debounced persistence, controller reuse, disconnection disposal, light/dark and high-contrast configuration, unsupported/disabled states and narrow layouts. The compatibility interface must retain values without pretending to render unsupported WinUI materials. Do not dim text or change whole-window opacity to simulate these parameters.
+
 ## Start with the affected suite
 
 ```powershell

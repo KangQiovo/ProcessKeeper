@@ -49,6 +49,7 @@ public sealed partial class MainWindow : Window
         InitializeRiskMode();
         CompatibilityNotice.IsOpen = CompatibilityNoticeState.ShouldShow();
         ReferencedProjectsList.ItemsSource = ReferencedProjects.All;
+        ProjectHomeButton.Tag = new ReferencedProject("Process Keeper", L.T("项目主页"), "https://github.com/KangQiovo/ProcessKeeper");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "ProcessKeeper.ico"));

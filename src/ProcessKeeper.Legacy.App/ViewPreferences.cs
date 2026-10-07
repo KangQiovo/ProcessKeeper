@@ -120,10 +120,27 @@ internal static class SettingsJson
 
     internal static AppearancePreferences ReadAppearance(JsonElement root)
     {
-        RequireObject(root, "Version", "BackdropEnabled", "Material", "Theme");
-        Version(root);
-        return new AppearancePreferences(Boolean(root, "BackdropEnabled"),
-            EnumValue<BackdropMaterial>(root, "Material"), EnumValue<AppearanceTheme>(root, "Theme"));
+        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("Version", out _))
+            throw new InvalidDataException(L.T("设置缺少必要字段。"));
+        var version = Integer(root, "Version");
+        if (version == 1)
+        {
+            RequireObject(root, "Version", "BackdropEnabled", "Material", "Theme");
+            return new AppearancePreferences(Boolean(root, "BackdropEnabled"),
+                EnumValue<BackdropMaterial>(root, "Material"), EnumValue<AppearanceTheme>(root, "Theme"));
+        }
+        if (version != 2) throw new InvalidDataException(L.T("设置版本不受支持。"));
+        RequireObject(root, "Version", "BackdropEnabled", "Material", "Theme", "CustomBackdropEnabled", "TintOpacity", "LuminosityOpacity", "TintColor");
+        var tint = root.GetProperty("TintOpacity"); var luminosity = root.GetProperty("LuminosityOpacity");
+        if (tint.ValueKind != JsonValueKind.Number || !tint.TryGetDouble(out var tintOpacity) ||
+            luminosity.ValueKind != JsonValueKind.Number || !luminosity.TryGetDouble(out var luminosityOpacity))
+            throw new InvalidDataException(L.T("材质不透明度必须是 0 到 1 之间的有限数值。"));
+        var color = root.GetProperty("TintColor");
+        if (color.ValueKind is not (JsonValueKind.Null or JsonValueKind.String))
+            throw new InvalidDataException(L.T("材质颜色必须是 #RRGGBB，或使用随主题颜色。"));
+        return ValidateAppearance(new AppearancePreferences(Boolean(root, "BackdropEnabled"),
+            EnumValue<BackdropMaterial>(root, "Material"), EnumValue<AppearanceTheme>(root, "Theme"),
+            Boolean(root, "CustomBackdropEnabled"), tintOpacity, luminosityOpacity, color.GetString()));
     }
 
     internal static void ValidateView(ViewPreferences? value)
@@ -144,9 +161,21 @@ internal static class SettingsJson
 
     internal static byte[] AppearanceBytes(AppearancePreferences? value)
     {
+        var normalized = ValidateAppearance(value);
+        return JsonSerializer.SerializeToUtf8Bytes(new { Version = 2, normalized.BackdropEnabled, normalized.Material, normalized.Theme,
+            normalized.CustomBackdropEnabled, normalized.TintOpacity, normalized.LuminosityOpacity, normalized.TintColor }, Options);
+    }
+
+    internal static AppearancePreferences ValidateAppearance(AppearancePreferences? value)
+    {
         if (value is null || !Enum.IsDefined(typeof(BackdropMaterial), value.Material) || !Enum.IsDefined(typeof(AppearanceTheme), value.Theme))
             throw new InvalidDataException(L.T("外观设置包含未知选项。"));
-        return JsonSerializer.SerializeToUtf8Bytes(new { Version = 1, value.BackdropEnabled, value.Material, value.Theme }, Options);
+        if (double.IsNaN(value.TintOpacity) || double.IsInfinity(value.TintOpacity) || value.TintOpacity is < 0 or > 1 ||
+            double.IsNaN(value.LuminosityOpacity) || double.IsInfinity(value.LuminosityOpacity) || value.LuminosityOpacity is < 0 or > 1)
+            throw new InvalidDataException(L.T("材质不透明度必须是 0 到 1 之间的有限数值。"));
+        if (value.TintColor is not null && (value.TintColor.Length != 7 || value.TintColor[0] != '#' || !value.TintColor.Skip(1).All(Uri.IsHexDigit)))
+            throw new InvalidDataException(L.T("材质颜色必须是 #RRGGBB，或使用随主题颜色。"));
+        return value.TintColor is null ? value : value with { TintColor = value.TintColor.ToUpperInvariant() };
     }
 
     internal static void WriteNew(string path, byte[] data)

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net462</TargetFramework><LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><PlatformTarget>x86</PlatformTarget><Prefer32Bit>true</Prefer32Bit><Product>ProcessKeeper.InstanceFixture</Product><AssemblyTitle>ProcessKeeper singleton fixture | compat</AssemblyTitle><Version>1.7.1</Version><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType></PropertyGroup>
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net462</TargetFramework><LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><PlatformTarget>x86</PlatformTarget><Prefer32Bit>true</Prefer32Bit><Product>ProcessKeeper.InstanceFixture</Product><AssemblyTitle>ProcessKeeper singleton fixture | compat</AssemblyTitle><Version>1.7.2</Version><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType></PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all"/>
     <PackageReference Include="System.Text.Json" Version="8.0.6"/>

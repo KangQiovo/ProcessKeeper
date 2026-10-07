@@ -22,7 +22,7 @@ public partial class MainWindow
     private WrapPanel BuildAboutVersion()
     {
         var line = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left };
-        line.Children.Add(Text(CurrentAppVersion + " | .NET Framework 4.6.2 | " + L.T(Environment.Is64BitProcess ? "64 位" : "32 位")));
+        line.Children.Add(Text(DisplayAboutVersion(CurrentAppVersion) + " | .NET Framework 4.6.2 | " + L.T(Environment.Is64BitProcess ? "64 位" : "32 位")));
         foreach (var label in DistributionBadges(_backend.Updates.RuntimeIdentity()))
         {
             var badge = new Border { CornerRadius = new CornerRadius(4), Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(8, 0, 0, 12), VerticalAlignment = VerticalAlignment.Top };
@@ -31,6 +31,28 @@ public partial class MainWindow
             text.SetResourceReference(TextBlock.ForegroundProperty, "InkBrush"); badge.Child = text; line.Children.Add(badge);
         }
         return line;
+    }
+    private static string DisplayAboutVersion(string version) => ProcessKeeper.Core.ReleaseIdentity.DisplayVersion(version.Split('+')[0]);
+    internal static string DisplayUpdateReleaseTag(UpdateRelease release) => release.Tag == "v" + release.Version
+        ? "v" + ProcessKeeper.Core.ReleaseIdentity.DisplayVersion(release.Version) : release.Tag;
+
+    private void AddAboutBuildHash(StackPanel about)
+    {
+        var information = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(MainWindow).Assembly)?.InformationalVersion;
+        var hash = ReadAboutBuildHash(information);
+        if (hash is null) return;
+        var line = new TextBox { Tag = "about-build-hash", Text = L.F($"构建哈希：{hash}"), IsReadOnly = true,
+            TextWrapping = TextWrapping.Wrap, FontSize = 11, BorderThickness = new Thickness(0), Padding = new Thickness(0),
+            MinHeight = 0, Background = System.Windows.Media.Brushes.Transparent, Margin = new Thickness(0, 0, 0, 12), HorizontalAlignment = HorizontalAlignment.Stretch };
+        line.SetResourceReference(TextBox.ForegroundProperty, "MutedBrush"); about.Children.Add(line);
+    }
+    private static string? ReadAboutBuildHash(string? information)
+    {
+        if (!UpdateVersion.TryParse(information, out _) || information is null) return null;
+        var separator = information.IndexOf('+');
+        if (separator < 0) return null;
+        var hash = information.Substring(separator + 1);
+        return (hash.Length == 40 || hash.Length == 64) && hash.All(Uri.IsHexDigit) ? hash : null;
     }
 
     private async Task<bool> ConfirmUpdatePackageChangeAsync(UpdateAsset asset, UpdateRuntimeIdentity runtime)

@@ -45,7 +45,7 @@
     <StackPanel Grid.Row="2" Margin="14"><TextBlock x:Name="TestingText" TextWrapping="Wrap" FontSize="11"/><TextBlock x:Name="LocalText" FontSize="11" Margin="0,7,0,0"/></StackPanel>
    </Grid>
    <Grid Grid.Column="1" Margin="10,24,24,18">
-    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Border x:Name="CompatibilityNotice" Background="#FFFDE7E9" Padding="12" Margin="0,0,0,14" CornerRadius="6"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="CompatibilityText" Foreground="#FFA4262C" TextWrapping="Wrap" VerticalAlignment="Center"/><Button Grid.Column="1" Content="×" Foreground="#FFA4262C" Background="Transparent" BorderThickness="0" Margin="8,0,0,0" Click="DismissCompatibility"/></Grid></Border>
     <StackPanel Grid.Row="1"><TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold"/><TextBlock x:Name="SubtitleText" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,16" TextWrapping="Wrap"/></StackPanel>
     <Grid x:Name="Toolbar" Grid.Row="2" Margin="0,0,0,10"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="Search" TextChanged="SearchChanged"/><CheckBox x:Name="Live" Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" Checked="LiveChanged" Unchecked="LiveChanged"/><Expander x:Name="WhitelistScopeExpander" Grid.Row="1" Grid.ColumnSpan="2" Visibility="Collapsed" Margin="0,10,0,0" HorizontalContentAlignment="Stretch"><ContentControl x:Name="WhitelistScopeHost" HorizontalContentAlignment="Stretch"/></Expander></Grid>
@@ -64,7 +64,12 @@
     <ScrollViewer x:Name="SettingsScroll" Grid.Row="5" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"><StackPanel x:Name="SettingsContent" HorizontalAlignment="Stretch"/></ScrollViewer>
     <ContentControl x:Name="MiscHost" Grid.Row="5" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="UninstallHost" Grid.Row="5" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
-    <TextBlock x:Name="Status" Grid.Row="6" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"/>
+    <Border x:Name="UpdateProgressArea" Grid.Row="6" Visibility="Collapsed" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+     <StackPanel><TextBlock x:Name="UpdateProgressText" TextWrapping="Wrap"/><ProgressBar x:Name="UpdateProgressBar" Minimum="0" Maximum="100" Height="6" IsIndeterminate="True" Margin="0,8,0,8"/><TextBlock x:Name="UpdateProgressDetail" FontSize="11" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+      <WrapPanel Margin="0,8,0,0"><Button x:Name="UpdateViewAction" Click="ViewUpdateProgressClicked"/><Button x:Name="UpdateInstallAction" Visibility="Collapsed" IsEnabled="False" Click="InstallUpdateClicked"/><Button x:Name="UpdateCancelAction" Click="CancelUpdateClicked"/></WrapPanel>
+     </StackPanel>
+    </Border>
+    <TextBlock x:Name="Status" Grid.Row="7" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"/>
    </Grid>
   </Grid>
   <Grid x:Name="Overlay" Grid.Row="1" Background="{DynamicResource PageBrush}" Visibility="Collapsed"/>

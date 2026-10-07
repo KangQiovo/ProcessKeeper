@@ -46,7 +46,7 @@ internal sealed class UpdatesView : UserControl
     private readonly ComboBox _source = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox _node = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly CheckBox _onStartup = new(), _desktop = new();
-    private readonly Button _check = new(), _shortcut = new(), _save = new(), _cancel = new();
+    private readonly Button _check = new(), _shortcut = new(), _save = new(), _cancel = new(), _installUpdate = new();
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, FontSize = 12 };
     private readonly TextBlock _buildDate = new() { TextWrapping = TextWrapping.Wrap, FontSize = 12 };
     private readonly DispatcherTimer _buildDateTimer = new() { Interval = TimeSpan.FromSeconds(5) };
@@ -55,6 +55,12 @@ internal sealed class UpdatesView : UserControl
     private readonly Queue<string> _sourceMessages = new();
     private bool _closed, _loading, _readable = true;
     private UpdateDownloadWindow? _downloadWindow;
+    private UpdateTransferController? _transfer;
+    private UpdateRelease? _transferRelease;
+    private UpdateAsset? _transferAsset;
+    private UpdateDownloadResult? _readyDownload;
+    private Action? _requestInstall;
+    private bool _showDownloadProgressWindow;
     internal bool IsBusy => _operation is not null;
     internal UpdatePreferences Preferences { get; private set; } = new();
     internal Func<bool> CanPresent { get; set; } = () => true;
@@ -69,6 +75,9 @@ internal sealed class UpdatesView : UserControl
         var panel = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Stretch };
         panel.Children.Add(new TextBlock { Text = L.T("检查更新"), FontSize = 19, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         panel.Children.Add(BuildAboutVersion(_currentVersion, _backend.Runtime()));
+        var sourceHash = ResolveCurrentSourceHash();
+        if (sourceHash.Length > 0) panel.Children.Add(new TextBlock { Text = L.F($"构建哈希：{sourceHash}"),
+            IsTextSelectionEnabled = true, TextWrapping = TextWrapping.Wrap, FontSize = 12 });
         void RefreshBuildDate() => _buildDate.Text = L.F($"构建时间：{BuildInfo.DisplayBuildDate}");
         RefreshBuildDate(); panel.Children.Add(_buildDate);
         _buildDateTimer.Tick += (_, _) => RefreshBuildDate();
@@ -81,7 +90,7 @@ internal sealed class UpdatesView : UserControl
         _check.HorizontalAlignment = _shortcut.HorizontalAlignment = HorizontalAlignment.Stretch;
         checks.Children.Add(_check); Grid.SetColumn(_shortcut, 1); checks.Children.Add(_shortcut); panel.Children.Add(checks);
         _source.Header = L.T("更新源");
-        foreach (var name in new[] { "自动选择最低延迟", "官方 GitHub", "第三方加速" }) _source.Items.Add(L.T(name));
+        foreach (var name in new[] { "自动（优先 GitHub 官方源）", "官方 GitHub", "第三方加速" }) _source.Items.Add(L.T(name));
         _node.Header = L.T("第三方节点"); _node.Items.Add(L.T("自动选择最低延迟"));
         foreach (var node in UpdateSources.All.Where(item => !item.IsOfficial)) { _nodeIds.Add(node.Id); _node.Items.Add(node.Name); }
         panel.Children.Add(_source); panel.Children.Add(_node);
@@ -89,15 +98,21 @@ internal sealed class UpdatesView : UserControl
         panel.Children.Add(_onStartup); panel.Children.Add(_desktop);
         _save.Content = Text(L.T("保存更新设置")); panel.Children.Add(_save);
         panel.Children.Add(Text(L.T("版本信息来自 GitHub 官方；更新源用于下载安装包。"), 12));
-        panel.Children.Add(Text(L.T("下载前检测实际文件延迟，自动使用响应最快的可用源。"), 12));
+        panel.Children.Add(Text(L.T("自动模式优先使用 GitHub 官方源；不可用时再尝试第三方源。"), 12));
         panel.Children.Add(_progress); panel.Children.Add(_status);
-        _cancel.Content = Text(L.T("取消操作")); _cancel.Visibility = Visibility.Collapsed; panel.Children.Add(_cancel);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        _installUpdate.Content = Text(L.T("更新并重启")); _installUpdate.Visibility = Visibility.Collapsed; _installUpdate.IsEnabled = false;
+        _cancel.Content = Text(L.T("取消操作")); _cancel.Visibility = Visibility.Collapsed;
+        foreach (var button in new[] { _installUpdate, _cancel }) button.Margin = new Thickness(0, 0, 8, 4);
+        actions.Children.Add(_installUpdate); actions.Children.Add(_cancel);
+        actions.SizeChanged += (_, _) => NativeCommandLayout.Reflow(actions); panel.Children.Add(actions);
         Content = panel;
         _source.SelectionChanged += (_, _) => { if (!_loading) _node.IsEnabled = _source.SelectedIndex == (int)UpdateSourceMode.ThirdParty && !IsBusy; };
         _check.Click += async (_, _) => await CheckAsync(false);
         _shortcut.Click += async (_, _) => await CreateShortcutAsync(false);
         _save.Click += (_, _) => Save();
         _cancel.Click += (_, _) => _operation?.Cancel();
+        _installUpdate.Click += (_, _) => _requestInstall?.Invoke();
         ActualThemeChanged += (_, _) => _downloadWindow?.ApplyTheme(ActualTheme);
         try { Apply(_store.Load()); }
         catch (Exception exception) { Apply(new UpdatePreferences()); _readable = false; SetStatus(L.T("更新设置无法读取") + " | " + exception.Message); }
@@ -177,7 +192,7 @@ internal sealed class UpdatesView : UserControl
     private async Task CheckAsync(bool automatic)
     {
         if (_closingSuspended) return;
-        if (!automatic && _downloadWindow is not null) { _downloadWindow.Reveal(); return; }
+        if (!automatic && _transfer is not null) { RevealDownloadWindow(); return; }
         if (_closed || IsBusy || !_readable) return;
         if (!automatic && !CanPresent()) { SetStatus(L.T("请等待当前操作完成")); return; }
         var token = BeginOperation();
@@ -205,9 +220,10 @@ internal sealed class UpdatesView : UserControl
 
     private async Task<UpdateAsset?> ChooseReleaseAssetAsync(UpdateRelease release, CancellationToken token)
     {
+        _showDownloadProgressWindow = false;
         var runtime = _backend.Runtime();
         var panel = new StackPanel { Spacing = 12, MaxWidth = 520 };
-        panel.Children.Add(Text(release.Name + " | " + release.Tag));
+        panel.Children.Add(Text(release.Name + " | " + DisplayReleaseTag(release)));
         if (release.PublishedAt is { } published) panel.Children.Add(Text(TimeDisplay.Format(published.ToLocalTime()), 12));
         panel.Children.Add(Text(L.T("更新日志")));
         var noteDocument = await Task.Run(() => ReleaseNotesParser.Parse(string.IsNullOrWhiteSpace(release.Body) ? L.T("未提供更新日志。") : release.Body), token);
@@ -226,7 +242,9 @@ internal sealed class UpdatesView : UserControl
         var website = new Button { Content = Text(L.T("发布主页")) };
         website.Click += async (_, _) => await OpenReleaseLinkAsync(release.HtmlUrl);
         panel.Children.Add(website);
-        var dialog = NewDialog(L.F($"发现新版本 | {release.Tag}"), panel, L.T("下载并更新"));
+        var showProgress = new CheckBox { Content = Text(L.T("显示下载进度窗口")), IsChecked = false };
+        panel.Children.Add(showProgress);
+        var dialog = NewDialog(L.F($"发现新版本 | {DisplayReleaseTag(release)}"), panel, L.T("下载并更新"));
         using var probing = CancellationTokenSource.CreateLinkedTokenSource(token);
         var probeToken = probing.Token;
         var probingNow = false;
@@ -275,6 +293,7 @@ internal sealed class UpdatesView : UserControl
             warning.Children.Add(Text(selected.Name, 12));
             if (await ShowCancellableDialog(NewDialog(L.T("切换更新包类型？"), warning, L.T("下载并更新")), token) != ContentDialogResult.Primary || token.IsCancellationRequested) return null;
         }
+        _showDownloadProgressWindow = showProgress.IsChecked == true;
         return selected;
     }
 
@@ -285,19 +304,18 @@ internal sealed class UpdatesView : UserControl
         TaskCompletionSource<bool>? installChoice = new(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
-            _downloadWindow = new UpdateDownloadWindow(transfer, release, asset, ActualTheme,
-                () => _operation?.Cancel(),
-                () => installChoice?.TrySetResult(true), ActivateProgressWindow);
+            _transfer = transfer; _transferRelease = release; _transferAsset = asset; _readyDownload = null;
+            _requestInstall = () => { if (CanRequestInstall) installChoice?.TrySetResult(true); };
             transfer.Changed += value =>
             {
                 if (_closed || token.IsCancellationRequested) return;
-                _downloadWindow?.Refresh(value); SetStatus(value.Message + " | " + value.Detail);
-                _progress.IsIndeterminate = value.Total <= 0; _progress.Value = value.Percent;
+                RefreshTransfer(value);
             };
-            _check.IsEnabled = true; _check.Content = Text(L.T("查看下载进度"));
-            _downloadWindow.Reveal();
+            _check.IsEnabled = true; _check.Content = Text(L.T("查看更新器窗口"));
+            if (_showDownloadProgressWindow) RevealDownloadWindow();
             var download = await transfer.DownloadAsync(release, asset, token);
             token.ThrowIfCancellationRequested(); if (_closed) return;
+            _readyDownload = download; RefreshTransfer(transfer.Snapshot);
             while (!_closed)
             {
                 installChoice ??= new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -333,8 +351,48 @@ internal sealed class UpdatesView : UserControl
         finally
         {
             _downloadWindow?.Finish(); _downloadWindow = null; _check.Content = Text(L.T("立即检查"));
+            _requestInstall = null; _readyDownload = null; _transfer = null; _transferRelease = null; _transferAsset = null;
+            _installUpdate.Visibility = Visibility.Collapsed; _installUpdate.IsEnabled = false;
             try { await Task.Run(transfer.Dispose); } catch (Exception exception) { Log(L.T("更新失败") + " | " + exception.Message); }
         }
+    }
+
+    private bool CanRequestInstall => _transfer?.Snapshot.Phase == UpdateTransferPhase.Ready &&
+        _readyDownload is { Asset.CanAutoInstall: true } download && _transferRelease is { } release && _transferAsset is { } asset &&
+        download.Release.Repository == release.Repository && download.Release.Tag == release.Tag && download.Release.Version == release.Version &&
+        download.Asset.Id == asset.Id && download.Asset.Name == asset.Name && download.Asset.Size == asset.Size &&
+        download.Asset.PackageTarget == asset.PackageTarget && download.Asset.DistributionKind == asset.DistributionKind && download.Asset.Digest == asset.Digest &&
+        download.Sha256.Length == 64 && download.Sha256.All(Uri.IsHexDigit) &&
+        asset.Digest.Equals("sha256:" + download.Sha256, StringComparison.OrdinalIgnoreCase) &&
+        UpdatePackagePolicy.Supports(download.Asset, _backend.Runtime());
+
+    private void RefreshTransfer(UpdateTransferSnapshot value)
+    {
+        var ready = CanRequestInstall;
+        _downloadWindow?.Refresh(value, ready); SetStatus(value.Message + " | " + value.Detail);
+        _progress.IsIndeterminate = value.Total <= 0; _progress.Value = value.Percent;
+        _installUpdate.Content = Text(L.T(_transferAsset?.DistributionKind == UpdateDistributionKind.Installer ? "退出并启动安装程序" : "更新并重启"));
+        _installUpdate.Visibility = ready ? Visibility.Visible : Visibility.Collapsed; _installUpdate.IsEnabled = ready;
+    }
+
+    private void RevealDownloadWindow()
+    {
+        if (_closed || _transfer is null || _transferRelease is null || _transferAsset is null) return;
+        _downloadWindow ??= new UpdateDownloadWindow(_transfer, _transferRelease, _transferAsset, ActualTheme,
+            () => _operation?.Cancel(), () => _requestInstall?.Invoke(), ActivateProgressWindow);
+        _downloadWindow.Refresh(_transfer.Snapshot, CanRequestInstall); _downloadWindow.Reveal();
+    }
+
+    internal static string DisplayReleaseTag(UpdateRelease release) => release.Tag == "v" + release.Version
+        ? "v" + ReleaseIdentity.DisplayVersion(release.Version) : release.Tag;
+
+    private static string ResolveCurrentSourceHash()
+    {
+        var information = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(MainWindow).Assembly)?.InformationalVersion;
+        if (!UpdateVersion.TryParse(information, out _)) return "";
+        var marker = information!.IndexOf('+');
+        var hash = marker >= 0 ? information[(marker + 1)..] : "";
+        return hash.Length is 40 or 64 && hash.All(Uri.IsHexDigit) ? hash : "";
     }
 
     private async Task CreateShortcutAsync(bool automatic)
@@ -388,7 +446,7 @@ internal sealed class UpdatesView : UserControl
     private static RichTextBlock BuildAboutVersion(string version, UpdateRuntimeIdentity runtime)
     {
         var line = new RichTextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 14 };
-        var paragraph = new Paragraph(); paragraph.Inlines.Add(new Run { Text = L.F($"当前版本：{version}") + "  " });
+        var paragraph = new Paragraph(); paragraph.Inlines.Add(new Run { Text = L.F($"当前版本：{ReleaseIdentity.DisplayVersion(version.Split('+')[0])}") + "  " });
         foreach (var label in DistributionBadges(runtime))
         {
             var badge = (Border)Microsoft.UI.Xaml.Markup.XamlReader.Load("""

@@ -32,7 +32,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Compatibility build failed.' }
 
 `build.ps1` 生成一次统一时间戳、运行托管回归并将现代载荷输出到 `App`。随后基于**同一时间戳**构建兼容载荷，期间不要重新生成构建时间。自备 SDK/缓存可传 `-DotnetPath`、`-NugetPackages`。原生测试只使用自有夹具进程。
 
-## 打包 1.7.1 发行目标
+## 打包 1.7.2 发行目标
 
 前面的 ARM64 调用将现代载荷交叉编译至 `App-arm64`，复用同一时间戳。外层启动器和更新助手仍为 x86，不需要 ARM64 MSVC 工具；交叉编译成功不能替代 ARM 设备验证。
 
@@ -56,7 +56,7 @@ foreach ($entry in $targets.GetEnumerator()) {
 
 每次选择**新输出文件名**。打包器拒绝覆盖已有文件，校验所选载荷的渠道和日期，构建原生更新助手，生成带清单/哈希的 CAB 并嵌入 x86 引导程序。打包不会启动应用。
 
--PackageTarget Universal 仍为默认并使用 PK14。1.7.1 正式附件保留 ProcessKeeper-v1.7.1.exe，1.6 更新器可接受该合包。旧更新器不支持 PK17 分包；迁移时选择合包，或手动下载其他版本。
+-PackageTarget Universal 仍为默认并使用 PK14。1.7.2 正式附件保留 ProcessKeeper-v1.7.2.exe，1.6 更新器可接受该合包。旧更新器不支持 PK17 分包；迁移时选择合包，或手动下载其他版本。
 
 直接运行 `App/ProcessKeeper.exe` 属于开发路线，缺少免安装入口提供的可信上下文，应用内更新和桌面快捷方式可能不可用；不能当作更新测试成功。
 
@@ -81,12 +81,12 @@ foreach ($entry in $targets.GetEnumerator()) {
   ./package-universal.ps1 -StableRelease -PackageTarget $entry.Key `
     -ModernDirectory ./App -Arm64Directory ./App-arm64 `
     -LegacyDirectory ./src/ProcessKeeper.Legacy.App/bin/Release/net462 `
-    -OutputPath ("./artifacts/ProcessKeeper-v1.7.1-" + $entry.Value + ".exe")
+    -OutputPath ("./artifacts/ProcessKeeper-v1.7.2-" + $entry.Value + ".exe")
   if ($LASTEXITCODE -ne 0) { throw 'Stable portable package failed.' }
 }
 ```
 
-发行前完成其余测试，并逐一检查**实际 EXE** 的路线标记、PE 架构、嵌入清单、载荷哈希、空白默认规则和公布的 SHA-256。混用渠道/日期或未知渠道会被拒绝；只有正式 UI 隐藏侧栏、关于及引导中的预览文案。仓库不自动发布 Release，也不提供签名证书。后续更新附件需符合固定仓库、语义版本、包类型、`PK17` 协议和官方 SHA-256。见 [1.7.1 更新说明](RELEASE-1.7.1.zh-CN.md)。
+发行前完成其余测试，并逐一检查**实际 EXE** 的路线标记、PE 架构、嵌入清单、载荷哈希、空白默认规则和公布的 SHA-256。混用渠道/日期或未知渠道会被拒绝；只有正式 UI 隐藏侧栏、关于及引导中的预览文案。仓库不自动发布 Release，也不提供签名证书。后续更新附件需符合固定仓库、语义版本、包类型、`PK17` 协议和官方 SHA-256。见 [1.7.2 更新说明](RELEASE-1.7.2.zh-CN.md)。
 
 ## 源码公开检查
 
@@ -108,7 +108,7 @@ foreach ($entry in $targets.GetEnumerator()) {
 ./package-universal.ps1 -StableRelease -PackageTarget Universal `
   -ModernDirectory ./App -Arm64Directory ./App-arm64 `
   -LegacyDirectory ./src/ProcessKeeper.Legacy.App/bin/Release/net462 `
-  -OutputPath ./artifacts/ProcessKeeper-v1.7.1.exe
+  -OutputPath ./artifacts/ProcessKeeper-v1.7.2.exe
 if ($LASTEXITCODE -ne 0) { throw 'Universal package failed.' }
 ./src/ProcessKeeper.UniversalLauncher/build-native.ps1 -SetupGuardOnly `
   -OutputPath ./artifacts/ProcessKeeper.SetupGuard.dll `
@@ -116,8 +116,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Universal package failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Setup guard build failed.' }
 foreach ($entry in $targets.GetEnumerator()) {
   ./scripts/package-installers.ps1 -StableRelease -PackageTarget $entry.Key `
-    -PortablePath ("./artifacts/ProcessKeeper-v1.7.1-" + $entry.Value + ".exe") `
-    -OutputPath ("./artifacts/ProcessKeeper-v1.7.1-" + $entry.Value + "-setup.exe") `
+    -PortablePath ("./artifacts/ProcessKeeper-v1.7.2-" + $entry.Value + ".exe") `
+    -OutputPath ("./artifacts/ProcessKeeper-v1.7.2-" + $entry.Value + "-setup.exe") `
     -NsisCompiler ./tools/nsis-3.13/makensis.exe `
     -SetupGuardPath ./artifacts/ProcessKeeper.SetupGuard.dll
   if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }

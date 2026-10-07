@@ -25,11 +25,12 @@ internal sealed class UpdateDownloadWindow : Window
     {
         _activate = activate;
         _transfer = transfer; _cancelAction = cancel; _installAction = install;
-        Title = "Process Keeper | " + L.T("下载并更新"); _body.RequestedTheme = theme;
-        _body.Children.Add(new TextBlock { Text = release.Tag, FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        Title = "Process Keeper | " + L.T("更新器"); _body.RequestedTheme = theme;
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "ProcessKeeperUpdater.ico"));
+        _body.Children.Add(new TextBlock { Text = UpdatesView.DisplayReleaseTag(release), FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         _body.Children.Add(new TextBlock { Text = asset.Name, TextWrapping = TextWrapping.Wrap, FontSize = 12 });
         _body.Children.Add(_status); _body.Children.Add(_bar); _body.Children.Add(_detail); _body.Children.Add(_sourceText);
-        foreach (var text in new[] { L.T("自动选择最低延迟"), L.T("官方 GitHub"), L.T("第三方加速") }) _source.Items.Add(text);
+        foreach (var text in new[] { L.T("自动（优先 GitHub 官方源）"), L.T("官方 GitHub"), L.T("第三方加速") }) _source.Items.Add(text);
         foreach (var node in _nodes) _source.Items.Add(node.Name);
         _source.SelectedIndex = transfer.Preferences.SourceMode == UpdateSourceMode.Auto ? 0 : transfer.Preferences.SourceMode == UpdateSourceMode.Official ? 1 :
             transfer.Preferences.ThirdPartySourceId == "auto" ? 2 : Math.Max(2, Array.FindIndex(_nodes, node => node.Id == transfer.Preferences.ThirdPartySourceId) + 3);
@@ -59,7 +60,7 @@ internal sealed class UpdateDownloadWindow : Window
     private UpdatePreferences SelectedPreferences() => _transfer.Preferences with
     { SourceMode = _source.SelectedIndex == 0 ? UpdateSourceMode.Auto : _source.SelectedIndex == 1 ? UpdateSourceMode.Official : UpdateSourceMode.ThirdParty,
         ThirdPartySourceId = _source.SelectedIndex < 3 ? "auto" : _nodes[_source.SelectedIndex - 3].Id };
-    internal void Refresh(UpdateTransferSnapshot state)
+    internal void Refresh(UpdateTransferSnapshot state, bool canInstall = true)
     {
         if (_closing) return;
         _status.Text = state.Message; _detail.Text = state.Detail;
@@ -69,7 +70,8 @@ internal sealed class UpdateDownloadWindow : Window
         _source.IsEnabled = state.Phase == UpdateTransferPhase.Paused;
         _pause.Content = L.T(state.Phase == UpdateTransferPhase.Paused ? "继续下载" : "暂停下载");
         _pause.IsEnabled = _transfer.CanPause && state.Phase is UpdateTransferPhase.Paused or UpdateTransferPhase.Downloading;
-        _install.Visibility = state.Phase == UpdateTransferPhase.Ready ? Visibility.Visible : Visibility.Collapsed;
+        _install.Visibility = state.Phase == UpdateTransferPhase.Ready && canInstall ? Visibility.Visible : Visibility.Collapsed;
+        _install.IsEnabled = state.Phase == UpdateTransferPhase.Ready && canInstall;
         _cancel.Content = L.T("取消下载");
         _cancel.IsEnabled = state.Phase != UpdateTransferPhase.Installing;
     }

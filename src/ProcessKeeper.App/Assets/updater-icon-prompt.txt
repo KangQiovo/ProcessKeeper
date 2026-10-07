@@ -1,0 +1,5 @@
+Generator: Built-in image_gen, edit mode; 2026-10-07.
+Reference: ProcessKeeper.png. Preserve the jade-teal bookmark silhouette and bottom V-notch; add a bold white download arrow and landing line. Restrained, flat style, balanced transparent padding, no text, border, badge circle, shadow or extra tile.
+Saved PNG uses genuine alpha transparency. ICO is a format conversion/resampling only, performed with Pillow; no programmatic drawing or SVG compositing.
+ICO sizes: 16, 20, 24, 32, 40, 48, 64, 128, 256 pixels.
+The managed WinUI/WPF updater windows and trusted native update helper use this icon. The main application icon is unchanged.

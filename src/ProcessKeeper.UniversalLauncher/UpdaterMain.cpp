@@ -7,7 +7,7 @@
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t*, int) {
     std::wstring statusPath;
-    const auto title = pk::HelperText(L"Process Keeper | Update", L"Process Keeper | 更新", L"Process Keeper | 更新");
+    const auto title = pk::HelperText(L"Process Keeper | Updater", L"Process Keeper | 更新器", L"Process Keeper | 更新器");
     const auto failureSummary = pk::HelperText(L"The operation did not complete. Check the details below; no unrelated file is overwritten.", L"操作未完成，请检查下方详细信息。无关文件不会被覆盖。", L"操作未完成，請檢查下方詳細資訊。無關檔案不會被覆寫。");
     try {
         if (!pk::IsAdministrator()) throw pk::Failure(L"Start the original Process Keeper EXE and approve its administrator request first.");

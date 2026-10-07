@@ -1,0 +1,10 @@
+[
+  { "source": "更新器", "en": "Updater" },
+  { "source": "显示下载进度窗口", "en": "Show download progress window" },
+  { "source": "查看更新器窗口", "en": "View updater window" },
+  { "source": "更新并重启", "en": "Update and restart" },
+  { "source": "自动（优先 GitHub 官方源）", "en": "Automatic (GitHub first)" },
+  { "source": "自动模式优先使用 GitHub 官方源；不可用时再尝试第三方源。", "en": "Automatic mode uses official GitHub first, then tries third-party sources if it is unavailable." },
+  { "source": "构建哈希：{0}", "en": "Build hash: {0}" },
+  { "source": "项目主页", "en": "Project homepage" }
+]

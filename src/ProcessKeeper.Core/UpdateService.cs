@@ -25,7 +25,7 @@ public sealed partial class UpdateService : IDisposable
     {
         handler ??= new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.None, UseCookies = false };
         _http = new HttpClient(handler, true) { Timeout = Timeout.InfiniteTimeSpan };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.7.0");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.7.2");
         _createDownloadFile = createDownloadFile ?? UpdateTrustedFiles.Create;
         _openResumeFile = openResumeFile ?? UpdateTrustedFiles.OpenResume;
         _runtime = runtime ?? UpdatePackagePolicy.Current();
@@ -87,23 +87,24 @@ public sealed partial class UpdateService : IDisposable
         {
             Report(progress, "metadata", "official", 0, asset.Size, L.T("正在读取 GitHub 官方发布信息。"));
             var verified = await Revalidate(preferences, release, asset, timeout.Token).ConfigureAwait(false);
-            var probes = await ProbeSources(preferences, verified.Asset, progress, timeout.Token).ConfigureAwait(false);
-            var successes = probes.Where(p => p.Success).OrderBy(p => p.LatencyMilliseconds).ToArray();
-            if (successes.Length == 0) throw Error("no-source", "所有候选下载源均不可用。请查看各源检测结果。");
             UpdateException? last = null;
-            foreach (var probe in successes)
+            foreach (var plan in DownloadPlans(preferences))
             {
-                timeout.Token.ThrowIfCancellationRequested();
-                var source = UpdateSources.All.Single(s => s.Id == probe.SourceId);
-                try { return await DownloadSource(source, verified.Release, verified.Asset, stagingDirectory, progress, timeout.Token).ConfigureAwait(false); }
-                catch (Exception ex) when (ex is UpdateException or HttpRequestException or IOException)
+                var probes = await ProbeSources(plan, verified.Asset, progress, timeout.Token).ConfigureAwait(false);
+                foreach (var probe in probes.Where(p => p.Success).OrderBy(p => p.LatencyMilliseconds))
                 {
-                    if (timeout.IsCancellationRequested) throw new OperationCanceledException(timeout.Token);
-                    last = ex as UpdateException ?? new UpdateException("download", L.T("更新下载失败。") + " " + ex.Message, null, ex);
-                    Report(progress, "source-failed", source.Id, 0, verified.Asset.Size, source.Name + " | " + last.Message);
+                    timeout.Token.ThrowIfCancellationRequested();
+                    var source = UpdateSources.All.Single(s => s.Id == probe.SourceId);
+                    try { return await DownloadSource(source, verified.Release, verified.Asset, stagingDirectory, progress, timeout.Token).ConfigureAwait(false); }
+                    catch (Exception ex) when (ex is UpdateException or HttpRequestException or IOException)
+                    {
+                        if (timeout.IsCancellationRequested) throw new OperationCanceledException(timeout.Token);
+                        last = ex as UpdateException ?? new UpdateException("download", L.T("更新下载失败。") + " " + ex.Message, null, ex);
+                        Report(progress, "source-failed", source.Id, 0, verified.Asset.Size, source.Name + " | " + last.Message);
+                    }
                 }
             }
-            throw last ?? Error("download", "更新下载失败。");
+            throw last ?? Error("no-source", "所有候选下载源均不可用。请查看各源检测结果。");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { throw Error("timeout", "更新请求超时，请稍后重试。"); }
         catch (Exception) when (timeout.IsCancellationRequested) { cancellationToken.ThrowIfCancellationRequested(); throw Error("timeout", "更新请求超时，请稍后重试。"); }

@@ -17,6 +17,7 @@ var count = 0;
 void Check(bool value, string name) { if (!value) { Report("FAIL: " + name); throw new Exception(name); } count++; Report("PASS: " + name); }
 void Reject(Action action, string name) { try { action(); } catch (InvalidDataException) { Check(true, name); return; } throw new Exception("accepted invalid data: " + name); }
 var oldBundle = new SettingsBundle(WhitelistStore.CreateDefaults(), new AppearancePreferences(), new ViewPreferences());
+AppearanceParametersVerification.Run(root, Check);
 ProfileBundleVerification.Run(root, Check);
 var defaultExample = SettingsBundleStore.ReadImport(Path.Combine(AppContext.BaseDirectory, "fixtures-input", "default-settings.json"));
 Check(defaultExample.Rules.SequenceEqual(oldBundle.Rules) && defaultExample.Appearance == oldBundle.Appearance && defaultExample.View == oldBundle.View, "distributed default settings example exactly matches product defaults");
@@ -61,7 +62,7 @@ Mutate(j => j["Version"] = "1");
 Mutate(j => j["UnexpectedPrivateData"] = "must not import");
 foreach (var section in new[] { "Whitelist", "Appearance", "View" })
 {
-    Mutate(j => j[section]!["Version"] = 2);
+    Mutate(j => j[section]!["Version"] = section == "Appearance" ? 3 : 2);
     Mutate(j => j[section]!["Version"] = null);
     Mutate(j => j[section]!["Extra"] = true);
 }

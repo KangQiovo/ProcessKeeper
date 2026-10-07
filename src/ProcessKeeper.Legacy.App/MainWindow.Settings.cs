@@ -56,18 +56,20 @@ public partial class MainWindow
             SaveView(); L.Language = LanguageResolver.ResolveCurrent(_view.Language); ConfigureLanguage(); await RenderAsync();
         };
         language.Children.Add(languages);
-        var appearance = Tab("外观"); appearance.Children.Add(Text(L.T("应用主题"), 20));
-        var themes = new ComboBox { ItemsSource = new[] { L.T("跟随系统"), L.T("浅色"), L.T("深色") }, SelectedIndex = (int)_appearance.Theme, MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 16) };
-        themes.SelectionChanged += (_, _) => { if (themes.SelectedIndex < 0) return; _appearance = _appearance with { Theme = (AppearanceTheme)themes.SelectedIndex }; try { new AppearancePreferencesStore(_directory).Save(_appearance); ApplyTheme(); } catch (Exception ex) { Notice(ex.Message); } };
-        appearance.Children.Add(themes); appearance.Children.Add(Text(L.T("当前环境使用纯色背景。")));
+        var appearance = Tab("外观"); BuildCompatibilityAppearance(appearance);
         var backup = Tab("备份"); backup.Children.Add(Text(L.T("全部设置"), 20));
         backup.Children.Add(Button(L.T("导出"), ExportSettings)); backup.Children.Add(Button(L.T("导入全部设置"), async () => await ImportSettings()));
         backup.Children.Add(Button(L.T("导出白名单"), () => ExportRulesClick(this, new RoutedEventArgs())));
         backup.Children.Add(Button(L.T("导入白名单"), () => ImportRulesClick(this, new RoutedEventArgs())));
         AddProfilesView(backup);
-        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(BuildAboutVersion());
+        var about = Tab("关于"); about.Children.Add(Text("Process Keeper", 24)); about.Children.Add(BuildAboutVersion()); AddAboutBuildHash(about);
         if (BuildInfo.IsPreviewBuild) about.Children.Add(Text(L.T("测试版本不代表最终品质"))); BuildUpdateSettings(about); about.Children.Add(Text(L.T("作者信息"), 20)); AddAuthorAvatar(about); about.Children.Add(Text("KangQi"));
         var links = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left }; links.Children.Add(AuthorButton("GitHub", AuthorIcons.Github, "https://github.com/KangQiovo")); links.Children.Add(AuthorButton(L.T("酷安"), AuthorIcons.Coolapk, "https://www.coolapk.com/u/21241695", true)); links.Children.Add(AuthorButton(L.T("B站"), AuthorIcons.Bilibili, "https://space.bilibili.com/329073257")); about.Children.Add(links);
+        var projectHome = Button("Process Keeper | " + L.T("项目主页"), async () =>
+        { const string url = "https://github.com/KangQiovo/ProcessKeeper"; if (await Confirm(L.T("打开项目主页？"), L.T("将在默认浏览器打开以下网址：") + "\n" + url)) OpenWebsite(url); });
+        projectHome.Content = new TextBlock { Text = "Process Keeper | " + L.T("项目主页"), TextWrapping = TextWrapping.Wrap };
+        projectHome.Tag = "https://github.com/KangQiovo/ProcessKeeper"; projectHome.HorizontalAlignment = HorizontalAlignment.Stretch; projectHome.HorizontalContentAlignment = HorizontalAlignment.Left;
+        projectHome.BorderThickness = new Thickness(0); projectHome.Background = Brushes.Transparent; about.Children.Add(projectHome);
         about.Children.Add(Text(L.T("引用项目"), 20));
         foreach (var project in ReferencedProjects.All)
         {
@@ -108,6 +110,47 @@ public partial class MainWindow
         risk.Tag = "risk-mode-toggle"; risk.Background = new SolidColorBrush(Color.FromRgb(176, 0, 32)); risk.Foreground = Brushes.White;
         risk.Style = (Style)Resources[typeof(Button)]; risk.Content = new TextBlock { Text = L.T(RiskConfirmationMode.IsEnabled ? "恢复风险确认" : "无视风险模式"), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
         about.Children.Add(Text(L.T("仅本次运行生效；重新启动后恢复风险确认。"))); about.Children.Add(risk);
+    }
+    private void BuildCompatibilityAppearance(StackPanel appearance)
+    {
+        appearance.Children.Add(Text(L.T("应用主题"), 20));
+        var themes = new ComboBox { Tag = "appearance-theme", ItemsSource = new[] { L.T("跟随系统"), L.T("浅色"), L.T("深色") }, SelectedIndex = (int)_appearance.Theme, MaxWidth = 360, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 16) };
+        appearance.Children.Add(themes); appearance.Children.Add(Text(L.T("当前环境使用纯色背景。")));
+        var explanation = Text(L.T("此兼容界面不支持原生材质参数，设置保留供现代界面使用。"), 12);
+        explanation.SetResourceReference(TextBlock.ForegroundProperty, "MutedBrush"); appearance.Children.Add(explanation);
+        var parameters = new StackPanel { Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
+        var region = new Expander { Tag = "appearance-native-parameters", Header = new TextBlock { Text = L.T("自定义材质参数"), TextWrapping = TextWrapping.Wrap }, Content = parameters,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, IsExpanded = true, Margin = new Thickness(0, 0, 0, 16) };
+        region.SetResourceReference(Control.ForegroundProperty, "InkBrush"); appearance.Children.Add(region);
+        var custom = new CheckBox { Tag = "appearance-custom-enabled", Content = new TextBlock { Text = L.T("启用自定义材质参数"), TextWrapping = TextWrapping.Wrap }, IsEnabled = false, Margin = new Thickness(0, 0, 0, 12) };
+        custom.SetResourceReference(Control.ForegroundProperty, "InkBrush"); parameters.Children.Add(custom);
+        var tintLabel = Text("", 12); parameters.Children.Add(tintLabel);
+        var tint = new Slider { Tag = "appearance-tint-opacity", Minimum = 0, Maximum = 1, IsEnabled = false, Margin = new Thickness(0, 0, 0, 16) }; parameters.Children.Add(tint);
+        var luminosityLabel = Text("", 12); parameters.Children.Add(luminosityLabel);
+        var luminosity = new Slider { Tag = "appearance-luminosity-opacity", Minimum = 0, Maximum = 1, IsEnabled = false, Margin = new Thickness(0, 0, 0, 16) }; parameters.Children.Add(luminosity);
+        parameters.Children.Add(Text(L.T("色调颜色"), 12));
+        var color = new TextBox { Tag = "appearance-tint-color", IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(0), MinHeight = 0, Margin = new Thickness(0, 0, 0, 12) };
+        color.SetResourceReference(Control.ForegroundProperty, "InkBrush"); parameters.Children.Add(color);
+        var resetNative = Button(L.T("恢复原生默认"), () => { }); resetNative.Tag = "appearance-reset-native"; resetNative.IsEnabled = false; parameters.Children.Add(resetNative);
+        bool refreshing = false;
+        void Refresh()
+        {
+            refreshing = true;
+            try
+            {
+                themes.SelectedIndex = (int)_appearance.Theme; custom.IsChecked = _appearance.CustomBackdropEnabled;
+                tint.Value = _appearance.TintOpacity; luminosity.Value = _appearance.LuminosityOpacity;
+                tintLabel.Text = L.T("色调不透明度") + " | " + (_appearance.TintOpacity * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+                luminosityLabel.Text = L.T("亮度层不透明度") + " | " + (_appearance.LuminosityOpacity * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+                color.Text = _appearance.TintColor ?? L.T("跟随主题");
+            }
+            finally { refreshing = false; }
+        }
+        void Save()
+        { try { new AppearancePreferencesStore(_directory).Save(_appearance); ApplyTheme(); Refresh(); } catch (Exception ex) { Notice(ex.Message); } }
+        themes.SelectionChanged += (_, _) => { if (refreshing || themes.SelectedIndex < 0) return; _appearance = _appearance with { Theme = (AppearanceTheme)themes.SelectedIndex }; Save(); };
+        var reset = Button(L.T("恢复默认外观"), () => { _appearance = new AppearancePreferences(); Save(); }); reset.Tag = "appearance-reset"; appearance.Children.Add(reset);
+        Refresh();
     }
     private async Task ClearAppCacheAsync()
     {

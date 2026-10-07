@@ -2,7 +2,7 @@
  <PropertyGroup>
   <OutputType>WinExe</OutputType><TargetFramework>net462</TargetFramework><UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms>
   <LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings><PlatformTarget>AnyCPU</PlatformTarget><Prefer32Bit>false</Prefer32Bit>
-  <AssemblyName>ProcessKeeper</AssemblyName><RootNamespace>ProcessKeeper.App</RootNamespace><Product>Process Keeper</Product><Version>1.7.1</Version><ApplicationManifest>app.manifest</ApplicationManifest>
+  <AssemblyName>ProcessKeeper</AssemblyName><RootNamespace>ProcessKeeper.App</RootNamespace><Product>Process Keeper</Product><Version>1.7.2</Version><ApplicationManifest>app.manifest</ApplicationManifest>
   <ApplicationIcon>../ProcessKeeper.App/Assets/ProcessKeeper.ico</ApplicationIcon><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
  </PropertyGroup>
  <ItemGroup><Reference Include="System.Net.Http"/>
@@ -15,5 +15,7 @@
   <Compile Include="../ProcessKeeper.App/UpdateTransferController.cs" Link="UpdateTransferController.cs"/>
   <ProjectReference Include="../ProcessKeeper.Legacy.Core/ProcessKeeper.Legacy.Core.csproj"/>
   <Resource Include="../ProcessKeeper.App/Assets/ProcessKeeper.png" Link="Assets/ProcessKeeper.png"/>
+  <Resource Include="../ProcessKeeper.App/Assets/ProcessKeeperUpdater.ico" Link="Assets/ProcessKeeperUpdater.ico"/>
+  <Resource Include="../ProcessKeeper.App/Assets/ProcessKeeperUpdater.png" Link="Assets/ProcessKeeperUpdater.png"/>
  </ItemGroup>
 </Project>
