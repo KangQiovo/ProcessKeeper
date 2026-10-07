@@ -41,6 +41,7 @@ public static class WindowActions
         name.Equals("SysShadow", StringComparison.OrdinalIgnoreCase);
 
     private enum WindowOperation { Activate, Minimize, RevealHidden }
+    private enum WindowValidationState { Invalid, PendingShellCloak, Ready }
 
     private static (bool Success, string Message) Execute(ProcessRecord process, WindowRecord window, WindowOperation operation, string? applicationKey)
     {
@@ -53,6 +54,7 @@ public static class WindowActions
         if (requireAvdGui && !AvdGuiMatcher.IsExistingGuiWindow(window, includeHidden: operation == WindowOperation.RevealHidden))
             return (false, L.T("这不是 AVD 的原生设备页面；命令行、终端或辅助窗口不会作为打开成功。请刷新后使用原生窗口重启入口。"));
 
+        var operationWatch = Stopwatch.StartNew();
         try
         {
             using var handle = WindowNative.OpenProcess(0x1000 /* QUERY_LIMITED_INFORMATION */ | 0x00100000 /* SYNCHRONIZE */, false, process.Id);
@@ -76,23 +78,35 @@ public static class WindowActions
             if (!ValidateWindow(handle, process.Id, window.Handle, out string reason, reveal, requireAvdGui)) return (false, reason);
             if (reveal)
             {
+                Stopwatch? displayWatch = null;
                 if (!WindowNative.IsWindowVisible(window.Handle) || WindowNative.IsIconic(window.Handle))
                 {
                     int command = WindowNative.IsIconic(window.Handle) ? 9 /* SW_RESTORE */ : 5 /* SW_SHOW */;
+                    displayWatch = operationWatch;
                     if (!WindowNative.ShowWindowAsync(window.Handle, command))
                         return (false, L.T("Windows 未接受显示请求；该窗口可能已变化或不允许显示。"));
-                    // During this wait the target is expected to remain hidden until its
-                    // owning thread processes ShowWindowAsync. Do not reject it prematurely.
+                    // A queued first show may remain hidden, then be temporarily cloaked by
+                    // the Shell. All following observations share this display deadline.
                     if (!Observe(handle, process.Id, window.Handle,
-                        () => WindowNative.IsWindowVisible(window.Handle) && !WindowNative.IsIconic(window.Handle), allowHidden: true, requireAvdGui: requireAvdGui))
+                        () => WindowNative.IsWindowVisible(window.Handle) && !WindowNative.IsIconic(window.Handle),
+                        allowHidden: true, requireAvdGui: requireAvdGui, displayWatch: displayWatch))
                         return (false, L.T("已发送显示请求，但尚未观察到可见窗口；程序可能没有响应或再次隐藏了窗口。"));
                 }
-                if (!ValidateWindow(handle, process.Id, window.Handle, out reason, requireAvdGui: requireAvdGui)) return (false, reason);
+                if (!Observe(handle, process.Id, window.Handle,
+                    () => WindowNative.IsWindowVisible(window.Handle) && !WindowNative.IsIconic(window.Handle),
+                    requireAvdGui: requireAvdGui, displayWatch: displayWatch, requireMainWindowShape: true))
+                {
+                    if (!ValidateWindow(handle, process.Id, window.Handle, out reason,
+                        requireAvdGui: requireAvdGui, requireMainWindowShape: true)) return (false, reason);
+                    return (false, L.T("已发送显示请求，但尚未观察到可见窗口；程序可能没有响应或再次隐藏了窗口。"));
+                }
                 WindowNative.SetForegroundWindow(window.Handle);
                 if (Observe(handle, process.Id, window.Handle,
-                    () => !WindowNative.IsIconic(window.Handle) && WindowNative.GetForegroundWindow() == window.Handle, requireAvdGui: requireAvdGui))
+                    () => !WindowNative.IsIconic(window.Handle) && WindowNative.GetForegroundWindow() == window.Handle,
+                    requireAvdGui: requireAvdGui, displayWatch: displayWatch, requireMainWindowShape: true))
                     return (true, L.T("已显示隐藏的主窗口并切到前台。"));
-                if (ValidateWindow(handle, process.Id, window.Handle, out _, requireAvdGui: requireAvdGui) && !WindowNative.IsIconic(window.Handle))
+                if (ValidateWindow(handle, process.Id, window.Handle, out _,
+                    requireAvdGui: requireAvdGui, requireMainWindowShape: true) && !WindowNative.IsIconic(window.Handle))
                     return (true, L.T("已显示窗口，但 Windows 未允许切换焦点或焦点已被其他窗口接管；可从任务栏选择。"));
                 return (false, L.T("窗口一度显示，随后又被程序隐藏、最小化或关闭，请刷新状态。"));
             }
@@ -106,18 +120,27 @@ public static class WindowActions
                 return (false, L.T("已发送最小化请求，但尚未确认窗口最小化；程序可能未响应。"));
             }
 
+            Stopwatch? restoreWatch = null;
             if (WindowNative.IsIconic(window.Handle))
             {
+                restoreWatch = operationWatch;
                 if (!WindowNative.ShowWindowAsync(window.Handle, 9 /* SW_RESTORE */))
                     return (false, L.T("Windows 未接受还原请求，窗口可能已变化或受权限限制。"));
-                if (!Observe(handle, process.Id, window.Handle, () => !WindowNative.IsIconic(window.Handle), requireAvdGui: requireAvdGui))
+                if (!Observe(handle, process.Id, window.Handle, () => !WindowNative.IsIconic(window.Handle),
+                    requireAvdGui: requireAvdGui, displayWatch: restoreWatch))
                     return (false, L.T("已发送还原请求，但尚未确认窗口恢复；请稍后重试。"));
             }
             // Recheck after restoration as the app may destroy, hide, or replace its original window.
-            if (!ValidateWindow(handle, process.Id, window.Handle, out reason, requireAvdGui: requireAvdGui)) return (false, reason);
+            if (!Observe(handle, process.Id, window.Handle, () => !WindowNative.IsIconic(window.Handle),
+                requireAvdGui: requireAvdGui, displayWatch: restoreWatch))
+            {
+                if (!ValidateWindow(handle, process.Id, window.Handle, out reason, requireAvdGui: requireAvdGui)) return (false, reason);
+                return (false, L.T("已发送还原请求，但尚未确认窗口恢复；请稍后重试。"));
+            }
             bool accepted = WindowNative.SetForegroundWindow(window.Handle);
             if (Observe(handle, process.Id, window.Handle,
-                () => !WindowNative.IsIconic(window.Handle) && WindowNative.GetForegroundWindow() == window.Handle, requireAvdGui: requireAvdGui))
+                () => !WindowNative.IsIconic(window.Handle) && WindowNative.GetForegroundWindow() == window.Handle,
+                requireAvdGui: requireAvdGui, displayWatch: restoreWatch))
                 return (true, L.T("已将窗口切到前台。"));
             return accepted
                 ? (false, L.T("已请求切到前台，但焦点未停留在所选窗口；程序可能有活动对话框。"))
@@ -130,40 +153,66 @@ public static class WindowActions
     }
 
     // Keep the UI wait bounded, and report observed state rather than claiming success from a queued request.
-    private static bool Observe(SafeProcessHandle handle, int processId, nint window, Func<bool> state, bool allowHidden = false, bool requireAvdGui = false)
+    private static bool Observe(SafeProcessHandle handle, int processId, nint window, Func<bool> state, bool allowHidden = false,
+        bool requireAvdGui = false, Stopwatch? displayWatch = null, bool requireMainWindowShape = false)
     {
-        var watch = Stopwatch.StartNew();
+        var watch = displayWatch ?? Stopwatch.StartNew();
+        var maximumWait = displayWatch is null ? TimeSpan.FromMilliseconds(250) : TimeSpan.FromSeconds(1);
         do
         {
-            if (!ValidateWindow(handle, processId, window, out _, allowHidden, requireAvdGui)) return false;
-            if (state()) return true;
-            Thread.Sleep(15);
-        } while (watch.Elapsed < TimeSpan.FromMilliseconds(250));
-        return ValidateWindow(handle, processId, window, out _, allowHidden, requireAvdGui) && state();
+            var validation = InspectWindow(handle, processId, window, out _, allowHidden, requireAvdGui,
+                displayWatch is not null, requireMainWindowShape);
+            if (validation == WindowValidationState.Invalid) return false;
+            if (validation == WindowValidationState.Ready && state())
+            {
+                // The state callback can race a Shell transition or an application change.
+                // Only a fresh ready inspection can confirm success; Pending never can.
+                validation = InspectWindow(handle, processId, window, out _, allowHidden, requireAvdGui,
+                    displayWatch is not null, requireMainWindowShape);
+                if (validation == WindowValidationState.Invalid) return false;
+                if (validation == WindowValidationState.Ready && state()) return true;
+            }
+            var remaining = maximumWait - watch.Elapsed;
+            if (remaining <= TimeSpan.Zero) break;
+            Thread.Sleep(Math.Min(15, Math.Max(1, (int)remaining.TotalMilliseconds)));
+        } while (watch.Elapsed < maximumWait);
+        return ValidateWindow(handle, processId, window, out _, allowHidden, requireAvdGui, requireMainWindowShape) && state();
     }
 
-    private static bool ValidateWindow(SafeProcessHandle process, int processId, nint window, out string reason, bool allowHidden = false, bool requireAvdGui = false)
+    private static bool ValidateWindow(SafeProcessHandle process, int processId, nint window, out string reason,
+        bool allowHidden = false, bool requireAvdGui = false, bool requireMainWindowShape = false) =>
+        InspectWindow(process, processId, window, out reason, allowHidden, requireAvdGui,
+            requireMainWindowShape: requireMainWindowShape) == WindowValidationState.Ready;
+
+    private static WindowValidationState InspectWindow(SafeProcessHandle process, int processId, nint window, out string reason,
+        bool allowHidden = false, bool requireAvdGui = false, bool allowPendingShellCloak = false, bool requireMainWindowShape = false)
     {
         reason = L.T("窗口已关闭或所属进程已变化，请刷新列表。");
-        if (WindowNative.WaitForSingleObject(process, 0) != 0x00000102 || !WindowNative.IsWindow(window)) return false;
+        if (WindowNative.WaitForSingleObject(process, 0) != 0x00000102 || !WindowNative.IsWindow(window)) return WindowValidationState.Invalid;
         WindowNative.GetWindowThreadProcessId(window, out uint owner);
-        if (owner != (uint)processId) return false;
+        if (owner != (uint)processId) return WindowValidationState.Invalid;
         if (WindowNative.GetAncestor(window, 2 /* GA_ROOT */) != window)
-        { reason = L.T("所选句柄不是顶层窗口，未执行操作。"); return false; }
+        { reason = L.T("所选句柄不是顶层窗口，未执行操作。"); return WindowValidationState.Invalid; }
         if (!IsOnCurrentDesktop(window))
-        { reason = L.T("窗口不属于当前桌面，未执行跨桌面操作。"); return false; }
+        { reason = L.T("窗口不属于当前桌面，未执行跨桌面操作。"); return WindowValidationState.Invalid; }
         // Normal activation/minimization never forces a hidden helper or tray window open.
         if (!allowHidden && !WindowNative.IsWindowVisible(window))
-        { reason = L.T("窗口当前隐藏；请使用单独的隐藏主窗口显示操作。"); return false; }
+        { reason = L.T("窗口当前隐藏；请使用单独的隐藏主窗口显示操作。"); return WindowValidationState.Invalid; }
         if (WindowNative.DwmGetWindowAttribute(window, 14 /* DWMWA_CLOAKED */, out uint cloaked, sizeof(uint)) < 0)
-        { reason = L.T("无法核实窗口所在桌面的显示状态，未执行操作。"); return false; }
-        if (cloaked != 0)
-        { reason = L.T("窗口处于其他虚拟桌面或被系统隐藏，未执行操作。"); return false; }
-        if (allowHidden && !IsRevealableMainWindow(ReadWindowShape(window)))
-        { reason = L.T("所选窗口不是可显示的隐藏主窗口（可能是工具、消息辅助窗口或没有有效窗口区域）。"); return false; }
+        { reason = L.T("无法核实窗口所在桌面的显示状态，未执行操作。"); return WindowValidationState.Invalid; }
+        if ((allowHidden || requireMainWindowShape) && !IsRevealableMainWindow(ReadWindowShape(window)))
+        { reason = L.T("所选窗口不是可显示的隐藏主窗口（可能是工具、消息辅助窗口或没有有效窗口区域）。"); return WindowValidationState.Invalid; }
         if (requireAvdGui && !AvdGuiMatcher.IsExistingGuiWindow(ReadWindowShape(window), allowHidden))
-        { reason = L.T("未确认 AVD 原生设备页面；当前窗口是命令行、辅助窗口或页面状态已变化，未将其当作打开成功。"); return false; }
-        return true;
+        { reason = L.T("未确认 AVD 原生设备页面；当前窗口是命令行、辅助窗口或页面状态已变化，未将其当作打开成功。"); return WindowValidationState.Invalid; }
+        if (cloaked != 0)
+        {
+            reason = L.T("窗口处于其他虚拟桌面或被系统隐藏，未执行操作。");
+            // Only the observed post-show Shell transition can wait. Application,
+            // inherited, combined and unknown cloak values remain hard failures.
+            return allowPendingShellCloak && cloaked == 2 /* DWM_CLOAKED_SHELL */
+                ? WindowValidationState.PendingShellCloak : WindowValidationState.Invalid;
+        }
+        return WindowValidationState.Ready;
     }
 
     private static WindowRecord ReadWindowShape(nint window)

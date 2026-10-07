@@ -11,9 +11,12 @@ internal sealed class OwnWindows : IDisposable
     private readonly Dictionary<string, nint> _windows = new();
     private readonly ManualResetEventSlim _delayStarted = new();
     private readonly string _className;
+    private int _nextShowDelayMilliseconds;
+    private long _lastShowDelayMilliseconds;
     private bool _disposed;
     internal IReadOnlyDictionary<string, nint> Handles => _windows;
     internal string ClassName => _className;
+    internal long LastShowDelayMilliseconds => Interlocked.Read(ref _lastShowDelayMilliseconds);
 
     internal OwnWindows(string? className = null)
     {
@@ -61,6 +64,16 @@ internal sealed class OwnWindows : IDisposable
 
     private nint WindowProcedure(nint window, uint message, nuint wParam, nint lParam)
     {
+        if (message == 0x0018 /* WM_SHOWWINDOW */ && wParam != 0)
+        {
+            int delay = Interlocked.Exchange(ref _nextShowDelayMilliseconds, 0);
+            if (delay > 0)
+            {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                Thread.Sleep(delay);
+                Interlocked.Exchange(ref _lastShowDelayMilliseconds, watch.ElapsedMilliseconds);
+            }
+        }
         if (message == 0x8001)
         {
             Native.ShowWindow(lParam, (int)wParam);
@@ -94,6 +107,8 @@ internal sealed class OwnWindows : IDisposable
         if (!Native.PostMessage(_windows["main"], 0x8003, (nuint)milliseconds, 0) || !_delayStarted.Wait(2000))
             throw new Exception("Own message-loop delay did not begin");
     }
+
+    internal void DelayNextShow(int milliseconds) => Interlocked.Exchange(ref _nextShowDelayMilliseconds, milliseconds);
 
     internal WindowRecord Snapshot(string name)
     {
@@ -170,4 +185,5 @@ internal static class Native
     [DllImport("user32.dll", EntryPoint="GetClassNameW", CharSet=CharSet.Unicode)] internal static extern int GetClassName(nint window,StringBuilder text,int capacity);
     [DllImport("user32.dll")] [return:MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowRect(nint window,out Rectangle rectangle);
     [DllImport("dwmapi.dll")] internal static extern int DwmGetWindowAttribute(nint window,uint attribute,out uint value,int size);
+    [DllImport("dwmapi.dll")] internal static extern int DwmSetWindowAttribute(nint window,uint attribute,ref uint value,int size);
 }

@@ -16,6 +16,8 @@ Release name **1.7.1v2** uses numeric version **1.7.2** and tag `v1.7.2`. Existi
 
 - Add this project's own repository above referenced projects using the same native presentation and browser confirmation.
 
+- Fix native window recovery that could stop before Windows finished a temporary Shell display transition. Only a verified window observed as visible and uncloaked can succeed; console/helper-page, process-identity and desktop checks remain in force.
+
 ## Download selection
 
 | Asset | Intended use |

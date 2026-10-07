@@ -114,6 +114,16 @@ var ownIdentity = new ProcessRecord
     SessionId = current.SessionId, StartTimeUtcTicks = current.StartTime.ToUniversalTime().Ticks,
     OwnerSid = WindowsIdentity.GetCurrent().User?.Value ?? ""
 };
+long maximumNativeActionMilliseconds = 0;
+(bool Success, string Message) TimedWindowAction(string name, Func<(bool Success, string Message)> action)
+{
+    var watch = Stopwatch.StartNew();
+    var result = action();
+    watch.Stop();
+    maximumNativeActionMilliseconds = Math.Max(maximumNativeActionMilliseconds, watch.ElapsedMilliseconds);
+    Console.WriteLine($"NATIVE ACTION | {name} | elapsedMs={watch.ElapsedMilliseconds} | success={result.Success} | {result.Message}");
+    return result;
+}
 foreach (var className in new[] { "ConsoleWindowClass", "CASCADIA_HOSTING_WINDOW_CLASS", "PseudoConsoleWindow" })
 {
     using var windows = new OwnWindows(className);
@@ -123,25 +133,47 @@ foreach (var className in new[] { "ConsoleWindowClass", "CASCADIA_HOSTING_WINDOW
     var staleQt = hidden with { ClassName = "Qt6QWindowIcon" };
     var blocked = WindowActions.RevealHidden(ownIdentity, staleQt, "known:avd");
     Check(!blocked.Success && !Native.IsWindowVisible(hidden.Handle), "live recheck rejects forged Qt metadata for " + className);
-    var ordinary = WindowActions.RevealHidden(ownIdentity, hidden);
+    var ordinary = TimedWindowAction("reveal " + className, () => WindowActions.RevealHidden(ownIdentity, hidden));
     Check(ordinary.Success && Native.IsWindowVisible(hidden.Handle), "ordinary console-window owner can still reveal " + className);
     var visible = windows.Snapshot("main");
     blocked = WindowActions.Activate(ownIdentity, visible with { ClassName = "Qt6QWindowIcon" }, "known:avd");
     Check(!blocked.Success, "live recheck rejects visible console activation as AVD success for " + className);
-    var minimized = WindowActions.Minimize(ownIdentity, visible);
+    var minimized = TimedWindowAction("minimize " + className, () => WindowActions.Minimize(ownIdentity, visible));
     Check(minimized.Success && Native.IsIconic(hidden.Handle), "ordinary console-window owner can still minimize " + className);
 }
 using (var windows = new OwnWindows("Qt6QWindowRoutingFixture"))
 {
     var hidden = windows.Snapshot("main");
-    var restored = WindowActions.RevealHidden(ownIdentity, hidden, "known:avd");
+    var restored = TimedWindowAction("reveal Qt", () => WindowActions.RevealHidden(ownIdentity, hidden, "known:avd"));
     Check(restored.Success && Native.IsWindowVisible(hidden.Handle), "actual owned Qt main-window shape passes native AVD reveal checks");
-    var minimized = WindowActions.Minimize(ownIdentity, windows.Snapshot("main"), "known:avd");
+    var minimized = TimedWindowAction("minimize Qt", () => WindowActions.Minimize(ownIdentity, windows.Snapshot("main"), "known:avd"));
     Check(minimized.Success && Native.IsIconic(hidden.Handle), "actual owned Qt main-window shape retains minimize support");
     var stale = windows.Snapshot("main");
     var changed = Native.SetWindowText(hidden.Handle, "Extended controls");
     Check(changed && !WindowActions.Activate(ownIdentity, stale, "known:avd").Success && Native.IsIconic(hidden.Handle),
         "live title change to helper page prevents restore despite stale eligible snapshot");
 }
-Console.WriteLine($"RESULT | assertions={assertions} | failed={failures}");
+using (var windows = new OwnWindows("Qt6QWindowRoutingDelayedFixture"))
+{
+    var hidden = windows.Snapshot("main");
+    windows.DelayNextShow(350);
+    var restored = TimedWindowAction("reveal delayed Qt", () => WindowActions.RevealHidden(ownIdentity, hidden, "known:avd"));
+    var actual = windows.Snapshot("main");
+    Console.WriteLine($"NATIVE FIXTURE | phase=WM_SHOWWINDOW | delayMs={windows.LastShowDelayMilliseconds}");
+    Check(windows.LastShowDelayMilliseconds >= 300 && restored.Success && actual.IsVisible && !actual.IsMinimized && !actual.IsCloaked,
+        "actual Qt reveal waits for a 350ms post-show owner-loop delay and confirms an uncloaked window");
+}
+using (var windows = new OwnWindows("Qt6QWindowRoutingAppCloakFixture"))
+{
+    var hidden = windows.Snapshot("main");
+    uint cloak = 1;
+    int cloakResult = Native.DwmSetWindowAttribute(hidden.Handle, 13 /* DWMWA_CLOAK */, ref cloak, sizeof(uint));
+    int readResult = Native.DwmGetWindowAttribute(hidden.Handle, 14 /* DWMWA_CLOAKED */, out uint actualCloak, sizeof(uint));
+    Check(cloakResult >= 0 && readResult >= 0 && (actualCloak & 1) != 0,
+        "fixture applies real DWM application cloak only to its own Qt window");
+    var blocked = TimedWindowAction("reveal application-cloaked Qt", () => WindowActions.RevealHidden(ownIdentity, hidden, "known:avd"));
+    Check(!blocked.Success && !Native.IsWindowVisible(hidden.Handle) && windows.Snapshot("main").IsCloaked,
+        "live application cloak prevents reveal despite an earlier uncloaked Qt snapshot");
+}
+Console.WriteLine($"RESULT | assertions={assertions} | failed={failures} | maximumNativeActionMs={maximumNativeActionMilliseconds}");
 return failures == 0 ? 0 : 1;
