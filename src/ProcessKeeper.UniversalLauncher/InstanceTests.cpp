@@ -93,7 +93,8 @@ void RunInstanceTests(const std::function<void(bool, const wchar_t*)>& check) {
     Write(directory + L"\\instance-request.txt", {L"PKREQUEST1", std::to_wstring(GetCurrentProcessId()), std::to_wstring(ProcessCreated(GetCurrentProcess()))});
     check(VerifyInstancePeerFixture(id), L"live peer matches exact path PID start SID session PE product version and hashes");
     check(ResolvePreferredInstance(Route::Unsupported, ProcessCreated(peer.process.get()) + 1) && WaitForSingleObject(peer.process.get(), 0) == WAIT_TIMEOUT, L"ineligible package can only foreground existing compatible UI and never displace it");
-    fields[4] = L"1.8.0"; Write(directory + L"\\context.txt", fields); check(!VerifyInstancePeerFixture(id), L"receipt version cannot override actual executable VERSIONINFO"); fields[4] = ProductVersion;
+    fields[4] = std::wstring(ProductVersion) == L"0.0.1" ? L"0.0.2" : L"0.0.1";
+    Write(directory + L"\\context.txt", fields); check(!VerifyInstancePeerFixture(id), L"receipt version cannot override actual executable VERSIONINFO"); fields[4] = ProductVersion;
     fields[4] = L"corrupt version"; Write(directory + L"\\context.txt", fields);
     check(ResolvePreferredInstance(Route::Legacy, ProcessCreated(peer.process.get()) + 1) && WaitForSingleObject(peer.process.get(), 0) == WAIT_TIMEOUT,
         L"malformed live receipt provides foreground-only retention and never closing authority"); fields[4] = ProductVersion;
