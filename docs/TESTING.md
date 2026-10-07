@@ -4,7 +4,17 @@
 
 Read [BUILDING.md](BUILDING.md) for toolchain requirements and [COMPATIBILITY.md](COMPATIBILITY.md) for supported routes and limitations. Commands below run from the repository root on Windows with PowerShell 7 and the required .NET SDK. Do not run multiple builds against the same project's `obj` directory at once.
 
-## 1.7.1v2 (numeric 1.7.2) update revision
+## 1.8.0 display ownership and registration grouping
+
+Verify fresh settings start with Hide Microsoft apps off and an empty whitelist, while explicitly saved visibility preferences survive reload and backup/import. For package ownership, cover healthy registered Store/System packages with and without EXEs, independently trusted native signatures for other eligible packages, and rejection of copied roots, stale identities, development mode, untrusted signatures and publisher-only claims. A Microsoft child component must not hide a third-party parent.
+
+Keep registration grouping and component-role failures RED before implementation. Cover native MSI ProductCode/component association, an exact registered icon directory with product/company evidence, and Burn/PEP514 provider/version/architecture/runtime paths. Reject fake GUID paths, missing registrations, conflicting vendors, another product, incomplete metadata and mismatched runtime/cache paths. Verify the real main file is the default target, icon/cache components remain present, and generic Python hosts stay protected without exact registration evidence. All original installation/action identities must remain available after merging.
+
+Exercise both interfaces with live collection paused: incomplete publisher evidence must trigger bounded display retries, eventually change the actual visible rows, preserve original mutations and stop after completion, cancellation or closure. Test positive and negative inventory cases rather than just the initially reported screenshots. Native caption light/dark tests must inspect the selected app theme and readable customized backdrops.
+
+The read-only modern-host sample had 103 package UI candidates, 27 Microsoft-publisher desktop records forming 18 parents, and 14 third-party records with Microsoft components forming 13 parents. Installed presentation retained all 323 original identities and 1469 distinct EXE paths in 280 parents. The 165 related uninstall registrations included 5 with sufficient evidence, 134 without readable application evidence and 26 with only icon/installer evidence. Remaining visible unknown ownership and distinct package families are coverage boundaries, not test failures to hide by name. Keep detailed local inventory and private paths out of Git; see [release notes](RELEASE-1.8.0.md).
+
+## Retained 1.7.1v2 (numeric 1.7.2) update checks
 
 Verify automatic ordinary and resumed downloads choose GitHub first, fallback only after official failure, retain explicit source selections, and never fetch release authority from mirrors. Test official timeout, invalid content, cancellation, resumed range offsets and checksum validation with bounded fake HTTP handlers.
 

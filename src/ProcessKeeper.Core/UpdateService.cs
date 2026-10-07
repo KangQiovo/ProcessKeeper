@@ -25,7 +25,7 @@ public sealed partial class UpdateService : IDisposable
     {
         handler ??= new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.None, UseCookies = false };
         _http = new HttpClient(handler, true) { Timeout = Timeout.InfiniteTimeSpan };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/1.7.2");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessKeeper/" + ReleaseIdentity.NumericVersion);
         _createDownloadFile = createDownloadFile ?? UpdateTrustedFiles.Create;
         _openResumeFile = openResumeFile ?? UpdateTrustedFiles.OpenResume;
         _runtime = runtime ?? UpdatePackagePolicy.Current();

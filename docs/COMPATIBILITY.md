@@ -17,7 +17,7 @@ These are implementation targets. **Windows 7, Windows 8.1, Windows 10 and ARM64
 
 On ARM64, the package selects the native ARM64 modern payload; the x86 compatibility fallback is not offered. The x64-specific AVD environment reader is disabled on ARM64. Cross-compilation and native route tests on x64 are not ARM device validation.
 
-**For 1.6.x in-app upgrades, select ProcessKeeper-v1.7.2.exe (Universal).** The old updater accepts PK14 and rejects PK17 split editions or installers safely. To switch to a smaller edition or an installed copy, download its corresponding EXE manually. From 1.7.1, defaults match the verified package target and portable/installed type. A different compatible edition requires confirmation. Installer updates open a standard setup wizard after explicit consent.
+**For 1.6.x in-app upgrades, select ProcessKeeper-v1.8.0.exe (Universal).** The old updater accepts PK14 and rejects PK17 split editions or installers safely. To switch to a smaller edition or an installed copy, download its corresponding EXE manually. From 1.7.1, defaults match the verified package target and portable/installed type. A different compatible edition requires confirmation. Installer updates open a standard setup wizard after explicit consent.
 
 ## Feature differences
 
@@ -37,6 +37,7 @@ Some VM and tray adapters also require reliable cross-architecture argument/envi
 
 ## Known limitations and unverified scenarios
 
+- **1.8.0 visibility and grouping:** Hide Microsoft apps starts off; enabling it requires positive OS/package-signature or executable evidence. Unknown ownership remains visible, third-party parents are not hidden by a Microsoft child, and equal names do not merge distinct package families. In the read-only sample, 165 Microsoft-related uninstall records included 5 with sufficient application evidence, 134 with none and 26 with only icon/installer evidence. The latter records remain visible; see [1.8.0 release notes](RELEASE-1.8.0.md).
 - **Real deployment:** production UAC consent/cancellation, first protected ProgramData extraction, and end-to-end public-release upgrading remain unverified as a complete user workflow. Isolated launch/update tests are not substitutes.
 - **Unsigned builds:** Windows may show an unknown publisher. No production signing certificate is included. Internal hashes do not authenticate an arbitrarily rewritten executable.
 - **Old Windows networking:** certificates, TLS support and system updates affect GitHub access. The application does not disable certificate validation or change the machine's TLS configuration to work around failures.

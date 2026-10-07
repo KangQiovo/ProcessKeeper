@@ -6,9 +6,9 @@ The three native NSIS installers contain their corresponding official portable E
 
 | Installer | Intended route |
 | --- | --- |
-| `ProcessKeeper-v1.7.0-win7-x86-compat-setup.exe` | Intel/AMD Windows 7 SP1 / 8.1 / 10 or later; compatibility UI, including x86 machines |
-| `ProcessKeeper-v1.7.0-win10-x86-x64-setup.exe` | Intel/AMD Windows 10 or later; x64 modern UI where supported, x86 compatibility route otherwise |
-| `ProcessKeeper-v1.7.0-win10-arm64-setup.exe` | Native ARM64 Windows 10 build 19041+ / Windows 11; ARM64 modern UI |
+| `ProcessKeeper-v1.8.0-win7-x86-compat-setup.exe` | Intel/AMD Windows 7 SP1 / 8.1 / 10 or later; compatibility UI, including x86 machines |
+| `ProcessKeeper-v1.8.0-win10-x86-x64-setup.exe` | Intel/AMD Windows 10 or later; x64 modern UI where supported, x86 compatibility route otherwise |
+| `ProcessKeeper-v1.8.0-win10-arm64-setup.exe` | Native ARM64 Windows 10 build 19041+ / Windows 11; ARM64 modern UI |
 
 All setup/uninstall executables are native x86 Unicode programs. ARM64 Windows uses x86 emulation for the installer and bootstrapper; the modern app payload is ARM64. Missing Framework dependencies remain the app launcher's explicit recovery workflow. These are implementation targets; real Windows 7/8.1/10 and ARM64 installation/uninstallation has not been certified.
 
@@ -24,8 +24,8 @@ First build the matching portable target using the [build guide](../docs/BUILDIN
   -BuildDirectory ./artifacts/setup-guard
 if ($LASTEXITCODE -ne 0) { throw 'Setup guard build failed.' }
 ./scripts/package-installers.ps1 -PackageTarget Windows10x64 `
-  -PortablePath ./artifacts/ProcessKeeper-v1.7.0-win10-x86-x64.exe `
-  -OutputPath ./artifacts/ProcessKeeper-v1.7.0-win10-x86-x64-setup.exe `
+  -PortablePath ./artifacts/ProcessKeeper-v1.8.0-win10-x86-x64.exe `
+  -OutputPath ./artifacts/ProcessKeeper-v1.8.0-win10-x86-x64-setup.exe `
   -NsisCompiler E:/Tools/nsis-3.13/makensis.exe `
   -SetupGuardPath ./artifacts/ProcessKeeper.SetupGuard.dll -StableRelease
 ```

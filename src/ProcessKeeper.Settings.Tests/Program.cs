@@ -17,6 +17,7 @@ var count = 0;
 void Check(bool value, string name) { if (!value) { Report("FAIL: " + name); throw new Exception(name); } count++; Report("PASS: " + name); }
 void Reject(Action action, string name) { try { action(); } catch (InvalidDataException) { Check(true, name); return; } throw new Exception("accepted invalid data: " + name); }
 var oldBundle = new SettingsBundle(WhitelistStore.CreateDefaults(), new AppearancePreferences(), new ViewPreferences());
+MicrosoftVisibilityPreferencesVerification.Run(root, Path.Combine(AppContext.BaseDirectory, "fixtures-input", "default-settings.json"), Check);
 AppearanceParametersVerification.Run(root, Check);
 ProfileBundleVerification.Run(root, Check);
 var defaultExample = SettingsBundleStore.ReadImport(Path.Combine(AppContext.BaseDirectory, "fixtures-input", "default-settings.json"));

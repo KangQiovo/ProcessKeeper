@@ -6,9 +6,9 @@
 
 | 安装包 | 适用路线 |
 | --- | --- |
-| `ProcessKeeper-v1.7.0-win7-x86-compat-setup.exe` | Intel/AMD Windows 7 SP1 / 8.1 / 10 及更新系统，包括 x86 设备；兼容界面 |
-| `ProcessKeeper-v1.7.0-win10-x86-x64-setup.exe` | Intel/AMD Windows 10 及更新系统；支持时使用 x64 现代界面，否则使用 x86 兼容路线 |
-| `ProcessKeeper-v1.7.0-win10-arm64-setup.exe` | 原生 ARM64 Windows 10 build 19041+ / Windows 11；ARM64 现代界面 |
+| `ProcessKeeper-v1.8.0-win7-x86-compat-setup.exe` | Intel/AMD Windows 7 SP1 / 8.1 / 10 及更新系统，包括 x86 设备；兼容界面 |
+| `ProcessKeeper-v1.8.0-win10-x86-x64-setup.exe` | Intel/AMD Windows 10 及更新系统；支持时使用 x64 现代界面，否则使用 x86 兼容路线 |
+| `ProcessKeeper-v1.8.0-win10-arm64-setup.exe` | 原生 ARM64 Windows 10 build 19041+ / Windows 11；ARM64 现代界面 |
 
 安装器和卸载器均为原生 x86 Unicode 程序。ARM64 Windows 使用 x86 模拟运行安装器和启动器，现代应用负载仍为 ARM64。缺失 Framework 时仍由应用启动器提供明确的恢复指引。以上为实现目标，尚未完成真实 Windows 7/8.1/10 与 ARM64 安装卸载认证。
 
@@ -24,8 +24,8 @@
   -BuildDirectory ./artifacts/setup-guard
 if ($LASTEXITCODE -ne 0) { throw 'Setup guard build failed.' }
 ./scripts/package-installers.ps1 -PackageTarget Windows10x64 `
-  -PortablePath ./artifacts/ProcessKeeper-v1.7.0-win10-x86-x64.exe `
-  -OutputPath ./artifacts/ProcessKeeper-v1.7.0-win10-x86-x64-setup.exe `
+  -PortablePath ./artifacts/ProcessKeeper-v1.8.0-win10-x86-x64.exe `
+  -OutputPath ./artifacts/ProcessKeeper-v1.8.0-win10-x86-x64-setup.exe `
   -NsisCompiler E:/Tools/nsis-3.13/makensis.exe `
   -SetupGuardPath ./artifacts/ProcessKeeper.SetupGuard.dll -StableRelease
 ```
