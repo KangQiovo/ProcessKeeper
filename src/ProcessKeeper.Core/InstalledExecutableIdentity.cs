@@ -91,6 +91,9 @@ public sealed class InstalledExecutableIdentity
             return found;
         }
         var entries=new HashSet<string>(application.EntryPaths.Take(MaximumExecutables),StringComparer.OrdinalIgnoreCase);
+        var registeredRuntime=application.PresentationRegistrationLinks.Any(link=>link.StartsWith("registration:",StringComparison.Ordinal));
+        var runtimeMains=new HashSet<string>(registeredRuntime?application.RegisteredRuntimeMainPaths.Take(MaximumExecutables):Enumerable.Empty<string>(),StringComparer.OrdinalIgnoreCase);
+        var runtimeInstallers=new HashSet<string>(registeredRuntime?application.RegisteredRuntimeInstallerPaths.Take(MaximumExecutables):Enumerable.Empty<string>(),StringComparer.OrdinalIgnoreCase);
         var name=NameKey(application.Name);
         var englishName=EnglishNameKey(application.Name);
         foreach(var executable in application.Executables.Take(MaximumExecutables))
@@ -102,6 +105,8 @@ public sealed class InstalledExecutableIdentity
                 var file=Path.GetFileName(executable.Path);var stem=Path.GetFileNameWithoutExtension(file);var key=NameKey(stem);
                 var utility=UtilityRole(stem,name);
                 if(_uninstallers.Contains(executable.Path))role=new(){Role=InstalledExecutableRole.Uninstaller,Evidence=InstalledExecutableEvidence.RegisteredUninstaller,IsUncertain=false};
+                else if(runtimeInstallers.Contains(executable.Path))role=new(){Role=InstalledExecutableRole.Helper,Evidence=InstalledExecutableEvidence.ExplicitEntry,IsUncertain=false};
+                else if(runtimeMains.Contains(executable.Path)&&entries.Contains(executable.Path))role=new(){Role=_registrationsTruncated?InstalledExecutableRole.PotentialMain:InstalledExecutableRole.Main,Evidence=InstalledExecutableEvidence.ExplicitEntry,IsUncertain=_registrationsTruncated};
                 else if(Hosts.Contains(file))role=new(){Role=InstalledExecutableRole.Helper,Evidence=InstalledExecutableEvidence.UtilityFileName};
                 else if(utility!=InstalledExecutableRole.Unknown)role=new(){Role=utility,Evidence=InstalledExecutableEvidence.UtilityFileName};
                 else if(entries.Contains(executable.Path))role=new(){Role=_registrationsTruncated?InstalledExecutableRole.PotentialMain:InstalledExecutableRole.Main,Evidence=InstalledExecutableEvidence.ExplicitEntry,IsUncertain=_registrationsTruncated};
@@ -113,7 +118,8 @@ public sealed class InstalledExecutableIdentity
             }
             roles.Add(executable.Path,role);
         }
-        found=new(roles,application.Executables.Count>MaximumExecutables||application.EntryPaths.Count>MaximumExecutables||_registrationsTruncated);
+        found=new(roles,application.Executables.Count>MaximumExecutables||application.EntryPaths.Count>MaximumExecutables
+            ||application.RegisteredRuntimeMainPaths.Count>MaximumExecutables||application.RegisteredRuntimeInstallerPaths.Count>MaximumExecutables||_registrationsTruncated);
         // A single inventory refresh creates one instance. Cap retained app objects as well.
         if(_applications.Count<10000)_applications.Add(application,found);
         return found;

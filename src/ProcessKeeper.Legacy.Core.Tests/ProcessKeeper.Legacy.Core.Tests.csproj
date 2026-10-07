@@ -24,6 +24,7 @@
     <Compile Include="../ProcessKeeper.Settings.Tests/BuildInfoVerification.cs" Link="Shared/BuildInfoVerification.cs" />
     <Compile Include="../ProcessKeeper.Installed.Tests/ApplicationGroupingVerification.cs" Link="Shared/ApplicationGroupingVerification.cs" />
     <Compile Include="../ProcessKeeper.Installed.Tests/InstalledDuplicateVerification.cs" Link="Shared/InstalledDuplicateVerification.cs" />
+    <Compile Include="../ProcessKeeper.Installed.Tests/InstalledRegistrationPresentationTests.cs" Link="Shared/InstalledRegistrationPresentationTests.cs" />
   </ItemGroup>
   <Target Name="GenerateInstalledFixture" BeforeTargets="CoreCompile">
     <Exec Command="&quot;$(PowerShellExe)&quot; -NoProfile -File &quot;$(MSBuildProjectDirectory)\GenerateLegacyFixtures.ps1&quot; -OutputFile &quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath)InstalledSearchVerification.g.cs&quot;" />

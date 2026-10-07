@@ -1,5 +1,15 @@
 namespace ProcessKeeper.Core;
 
+/// <summary>Healthy Store/System package attribution read from exact OS registration. Display filtering only;
+/// never grants protection, process-close, launch, update or uninstall authority.</summary>
+public sealed record VerifiedMicrosoftPackageEvidence(string FamilyName, string FullName, string InstallLocation,
+    IReadOnlyList<string> ExecutablePaths);
+
+/// <summary>Healthy registered non-Store package identity awaiting an independent package-signature chain check.
+/// Registration metadata alone is not positive Microsoft ownership.</summary>
+public sealed record MicrosoftPackageSignatureCandidate(string FamilyName, string FullName, string InstallLocation,
+    string Publisher, string SignaturePath, IReadOnlyList<string> ExecutablePaths);
+
 /// <summary>An installed executable candidate, not a running process or a launch guarantee.</summary>
 public sealed record InstalledExecutable
 {
@@ -25,6 +35,15 @@ public sealed record InstalledApplication
     public string ExternalInstallLocation { get; init; } = "";
     public string IdentityEvidence { get; init; } = "";
     public string ApplicationKey { get; init; } = "";
+    /// <summary>Preloaded package ownership, independent of localized Publisher/Name strings and standalone EXE signatures.</summary>
+    public VerifiedMicrosoftPackageEvidence? MicrosoftPackageEvidence { get; init; }
+    public MicrosoftPackageSignatureCandidate? MicrosoftPackageSignatureCandidate { get; init; }
+    /// <summary>Exact OS registration associations for presentation only. Never replaces installation or mutation identities.</summary>
+    public IReadOnlyList<string> PresentationRegistrationLinks { get; init; } = [];
+    /// <summary>Exact runtime entries associated with their registered installer by provider, release, architecture and cached metadata. Display roles only.</summary>
+    public IReadOnlyList<string> RegisteredRuntimeMainPaths { get; init; } = [];
+    /// <summary>Registered cached installers retained as components after an exact runtime association. Never authorizes installer execution.</summary>
+    public IReadOnlyList<string> RegisteredRuntimeInstallerPaths { get; init; } = [];
     /// <summary>Explicit registered, manifest, shortcut or user-selected entries; never inferred from list order.</summary>
     public IReadOnlyList<string> EntryPaths { get; init; } = [];
     public IReadOnlyList<InstalledExecutable> Executables { get; init; } = [];

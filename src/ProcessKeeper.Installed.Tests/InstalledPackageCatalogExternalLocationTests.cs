@@ -42,7 +42,7 @@ internal static class InstalledPackageCatalogExternalLocationTests
         check(Select(file, false, true).Length == 0,
             "an external registration cannot associate an ordinary file as an installation directory");
         var seedType = assembly.GetType("ProcessKeeper.Core.InstalledPackageSeed", throwOnError: true)!;
-        var seed = Activator.CreateInstance(seedType, new object?[] { "Fixture", "Publisher", "family", "full", @"E:\PackageManifest", Array.Empty<string>(), "", "" })!;
+        var seed = Activator.CreateInstance(seedType, new object?[] { "Fixture", "Publisher", "family", "full", @"E:\PackageManifest", Array.Empty<string>(), "", "", null, null })!;
         check((string)seedType.GetProperty("ExternalInstallLocation")!.GetValue(seed)! == "" &&
             ((IReadOnlyList<string>)seedType.GetProperty("ExecutablePaths")!.GetValue(seed)!).Count == 0,
             "existing package seeds retain zero components without inventing an external executable");

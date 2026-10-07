@@ -8,6 +8,8 @@ public sealed partial class MainWindow
     private const string PlatformRowPrefix = "presentation-platform:";
     private readonly ApplicationDisplayService _displayService = new();
     private readonly CancellationTokenSource _displayLifetime = new();
+    private readonly DispatcherTimer _displayRetryTimer = new();
+    private int _displayRetryRound;
     private readonly HashSet<string> _collapsedRunningPlatforms = new(StringComparer.Ordinal);
     private readonly HashSet<string> _collapsedInstalledPlatforms = new(StringComparer.Ordinal);
     private ApplicationDisplayCatalog _displayCatalog = ApplicationDisplayCatalog.Empty;
@@ -18,6 +20,11 @@ public sealed partial class MainWindow
 
     private void InitializePresentation()
     {
+        _displayRetryTimer.Tick += (_, _) =>
+        {
+            _displayRetryTimer.Stop();
+            if (!_closed) RequestPresentationCapture(retry: true);
+        };
         RunningPresentationOptions.Changed += PresentationChanged;
         InstalledPresentationOptions.Changed += PresentationChanged;
         if (_autorunsView is not null)
@@ -26,7 +33,7 @@ public sealed partial class MainWindow
             _autorunsView.InventoryChanged += (_, _) => RequestPresentationCapture();
         }
         ApplyPresentationPreferences(_groupGamePlatforms, _hideMicrosoftApps);
-        Closed += (_, _) => _displayLifetime.Cancel();
+        Closed += (_, _) => { _displayRetryTimer.Stop(); _displayLifetime.Cancel(); };
     }
     private void PresentationChanged(object? sender, EventArgs args)
     { if (sender is PresentationOptions options) ApplyPresentationChoice(options.GroupGames, options.HideMicrosoft); }
@@ -43,8 +50,19 @@ public sealed partial class MainWindow
         _autorunsView?.ApplyPresentation(_displayCatalog, group, hide);
         _uninstallView?.ApplyPresentation(_displayCatalog, group, hide);
     }
-    private async void RequestPresentationCapture()
+    private void SchedulePresentationRetry(bool incomplete)
     {
+        _displayRetryTimer.Stop();
+        if (!incomplete) { _displayRetryRound = 0; return; }
+        if (_closed || _displayDirty) return;
+        _displayRetryTimer.Interval = TimeSpan.FromSeconds(Math.Min(30, 2 << Math.Min(_displayRetryRound, 4)));
+        _displayRetryRound = Math.Min(_displayRetryRound + 1, 4);
+        _displayRetryTimer.Start();
+    }
+    private async void RequestPresentationCapture(bool retry = false)
+    {
+        _displayRetryTimer.Stop();
+        if (!retry) _displayRetryRound = 0;
         if (_closed || (!_groupGamePlatforms && !_hideMicrosoftApps && !(_uninstallView?.InventoryEntries.Count > 0))) return;
         _displayDirty = true;
         if (_displayCapturing) return;
@@ -61,6 +79,9 @@ public sealed partial class MainWindow
                 var verifyMicrosoft = _hideMicrosoftApps || uninstall.Count > 0;
                 var result = await Task.Run(() => CaptureDisplay is { } capture ? capture(snapshot, installed, autoruns, token) : _displayService.Capture(snapshot, installed, autoruns, uninstall, verifyMicrosoft, token), token);
                 if (_closed || token.IsCancellationRequested) return;
+                // Optional signer work can outlive this capture while live collection is paused.
+                // Finish that evidence separately, even if this intermediate presentation is unchanged.
+                SchedulePresentationRetry(result.RequiresMicrosoftRefresh);
                 if (_displayCatalog.HasSamePresentationAs(result)) continue;
                 _displayCatalog = result;
                 _autorunsView?.ApplyPresentation(result, _groupGamePlatforms, _hideMicrosoftApps);

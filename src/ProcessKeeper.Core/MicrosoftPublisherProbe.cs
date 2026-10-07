@@ -122,8 +122,74 @@ public sealed class MicrosoftPublisherProbe : IMicrosoftPublisherProbe
     {
         // PackageSignatureKind Store=3/System=4. Developer/enterprise registrations are not Microsoft trust evidence.
         // These IDs are Microsoft's registered publisher identities, not package-name or display-label prefixes.
-        if (!healthy || signatureKind is not (3 or 4) || publisherId is not ("8wekyb3d8bbwe" or "cw5n1h2txyewy")) return false;
+        if (!healthy || signatureKind is not (3 or 4)) return false;
+        return HasMicrosoftPackagePublisherIdentity(publisher, publisherId);
+    }
+
+    internal static bool HasMicrosoftPackagePublisherIdentity(string publisher, string publisherId)
+    {
+        if (publisherId is not ("8wekyb3d8bbwe" or "cw5n1h2txyewy")) return false;
         try { return HasMicrosoftOrganization(new X500DistinguishedName(publisher).RawData); }
+        catch { return false; }
+    }
+
+    internal static bool CanPreloadMicrosoftPackage(string publisher, string publisherId, int signatureKind, bool healthy,
+        bool developmentMode, bool framework, bool resourcePackage) => !developmentMode && !framework && !resourcePackage &&
+        HasTrustedMicrosoftPackagePublisher(publisher, publisherId, signatureKind, healthy);
+
+    /// <summary>Additional certificate-chain/timestamp verification for a healthy OS-registered non-Store package.
+    /// Called only by the bounded publisher worker; mathematical CMS signature checks alone do not confer trust.</summary>
+    internal static bool IsMicrosoftPackageSignature(string path, string registeredPublisher, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        try
+        {
+            if (!Path.GetFileName(path).Equals("AppxSignature.p7x", StringComparison.OrdinalIgnoreCase)) return false;
+            AutorunPathSafety.RejectReparseAncestors(path);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (stream.Length is <= 4 or > 2 * 1024 * 1024) return false;
+            var bytes = new byte[(int)stream.Length];
+            for (int offset = 0; offset < bytes.Length;)
+            {
+                token.ThrowIfCancellationRequested();
+                int read = stream.Read(bytes, offset, bytes.Length - offset); if (read == 0) return false; offset += read;
+            }
+            if (bytes[0] != 'P' || bytes[1] != 'K' || bytes[2] != 'C' || bytes[3] != 'X') return false;
+            var buffer = Marshal.AllocHGlobal(bytes.Length);
+            var pointer = nint.Zero;
+            var data = new TrustData { Size = (uint)Marshal.SizeOf<TrustData>(), UiChoice = 2, UnionChoice = 3, StateAction = 1,
+                ProviderFlags = 0x1000 | 0x10 };
+            var action = new Guid("00AAC56B-CD44-11d0-8CC2-00C04FC295EE");
+            try
+            {
+                Marshal.Copy(bytes, 0, buffer, bytes.Length);
+                // Microsoft's MSIX SDK uses this P7x SIP subject with WTD_CHOICE_BLOB. It verifies
+                // the package signing chain and timestamp while keeping URL retrieval cache-only.
+                var blob = new TrustBlob { Size = (uint)Marshal.SizeOf<TrustBlob>(),
+                    Subject = new("5598cff1-68db-4340-b57f-1cacf88c9a51"), ObjectSize = (uint)bytes.Length, Object = buffer };
+                pointer = Marshal.AllocHGlobal(Marshal.SizeOf<TrustBlob>());
+                Marshal.StructureToPtr(blob, pointer, false); data.FileInfo = pointer;
+                if (WinVerifyTrust(new nint(-1), ref action, ref data) != 0) return false;
+                token.ThrowIfCancellationRequested();
+                var provider = WTHelperProvDataFromStateData(data.StateData); if (provider == nint.Zero) return false;
+                var signer = WTHelperGetProvSignerFromChain(provider, 0, false, 0); if (signer == nint.Zero) return false;
+                var certificate = WTHelperGetProvCertFromChain(signer, 0); if (certificate == nint.Zero) return false;
+                var header = Marshal.PtrToStructure<ProviderCertificate>(certificate);
+                if (header.Size < Marshal.SizeOf<ProviderCertificate>() || header.Certificate == nint.Zero) return false;
+#pragma warning disable SYSLIB0057
+                using var x509 = new X509Certificate2(header.Certificate);
+#pragma warning restore SYSLIB0057
+                return HasMicrosoftOrganization(x509.SubjectName.RawData) &&
+                    x509.SubjectName.RawData.SequenceEqual(new X500DistinguishedName(registeredPublisher).RawData);
+            }
+            finally
+            {
+                if (data.StateData != nint.Zero) { data.StateAction = 2; _ = WinVerifyTrust(new nint(-1), ref action, ref data); }
+                if (pointer != nint.Zero) { Marshal.DestroyStructure<TrustBlob>(pointer); Marshal.FreeHGlobal(pointer); }
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+        catch (OperationCanceledException) { throw; }
         catch { return false; }
     }
 
@@ -148,6 +214,8 @@ public sealed class MicrosoftPublisherProbe : IMicrosoftPublisherProbe
     { public uint Attributes, CreatedLow, CreatedHigh, AccessedLow, AccessedHigh, WrittenLow, WrittenHigh, Volume, SizeHigh, SizeLow, Links, IndexHigh, IndexLow; }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct TrustFile
     { public uint Size; [MarshalAs(UnmanagedType.LPWStr)] public string Path; public nint FileHandle, KnownSubject; }
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct TrustBlob
+    { public uint Size; public Guid Subject; public nint DisplayName; public uint ObjectSize; public nint Object; public uint SignatureSize; public nint Signature; }
     [StructLayout(LayoutKind.Sequential)] private struct TrustData
     { public uint Size; public nint PolicyCallback, SipClient; public uint UiChoice, RevocationChecks, UnionChoice; public nint FileInfo; public uint StateAction; public nint StateData, UrlReference; public uint ProviderFlags, UiContext; public nint SignatureSettings; }
     [StructLayout(LayoutKind.Sequential)] private struct ProviderCertificate { public uint Size; public nint Certificate; }

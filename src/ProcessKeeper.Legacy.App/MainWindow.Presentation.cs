@@ -7,6 +7,8 @@ public partial class MainWindow
 {
     private ApplicationDisplayCatalog _displayCatalog = ApplicationDisplayCatalog.Empty;
     private bool _displayCapturing, _displayDirty;
+    private readonly System.Windows.Threading.DispatcherTimer _displayRetryTimer = new();
+    private int _displayRetryRound;
     private const string PlatformRowPrefix = "presentation-platform:";
     private readonly HashSet<string> _collapsedPlatforms = new(StringComparer.Ordinal);
     private static bool MatchesPlatformQuery(string query, GameCatalogEntry? game, GamePlatform? platform) => query.Length > 0 &&
@@ -38,8 +40,28 @@ public partial class MainWindow
         finally { _ready = wasReady; }
         SaveView(); await RenderAsync(); RequestPresentationCapture();
     }
-    private async void RequestPresentationCapture()
+    private void InitializePresentationRetry()
     {
+        _displayRetryTimer.Tick += (_, _) =>
+        {
+            _displayRetryTimer.Stop();
+            if (!_closed) RequestPresentationCapture(retry: true);
+        };
+        Closed += (_, _) => _displayRetryTimer.Stop();
+    }
+    private void SchedulePresentationRetry(bool incomplete)
+    {
+        _displayRetryTimer.Stop();
+        if (!incomplete) { _displayRetryRound = 0; return; }
+        if (_closed || _displayDirty) return;
+        _displayRetryTimer.Interval = TimeSpan.FromSeconds(Math.Min(30, 2 << Math.Min(_displayRetryRound, 4)));
+        _displayRetryRound = Math.Min(_displayRetryRound + 1, 4);
+        _displayRetryTimer.Start();
+    }
+    private async void RequestPresentationCapture(bool retry = false)
+    {
+        _displayRetryTimer.Stop();
+        if (!retry) _displayRetryRound = 0;
         if (_closed || (!_view.GroupGamePlatforms && !_view.HideMicrosoftApps && !(_uninstallView?.InventoryEntries.Count > 0))) return;
         _displayDirty = true;
         if (_displayCapturing) return;
@@ -54,6 +76,7 @@ public partial class MainWindow
                 var verifyMicrosoft = _view.HideMicrosoftApps || uninstall.Count > 0;
                 var result = await Task.Run(() => _backend.CaptureDisplayForView(snapshot, installed, autoruns, uninstall, verifyMicrosoft, _life.Token), _life.Token);
                 if (_closed || _life.IsCancellationRequested) return;
+                SchedulePresentationRetry(result.RequiresMicrosoftRefresh);
                 if (_displayCatalog.HasSamePresentationAs(result)) continue;
                 _displayCatalog = result; _uninstallView?.ApplyPresentation(result, _view.GroupGamePlatforms, _view.HideMicrosoftApps); await RenderAsync();
             }

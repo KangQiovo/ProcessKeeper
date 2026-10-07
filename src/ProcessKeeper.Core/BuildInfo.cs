@@ -15,8 +15,8 @@ public static class BuildInfo
     public static bool IsPreviewBuild => true;
     public const string BuildChannelMarker = "ProcessKeeper.Build.Channel:Preview";
 #endif
-    public const string BuildDateUtc = "2026-10-07T14:23:05Z";
-    public const string BuildDateUtc8 = "2026-10-07T22:23:05+08:00";
+    public const string BuildDateUtc = "2026-10-07T15:16:31Z";
+    public const string BuildDateUtc8 = "2026-10-07T23:16:31+08:00";
     public static string DisplayBuildDate
     {
         get

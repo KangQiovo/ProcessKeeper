@@ -1,7 +1,9 @@
 namespace ProcessKeeper.Core;
 
 internal sealed record InstalledPackageSeed(string Name, string Publisher, string FamilyName, string FullName,
-    string InstallLocation, IReadOnlyList<string> ExecutablePaths, string Warning, string ExternalInstallLocation = "");
+    string InstallLocation, IReadOnlyList<string> ExecutablePaths, string Warning, string ExternalInstallLocation = "",
+    VerifiedMicrosoftPackageEvidence? MicrosoftPackageEvidence = null,
+    MicrosoftPackageSignatureCandidate? MicrosoftPackageSignatureCandidate = null);
 internal static class InstalledPackageCatalog
 {
     internal static bool IsMicrosoftExecutable(string path, CancellationToken token)

@@ -12,6 +12,7 @@ InstalledApplication Installed(params string[] paths) => new() { Id = "fixture:i
 AutorunEntry Autorun(string path, AutorunSourceKind source = AutorunSourceKind.RegistryRun) => new() { Id = "fixture:autorun", Name = "Microsoft alleged", SourceKind = source, TargetPath = path, Command = "\"" + path + "\"", IsSystem = true };
 
 MicrosoftPackageVerification.Run(Check, args);
+MicrosoftInstalledVisibilityVerification.Run(Check);
 
 string Manifest(string id = "123", string name = "Example Game", string directory = "Example", string state = "4") =>
     "\"AppState\" { \"appid\" \"" + id + "\" \"name\" \"" + name + "\" \"installdir\" \"" + directory + "\" \"StateFlags\" \"" + state + "\" }";

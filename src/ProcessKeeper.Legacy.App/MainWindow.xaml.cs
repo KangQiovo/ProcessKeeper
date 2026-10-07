@@ -47,6 +47,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) => await InitializeAsync();
         Closing += CloseAfterPerformanceSave;
         InitializeWindowMotion();
+        InitializePresentationRetry();
         Loaded += RevealShell;
         Closed += (_, _) => { _closed = true; _memoryView?.Dispose(); _downloadView?.Dispose(); _performanceView?.Dispose(); _uninstallView?.Dispose(); RiskConfirmationMode.Changed -= RiskModeChanged; _life.Cancel(); _render?.Cancel(); _updateCheckCancellation?.Cancel(); _updatePromptTimer.Stop(); _buildDateTimer.Stop(); _refresh.Stop(); _searchDelay.Stop(); _noticeTimer.Stop(); };
         _refresh.Tick += async (_, _) => await RefreshLiveAsync();

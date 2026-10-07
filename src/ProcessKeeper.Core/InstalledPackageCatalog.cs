@@ -13,7 +13,9 @@ internal sealed record InstalledPackageSeed(
     string InstallLocation,
     IReadOnlyList<string> ExecutablePaths,
     string Warning,
-    string ExternalInstallLocation = "");
+    string ExternalInstallLocation = "",
+    VerifiedMicrosoftPackageEvidence? MicrosoftPackageEvidence = null,
+    MicrosoftPackageSignatureCandidate? MicrosoftPackageSignatureCandidate = null);
 
 /// <summary>Reads package registration and declared entry points without activating an application.</summary>
 internal static class InstalledPackageCatalog
@@ -46,8 +48,12 @@ internal static class InstalledPackageCatalog
                 if (package is null || !package.Id.FullName.Equals(fullName, StringComparison.Ordinal) ||
                     !DisplayPath.Normalize(package.InstalledLocation.Path).Equals(directory, StringComparison.OrdinalIgnoreCase) ||
                     package.IsDevelopmentMode || package.IsFramework || package.IsResourcePackage) return false;
-                return MicrosoftPublisherProbe.HasTrustedMicrosoftPackagePublisher(package.Id.Publisher,
-                    package.Id.PublisherId, (int)package.SignatureKind, package.Status.VerifyIsOK());
+                bool healthy = package.Status.VerifyIsOK(); int kind = (int)package.SignatureKind;
+                if (MicrosoftPublisherProbe.HasTrustedMicrosoftPackagePublisher(package.Id.Publisher,
+                    package.Id.PublisherId, kind, healthy)) return true;
+                return healthy && kind is (1 or 2) &&
+                    MicrosoftPublisherProbe.HasMicrosoftPackagePublisherIdentity(package.Id.Publisher, package.Id.PublisherId) &&
+                    MicrosoftPublisherProbe.IsMicrosoftPackageSignature(Path.Combine(directory, "AppxSignature.p7x"), package.Id.Publisher, token);
             }
         }
         catch (OperationCanceledException) { throw; }
@@ -103,7 +109,9 @@ internal static class InstalledPackageCatalog
                     string warning = string.Join("；", notes);
                     if (warning.Length > 0) warnings.Add($"{name}：{warning}");
                     results.Add(new InstalledPackageSeed(name, publisher, family, fullName,
-                        location, entries.Paths, warning, ReadExternalInstallLocation(package)));
+                        location, entries.Paths, warning, ReadExternalInstallLocation(package),
+                        ReadMicrosoftDisplayEvidence(package, family, fullName, location, entries.Paths),
+                        ReadMicrosoftSignatureCandidate(package, family, fullName, location, entries.Paths)));
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
@@ -118,6 +126,39 @@ internal static class InstalledPackageCatalog
             warnings.Add(L.F($"无法完整读取当前用户的已安装包：{ErrorText(ex)}"));
         }
         return results.AsReadOnly();
+    }
+
+    private static VerifiedMicrosoftPackageEvidence? ReadMicrosoftDisplayEvidence(Package package, string family,
+        string fullName, string location, IReadOnlyList<string> entries)
+    {
+        try
+        {
+            if (!MicrosoftPublisherProbe.CanPreloadMicrosoftPackage(package.Id.Publisher, package.Id.PublisherId,
+                (int)package.SignatureKind, package.Status.VerifyIsOK(), package.IsDevelopmentMode,
+                package.IsFramework, package.IsResourcePackage)) return null;
+            var root = DisplayPath.Normalize(location);
+            if (root.Length <= 3) return null;
+            AutorunPathSafety.RejectReparseAncestors(root);
+            return new(family, fullName, root, Array.AsReadOnly(entries.Select(DisplayPath.Normalize).ToArray()));
+        }
+        catch { return null; } // Unreadable/unsupported OS evidence stays unknown; display labels are not a fallback.
+    }
+
+    private static MicrosoftPackageSignatureCandidate? ReadMicrosoftSignatureCandidate(Package package, string family,
+        string fullName, string location, IReadOnlyList<string> entries)
+    {
+        try
+        {
+            if (package.IsDevelopmentMode || package.IsFramework || package.IsResourcePackage ||
+                !package.Status.VerifyIsOK() || (int)package.SignatureKind is not (1 or 2) ||
+                !MicrosoftPublisherProbe.HasMicrosoftPackagePublisherIdentity(package.Id.Publisher, package.Id.PublisherId)) return null;
+            var root = DisplayPath.Normalize(location);
+            if (root.Length <= 3) return null;
+            AutorunPathSafety.RejectReparseAncestors(root);
+            return new(family, fullName, root, package.Id.Publisher, Path.Combine(root, "AppxSignature.p7x"),
+                Array.AsReadOnly(entries.Select(DisplayPath.Normalize).ToArray()));
+        }
+        catch { return null; }
     }
 
     private static string ReadText(Func<string> read, string fallback, string field, List<string> notes)

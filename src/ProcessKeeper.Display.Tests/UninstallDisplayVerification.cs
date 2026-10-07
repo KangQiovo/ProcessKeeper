@@ -42,6 +42,8 @@ internal static class UninstallDisplayVerification
             "sibling directory prefix is not game ownership");
         var verifiedEntry = new UninstallEntry { IconPath = microsoft, Command = new(@"C:\Windows\System32\msiexec.exe", "/x {fixture}", true) };
         check(Microsoft(catalog, verifiedEntry), "verified application icon identifies Microsoft MSI application");
+        check(!Microsoft(catalog, verifiedEntry with { Publisher = "Adobe Inc." }), "third-party uninstall registration cannot inherit a Microsoft helper icon signer");
+        check(!Microsoft(catalog, verifiedEntry with { Publisher = "libusb-win32", ApplicationPaths = new[] { microsoft } }), "third-party uninstall registration cannot inherit a Microsoft shared executable signer");
         check(!Microsoft(catalog, new() { Name = "Microsoft App", Publisher = "Microsoft Corporation", IsSystem = true }),
             "unverified Microsoft registry labels remain visible");
         check(!Microsoft(catalog, verifiedEntry with { IconPath = other }), "Microsoft MSI host cannot hide third-party application");

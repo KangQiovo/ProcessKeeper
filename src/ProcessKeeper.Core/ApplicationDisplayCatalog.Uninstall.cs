@@ -8,6 +8,7 @@ public sealed partial class ApplicationDisplayCatalog
     // Registry publisher/system labels and a Microsoft-signed shared installer are not ownership evidence.
     public bool IsMicrosoft(UninstallEntry entry)
     {
+        if (entry.Publisher.Length > 0 && !MicrosoftDesktopPublisher(entry.Publisher)) return false;
         if (entry.ApplicationPaths.Count > 0) return AllMicrosoft(entry.ApplicationPaths);
         // DisplayIcon may be a fallback to the uninstall route. An installer cannot establish application ownership.
         if (entry.Command?.Executable.Equals(entry.IconPath, StringComparison.OrdinalIgnoreCase) == true ||

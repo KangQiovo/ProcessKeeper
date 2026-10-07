@@ -151,6 +151,8 @@ public static class ApplicationPresentationGroups
         var strong = originals.Select((app, index) =>
         {
             var keys = new List<string>(); var known = KnownKey(app); if (known.Length > 0) keys.Add("identity:" + known);
+            keys.AddRange(app.PresentationRegistrationLinks.Take(100).Where(link => link.StartsWith("registration:", StringComparison.Ordinal)
+                && link.Length <= 1050 && !link.Any(char.IsControl)));
             if (!string.IsNullOrEmpty(externalLinks[index])) keys.Add(externalLinks[index]);
             foreach (var path in app.EntryPaths.Where(path => !IsSharedHost(path))) keys.Add("entry:" + FileKey(path));
             if (AppDirectory(app.InstallLocation))

@@ -89,6 +89,8 @@ public sealed class InstalledApplicationCatalog
         var result = new List<InstalledApplication>();
         var roots = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
         var metadata = new Dictionary<string, InstalledExecutable>(StringComparer.OrdinalIgnoreCase);
+        var presentationRegistrations = new List<InstalledPresentationRegistration>();
+        var shortcutRegistrations = new List<(string ApplicationId, string ShortcutPath, string TargetPath)>();
         var componentCount = 0;
         var clock = Stopwatch.StartNew();
         bool BudgetAvailable() => result.Count < MaximumApplications && componentCount < MaximumTotalExecutables && metadata.Count < MaximumTotalExecutables &&
@@ -101,7 +103,9 @@ public sealed class InstalledApplicationCatalog
             var app = CreateApplication(package.Name, package.Publisher, package.InstallLocation, package.ExecutablePaths,
                 L.F($"当前用户的 Windows 包：{package.FullName}；只读取清单入口，不扫描包子目录。{package.Warning}"),
                 metadata, package.FamilyName, package.FullName, BudgetAvailable, cancellationToken, MaximumTotalExecutables - componentCount, package.ExecutablePaths);
-            if (app is not null) componentCount += AddDistinct(result, app with { ExternalInstallLocation = package.ExternalInstallLocation });
+            if (app is not null) componentCount += AddDistinct(result, app with
+            { ExternalInstallLocation = package.ExternalInstallLocation, MicrosoftPackageEvidence = package.MicrosoftPackageEvidence,
+                MicrosoftPackageSignatureCandidate = package.MicrosoftPackageSignatureCandidate });
         }
         foreach (var seed in ReadRegistry(warnings, cancellationToken, BudgetAvailable))
         {
@@ -119,7 +123,12 @@ public sealed class InstalledApplicationCatalog
             }
             var app = CreateApplication(seed.Name, seed.Publisher, seed.Root, entries, seed.Evidence, metadata, budgetAvailable: BudgetAvailable,
                 cancellationToken: cancellationToken, maximumEntries: MaximumTotalExecutables - componentCount, entryPaths: seed.EntryPaths);
-            if (app is not null) componentCount += AddDistinct(result, app);
+            if (app is not null)
+            {
+                componentCount += AddDistinct(result, app);
+                if (seed.PresentationRegistration is { } registration)
+                    presentationRegistrations.Add(registration with { ApplicationId = app.Id });
+            }
         }
 
         foreach (var location in new[] { Environment.SpecialFolder.StartMenu, Environment.SpecialFolder.CommonStartMenu })
@@ -135,12 +144,20 @@ public sealed class InstalledApplicationCatalog
                 var app = CreateApplication(Path.GetFileNameWithoutExtension(shortcut), "", Path.GetDirectoryName(target)!, [target],
                     L.T("开始菜单快捷方式记录的本地 EXE 目标；只读取链接，不解析迁移目标、不读取参数、不启动。"), metadata, budgetAvailable: BudgetAvailable,
                     cancellationToken: cancellationToken, maximumEntries: MaximumTotalExecutables - componentCount, entryPaths: [target]);
-                if (app is not null) componentCount += AddDistinct(result, app);
+                if (app is not null)
+                {
+                    componentCount += AddDistinct(result, app);
+                    shortcutRegistrations.Add((app.Id, shortcut, target));
+                }
             }
         }
         if (!BudgetAvailable()) warnings.Add(L.F($"扫描达到 {MaximumScanDurationSeconds} 秒、{MaximumApplications} 个程序或 {MaximumTotalExecutables} 个文件的上限。可手动添加遗漏的软件；正在执行的系统读取不能立即中断。"));
+        var presentationLinked = InstalledRegistrationPresentation.Associate(result, presentationRegistrations,
+            ReadAdvertisedShortcutDescriptors(shortcutRegistrations, warnings, cancellationToken, BudgetAvailable),
+            presentationRegistrations.Any(registration => registration.BundleProviderKey.StartsWith("CPython-", StringComparison.Ordinal))
+                ? ReadRuntimeRegistrations(cancellationToken, BudgetAvailable) : []);
         Warnings = Array.AsReadOnly(warnings.Distinct(StringComparer.Ordinal).Take(100).ToArray());
-        return Array.AsReadOnly(result.OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
+        return Array.AsReadOnly(presentationLinked.OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(app => app.InstallLocation, StringComparer.OrdinalIgnoreCase).ToArray());
     }
 
@@ -258,12 +275,16 @@ public sealed class InstalledApplicationCatalog
         {
             Executables = Array.AsReadOnly(current.Executables.Concat(candidate.Executables).DistinctBy(entry => entry.Path, StringComparer.OrdinalIgnoreCase).ToArray()),
             EntryPaths = Array.AsReadOnly(current.EntryPaths.Concat(candidate.EntryPaths).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()),
+            PresentationRegistrationLinks = Array.AsReadOnly(current.PresentationRegistrationLinks.Concat(candidate.PresentationRegistrationLinks).Distinct(StringComparer.Ordinal).ToArray()),
+            RegisteredRuntimeMainPaths = Array.AsReadOnly(current.RegisteredRuntimeMainPaths.Concat(candidate.RegisteredRuntimeMainPaths).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()),
+            RegisteredRuntimeInstallerPaths = Array.AsReadOnly(current.RegisteredRuntimeInstallerPaths.Concat(candidate.RegisteredRuntimeInstallerPaths).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()),
             IdentityEvidence = string.Join("\n", new[] { current.IdentityEvidence, candidate.IdentityEvidence }.Distinct(StringComparer.Ordinal))
         };
         return applications[index].Executables.Count - current.Executables.Count;
     }
 
-    private sealed record RegistrySeed(string Name, string Publisher, string Root, IReadOnlyList<string> Entries, IReadOnlyList<string> EntryPaths, string Evidence);
+    private sealed record RegistrySeed(string Name, string Publisher, string Root, IReadOnlyList<string> Entries, IReadOnlyList<string> EntryPaths,
+        string Evidence, InstalledPresentationRegistration? PresentationRegistration = null);
 
     private static IReadOnlyList<RegistrySeed> ReadRegistry(List<string> warnings, CancellationToken token, Func<bool> budgetAvailable)
     {
@@ -296,9 +317,14 @@ public sealed class InstalledApplicationCatalog
                         var path = ParseExecutableValue(child.GetValue(isAppPath ? "" : "DisplayIcon") as string);
                         if (root is null && path is null) continue;
                         root ??= Path.GetDirectoryName(path!)!;
-                        result.Add(new RegistrySeed(name, child.GetValue("Publisher") as string ?? "", root,
+                        var publisher = child.GetValue("Publisher") as string ?? "";
+                        var registration = isAppPath ? null : new InstalledPresentationRegistration("", hive + ":" + view + ":" + childName,
+                            name!, publisher, child.GetValue("DisplayVersion") as string ?? "", declaredRoot ?? "", path ?? "",
+                            child.GetValue("WindowsInstaller") is int msi && msi == 1 && Guid.TryParse(childName, out var product) ? product.ToString("B") : "",
+                            child.GetValue("BundleProviderKey") as string ?? "", ParseExecutableValue(child.GetValue("BundleCachePath") as string) ?? "");
+                        result.Add(new RegistrySeed(name, publisher, root,
                             path is null ? [] : [path], isAppPath && path is not null ? [path] : [],
-                            L.F($"{hive} {view} 的 {(isAppPath ? "App Paths" : L.T("卸载信息"))}注册项；未读取卸载命令。")));
+                            L.F($"{hive} {view} 的 {(isAppPath ? "App Paths" : L.T("卸载信息"))}注册项；未读取卸载命令。"), registration));
                     }
                     catch (Exception ex) when (IsReadFailure(ex)) { warnings.Add(L.T("部分软件注册项无法读取：") + ex.Message); }
                 }
@@ -306,6 +332,37 @@ public sealed class InstalledApplicationCatalog
             catch (Exception ex) when (IsReadFailure(ex)) { warnings.Add(L.F($"{hive} {view} 安装记录无法读取：{ex.Message}")); }
         }
         return result;
+    }
+
+    private static IReadOnlyList<InstalledRuntimeRegistration> ReadRuntimeRegistrations(CancellationToken token, Func<bool> budgetAvailable)
+    {
+        var result = new List<InstalledRuntimeRegistration>();
+        foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
+        foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+        {
+            token.ThrowIfCancellationRequested(); if (!budgetAvailable()) break;
+            try
+            {
+                using var baseKey = RegistryKey.OpenBaseKey(hive, view);
+                using var parent = baseKey.OpenSubKey(@"Software\Python\PythonCore", writable: false);
+                if (parent is null) continue;
+                foreach (var tag in parent.GetSubKeyNames().Take(128))
+                {
+                    token.ThrowIfCancellationRequested(); if (!budgetAvailable() || result.Count >= 256) break;
+                    using var registration = parent.OpenSubKey(tag, writable: false);
+                    var version = registration?.GetValue("SysVersion") as string ?? "";
+                    var architecture = registration?.GetValue("SysArchitecture") as string ?? "";
+                    if (!Version.TryParse(version, out var release) || release.Build >= 0 || architecture is not ("32bit" or "64bit")) continue;
+                    using var installation = registration?.OpenSubKey("InstallPath", writable: false);
+                    var root = NormalizeExistingDirectory(installation?.GetValue("") as string ?? "");
+                    var executable = NormalizeExistingExecutable(installation?.GetValue("ExecutablePath") as string ?? "");
+                    if (root is null || executable is null || !ProcessIdentity.IsUnderDirectory(executable, root)) continue;
+                    result.Add(new("CPython-" + version, version, architecture, root, executable));
+                }
+            }
+            catch (Exception ex) when (IsReadFailure(ex)) { /* Unreadable runtime registrations cannot establish a presentation association. */ }
+        }
+        return result.Distinct().ToArray();
     }
 
     private static IReadOnlyList<string> ScanPaths(string root, int depth, int maximum, List<string> warnings, CancellationToken token, Func<bool>? budgetAvailable = null) =>
@@ -436,6 +493,59 @@ public sealed class InstalledApplicationCatalog
         catch (Exception ex) when (IsReadFailure(ex)) { return null; }
         finally { if (instance is not null && Marshal.IsComObject(instance)) Marshal.ReleaseComObject(instance); }
     }
+
+    private static readonly SemaphoreSlim MsiShortcutReadGate = new(1, 1);
+    private static IReadOnlyList<InstalledAdvertisedShortcut> ReadAdvertisedShortcutDescriptors(
+        IReadOnlyList<(string ApplicationId, string ShortcutPath, string TargetPath)> shortcuts, List<string> warnings,
+        CancellationToken token, Func<bool> budgetAvailable)
+    {
+        if (shortcuts.Count == 0 || !budgetAvailable() || !MsiShortcutReadGate.Wait(0)) return [];
+        var result = new List<InstalledAdvertisedShortcut>();
+        void ReadBatch()
+        {
+            var clock = Stopwatch.StartNew();
+            try
+            {
+                foreach (var shortcut in shortcuts.Take(5000))
+                {
+                    if (token.IsCancellationRequested || !budgetAvailable() || clock.Elapsed >= TimeSpan.FromSeconds(2)) break;
+                    try
+                    {
+                        var product = new StringBuilder(39); var feature = new StringBuilder(256); var component = new StringBuilder(39);
+                        // Descriptor queries only. Neither API provisions, repairs, resolves or activates a component.
+                        if (MsiGetShortcutTarget(shortcut.ShortcutPath, product, feature, component) != 0
+                            || !Guid.TryParse(product.ToString(), out var productId) || !Guid.TryParse(component.ToString(), out _)) continue;
+                        var path = new StringBuilder(32768); uint length = (uint)path.Capacity;
+                        // INSTALLSTATE_LOCAL=3; advertised, absent and source-only components are not actual local entries.
+                        if (MsiGetComponentPath(product.ToString(), component.ToString(), path, ref length) != 3) continue;
+                        var executable = NormalizeExistingExecutable(path.ToString());
+                        if (executable is not null) result.Add(new(shortcut.ApplicationId, productId.ToString("B"), shortcut.TargetPath, executable));
+                    }
+                    catch (Exception ex) when (IsReadFailure(ex) || ex is DllNotFoundException or EntryPointNotFoundException) { }
+                }
+            }
+            finally { MsiShortcutReadGate.Release(); }
+        }
+        // MsiGetShortcutTarget returns 1603 in an MTA inventory worker for advertised shell links on Windows.
+        // One STA batch per scan avoids one thread per shortcut. A timed-out native call retains the gate;
+        // later scans cannot accumulate more background readers while that provider is still running.
+        var reader = new Thread(ReadBatch) { IsBackground = true, Name = "ProcessKeeper MSI shortcut inventory" };
+        try { reader.SetApartmentState(ApartmentState.STA); reader.Start(); }
+        catch { MsiShortcutReadGate.Release(); return []; }
+        if (!reader.Join(TimeSpan.FromSeconds(2)))
+        {
+            warnings.Add(L.T("部分软件注册项无法读取：") + "MSI shortcut registration read reached its time boundary.");
+            return [];
+        }
+        token.ThrowIfCancellationRequested();
+        return result.ToArray();
+    }
+
+    [DllImport("msi.dll", CharSet = CharSet.Unicode, EntryPoint = "MsiGetShortcutTargetW")]
+    private static extern uint MsiGetShortcutTarget(string shortcut, StringBuilder product, StringBuilder feature, StringBuilder component);
+
+    [DllImport("msi.dll", CharSet = CharSet.Unicode, EntryPoint = "MsiGetComponentPathW")]
+    private static extern int MsiGetComponentPath(string product, string component, StringBuilder path, ref uint length);
 
     private static bool IsReadFailure(Exception ex) => ex is IOException or UnauthorizedAccessException or SecurityException or ArgumentException or NotSupportedException or COMException or System.ComponentModel.Win32Exception;
 
