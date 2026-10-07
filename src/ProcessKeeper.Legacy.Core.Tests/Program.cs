@@ -22,6 +22,7 @@ ReleaseBoundaryVerification.Run(Check);
 WhitelistProfilesVerification.Run(Check);
 count += AutorunSearchVerification.Run();
 InstalledSearchVerification.Run(Check, Console.WriteLine);
+ApplicationGroupingVerification.Run(Check);
 var fixtureRoot = Path.Combine(Path.GetTempPath(), "ProcessKeeper-legacy-fixture-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(fixtureRoot);
 try

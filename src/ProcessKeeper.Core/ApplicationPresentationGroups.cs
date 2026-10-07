@@ -49,21 +49,130 @@ public static class ApplicationPresentationGroups
         return keys.Length == 1 ? keys[0].ToLowerInvariant() : "";
     }
 
+    private static IEnumerable<string> CopiedLauncherKeys(InstalledApplication app, InstalledExecutableIdentity roles)
+    {
+        var root = app.InstallLocation.TrimEnd('\\', '/');
+        if (!AppDirectory(root)) yield break;
+        // Launchers sometimes live next to a directly nested, numeric version
+        // directory. Arbitrary descendants or a common drive/container are not
+        // evidence that two programs belong to the same installation.
+        var versionDirectory = Version.TryParse(Path.GetFileName(root).TrimStart('v', 'V'), out _);
+        var productRoot = versionDirectory ? Path.GetDirectoryName(root) ?? "" : root;
+        if (!AppDirectory(productRoot)) yield break;
+        var name = NormalizeName(app.Name);
+        if (name.Length == 0) yield break;
+        var entries = new HashSet<string>(app.EntryPaths, StringComparer.OrdinalIgnoreCase);
+        foreach (var executable in app.Executables)
+        {
+            if (IsSharedHost(executable.Path) || !ProcessIdentity.IsUnderDirectory(executable.Path, root)
+                || !versionDirectory && !entries.Contains(executable.Path)) continue;
+            var company = PublisherKey(executable.CompanyName);
+            if (company.Length == 0 || NormalizeName(executable.ProductName) != name
+                || app.Publisher.Length > 0 && PublisherKey(app.Publisher) != company
+                || string.IsNullOrWhiteSpace(executable.FileVersion) || executable.FileVersion.Length > 128) continue;
+            var role = roles.Classify(app, executable).Role;
+            if (role is not (InstalledExecutableRole.Main or InstalledExecutableRole.PotentialMain)) continue;
+            yield return "copy:" + FileKey(productRoot) + "|" + name + "|" + FileKey(Path.GetFileName(executable.Path))
+                + "|" + company + "|" + executable.FileVersion.Trim().ToLowerInvariant();
+        }
+    }
+
+    private static string[] ExternalPackageLinks(InstalledApplication[] originals, string[] publishers)
+    {
+        var links = new string[originals.Length];
+        var desktops = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        string ProductDirectory(string name, string root)
+        {
+            var product = NormalizeName(name);
+            root = root.TrimEnd('\\', '/');
+            if (product.Length == 0 || !AppDirectory(root) || !Path.IsPathFullyQualified(root)
+                || root.StartsWith(@"\\", StringComparison.Ordinal)) return "";
+            return product + "|" + FileKey(root);
+        }
+        for (var index = 0; index < originals.Length; index++)
+        {
+            var app = originals[index];
+            if (app.ApplicationKey.StartsWith("package:", StringComparison.OrdinalIgnoreCase)) continue;
+            var key = ProductDirectory(app.Name, app.InstallLocation);
+            if (key.Length == 0) continue;
+            if (!desktops.TryGetValue(key, out var bucket)) desktops[key] = bucket = new();
+            bucket.Add(index);
+        }
+        foreach (var family in Enumerable.Range(0, originals.Length)
+            .Where(index => originals[index].ApplicationKey.StartsWith("package:", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(index => originals[index].ApplicationKey, StringComparer.OrdinalIgnoreCase))
+        {
+            var members = family.ToArray();
+            if (members.Select(index => publishers[index]).Where(value => value.Length > 0).Distinct(StringComparer.Ordinal).Take(2).Count() > 1) continue;
+            var matches = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+            foreach (var index in members)
+            {
+                var app = originals[index];
+                if (app.ExternalInstallLocation.Length == 0) continue;
+                var key = ProductDirectory(app.Name, app.ExternalInstallLocation);
+                if (desktops.TryGetValue(key, out var bucket)) matches[key] = bucket;
+            }
+            var vendors = matches.Values.SelectMany(bucket => bucket).Select(candidate => publishers[candidate])
+                .Where(value => value.Length > 0).Distinct(StringComparer.Ordinal).Take(2).ToArray();
+            if (matches.Count == 0 || vendors.Length > 1) continue;
+            // The OS-registered external content directory plus the same product
+            // name links a sparse shell-extension package to its desktop app.
+            // Its package publisher may differ from the Win32 registration's
+            // publisher. This override is local to presentation grouping only.
+            // Plan all versions of one package family together. A local override
+            // must not split another version of that same registered identity.
+            if (vendors.Length == 1) foreach (var index in members) publishers[index] = vendors[0];
+            foreach (var index in members)
+            {
+                var key = ProductDirectory(originals[index].Name, originals[index].ExternalInstallLocation);
+                if (!matches.ContainsKey(key)) continue;
+                links[index] = "external-installed:" + key;
+            }
+            foreach (var match in matches) foreach (var candidate in match.Value) links[candidate] = "external-installed:" + match.Key;
+        }
+        return links;
+    }
+
     public static IReadOnlyList<InstalledApplication> MergeInstalled(IReadOnlyList<InstalledApplication> source)
     {
         if (source.Count < 2) return source;
         var originals = source.SelectMany(app => app.Installations.Count == 0 ? new[] { app } : app.Installations).DistinctBy(app => app.Id, StringComparer.OrdinalIgnoreCase).ToArray();
         var publishers = originals.Select(app => PublisherKey(app.Publisher)).ToArray();
-        var strong = originals.Select(app =>
+        var externalLinks = ExternalPackageLinks(originals, publishers);
+        var roles = new InstalledExecutableIdentity();
+        var entryProducts = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var app in originals)
+        foreach (var path in app.EntryPaths.Where(path => !IsSharedHost(path)))
+        {
+            var key = FileKey(path);
+            if (!entryProducts.TryGetValue(key, out var products)) entryProducts[key] = products = new(StringComparer.Ordinal);
+            var name = NormalizeName(app.Name); if (name.Length > 0) products.Add(name);
+        }
+        var strong = originals.Select((app, index) =>
         {
             var keys = new List<string>(); var known = KnownKey(app); if (known.Length > 0) keys.Add("identity:" + known);
+            if (!string.IsNullOrEmpty(externalLinks[index])) keys.Add(externalLinks[index]);
             foreach (var path in app.EntryPaths.Where(path => !IsSharedHost(path))) keys.Add("entry:" + FileKey(path));
             if (AppDirectory(app.InstallLocation))
                 foreach (var executable in app.Executables.Where(exe => !IsSharedHost(exe.Path) && ProcessIdentity.IsUnderDirectory(exe.Path, app.InstallLocation)))
-                    keys.Add("component:" + FileKey(app.InstallLocation.TrimEnd('\\', '/')) + "|" + FileKey(executable.Path));
+                {
+                    var path = FileKey(executable.Path);
+                    keys.Add("component:" + FileKey(app.InstallLocation.TrimEnd('\\', '/')) + "|" + path);
+                    // A recursive directory scan may contain another product.
+                    // Bridge source/root differences only for a compatible
+                    // named product and its main entry, never any shared helper.
+                    if (entryProducts.TryGetValue(path, out var products) && products.Contains(NormalizeName(app.Name))
+                        && roles.Classify(app, executable).Role is InstalledExecutableRole.Main or InstalledExecutableRole.PotentialMain)
+                        keys.Add("entry:" + path);
+                }
+            keys.AddRange(CopiedLauncherKeys(app, roles));
             return keys.Distinct(StringComparer.Ordinal).ToArray();
         }).ToArray();
-        var weak = originals.Select((app, index) => publishers[index].Length > 0 && NormalizeName(app.Name).Length > 0
+        // A package identity needs an actual file or OS external-directory link
+        // to join a desktop record. Display-name/publisher equality alone is not
+        // installation ownership, especially for unreadable shell-extension packages.
+        var weak = originals.Select((app, index) => !app.ApplicationKey.StartsWith("package:", StringComparison.OrdinalIgnoreCase)
+            && publishers[index].Length > 0 && NormalizeName(app.Name).Length > 0
             ? "product:" + NormalizeName(app.Name) + "|" + publishers[index] : "").ToArray();
         var groups = Connected(strong, weak, publishers);
         return groups.Select(indices =>
@@ -74,7 +183,8 @@ public static class ApplicationPresentationGroups
             if (members.Length == 1) return members[0];
             var primary = members[0]; var known = members.Select(KnownKey).Where(key => key.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
             var product = members.Where(app => app.Publisher.Length > 0).Select(app => "product:" + NormalizeName(app.Name) + "|" + PublisherKey(app.Publisher)).Order(StringComparer.Ordinal).FirstOrDefault();
-            var family = known.Length == 1 ? known[0] + "|" + PublisherKey(primary.Publisher) : product ??
+            var effectivePublisher = indices.Select(index => publishers[index]).FirstOrDefault(value => value.Length > 0) ?? "";
+            var family = known.Length == 1 ? known[0] + "|" + effectivePublisher : product ??
                 "installation:" + indices.SelectMany(index => strong[index]).Order(StringComparer.Ordinal).FirstOrDefault() + "|" + PublisherKey(primary.Publisher);
             return primary with
             {
@@ -108,15 +218,32 @@ public static class ApplicationPresentationGroups
         var buckets = new Dictionary<string, List<int>>(StringComparer.Ordinal);
         for (var index = 0; index < strong.Length; index++) foreach (var key in strong[index])
         { if (!buckets.TryGetValue(key, out var bucket)) buckets[key] = bucket = new(); bucket.Add(index); }
-        // A record may bridge different strong buckets, so ambiguity must be
-        // checked across all its evidence before any union is made.
+        // Missing publishers can form a chain across many buckets. Inspect the
+        // whole blank connected component before attaching it to any publisher;
+        // inspecting just immediate neighbours makes ownership scan-order dependent.
         var bucketPublishers = buckets.ToDictionary(pair => pair.Key, pair => pair.Value.Select(index => publishers[index]).Where(value => value.Length > 0).Distinct(StringComparer.Ordinal).Take(2).ToArray(), StringComparer.Ordinal);
-        var candidates = strong.Select(keys => keys.SelectMany(key => bucketPublishers[key]).Distinct(StringComparer.Ordinal).Take(2).Count()).ToArray();
-        for (var index = 0; index < ambiguous.Length; index++) ambiguous[index] = publishers[index].Length == 0 && candidates[index] > 1;
+        var blankParent = Enumerable.Range(0, strong.Length).ToArray();
+        int BlankRoot(int index) { while (blankParent[index] != index) { blankParent[index] = blankParent[blankParent[index]]; index = blankParent[index]; } return index; }
         foreach (var bucket in buckets.Values)
         {
-            var known = bucket.Select(index => publishers[index]).Where(value => value.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
-            foreach (var samePublisher in bucket.GroupBy(index => publishers[index].Length == 0 && known.Length == 1 ? known[0] : publishers[index], StringComparer.Ordinal))
+            var first = -1;
+            foreach (var index in bucket.Where(index => publishers[index].Length == 0))
+            { if (first < 0) first = index; else blankParent[BlankRoot(index)] = BlankRoot(first); }
+        }
+        var neighbours = new Dictionary<int, HashSet<string>>();
+        foreach (var pair in buckets)
+        foreach (var index in pair.Value.Where(index => publishers[index].Length == 0))
+        {
+            var root = BlankRoot(index);
+            if (!neighbours.TryGetValue(root, out var vendors)) neighbours[root] = vendors = new(StringComparer.Ordinal);
+            foreach (var vendor in bucketPublishers[pair.Key]) if (vendors.Count < 2) vendors.Add(vendor);
+        }
+        for (var index = 0; index < ambiguous.Length; index++)
+            ambiguous[index] = publishers[index].Length == 0 && neighbours.TryGetValue(BlankRoot(index), out var vendors) && vendors.Count > 1;
+        foreach (var pair in buckets)
+        {
+            var known = bucketPublishers[pair.Key];
+            foreach (var samePublisher in pair.Value.GroupBy(index => publishers[index].Length == 0 && !ambiguous[index] && known.Length == 1 ? known[0] : publishers[index], StringComparer.Ordinal))
             { var first = samePublisher.First(); foreach (var index in samePublisher.Skip(1)) Join(first, index); }
         }
         foreach (var bucket in Enumerable.Range(0, weak.Length).Where(index => weak[index].Length > 0).GroupBy(index => weak[index], StringComparer.Ordinal))
@@ -170,7 +297,12 @@ public static class ApplicationPresentationGroups
                     if (exe.ApplicationKey.Length > 0) Add(_identities, exe.ApplicationKey, owner);
                 }
                 foreach (var member in app.Installations.Count == 0 ? new[] { app } : app.Installations)
+                {
+                    if (member.ApplicationKey.Length > 0) Add(_identities, member.ApplicationKey, owner);
                     if (AppDirectory(member.InstallLocation)) Add(_roots, FileKey(member.InstallLocation.TrimEnd('\\', '/')), owner);
+                    if (member.ApplicationKey.StartsWith("package:", StringComparison.OrdinalIgnoreCase)
+                        && AppDirectory(member.ExternalInstallLocation)) Add(_roots, FileKey(member.ExternalInstallLocation.TrimEnd('\\', '/')), owner);
+                }
             }
             foreach (var app in snapshot.Applications)
             {

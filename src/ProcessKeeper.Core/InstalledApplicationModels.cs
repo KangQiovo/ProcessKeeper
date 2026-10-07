@@ -6,6 +6,11 @@ public sealed record InstalledExecutable
     public string Path { get; init; } = "";
     public string Name { get; init; } = "";
     public string Description { get; init; } = "";
+    // Cached alongside FileDescription in the bounded inventory read. These
+    // hints describe a product; they never establish executable trust.
+    public string ProductName { get; init; } = "";
+    public string CompanyName { get; init; } = "";
+    public string FileVersion { get; init; } = "";
     public string ApplicationKey { get; init; } = "";
 }
 
@@ -16,6 +21,8 @@ public sealed record InstalledApplication
     public string Name { get; init; } = "";
     public string Publisher { get; init; } = "";
     public string InstallLocation { get; init; } = "";
+    /// <summary>OS-registered external content directory for a healthy, non-development package; never inferred from its display name.</summary>
+    public string ExternalInstallLocation { get; init; } = "";
     public string IdentityEvidence { get; init; } = "";
     public string ApplicationKey { get; init; } = "";
     /// <summary>Explicit registered, manifest, shortcut or user-selected entries; never inferred from list order.</summary>

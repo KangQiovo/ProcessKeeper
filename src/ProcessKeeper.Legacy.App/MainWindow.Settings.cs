@@ -69,7 +69,7 @@ public partial class MainWindow
         { const string url = "https://github.com/KangQiovo/ProcessKeeper"; if (await Confirm(L.T("打开项目主页？"), L.T("将在默认浏览器打开以下网址：") + "\n" + url)) OpenWebsite(url); });
         projectHome.Content = new TextBlock { Text = "Process Keeper | " + L.T("项目主页"), TextWrapping = TextWrapping.Wrap };
         projectHome.Tag = "https://github.com/KangQiovo/ProcessKeeper"; projectHome.HorizontalAlignment = HorizontalAlignment.Stretch; projectHome.HorizontalContentAlignment = HorizontalAlignment.Left;
-        projectHome.BorderThickness = new Thickness(0); projectHome.Background = Brushes.Transparent; about.Children.Add(projectHome);
+        projectHome.BorderThickness = new Thickness(0); projectHome.Background = Brushes.Transparent; about.Children.Add(Text(L.T("本项目"), 20)); about.Children.Add(projectHome);
         about.Children.Add(Text(L.T("引用项目"), 20));
         foreach (var project in ReferencedProjects.All)
         {

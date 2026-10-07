@@ -4,6 +4,7 @@ internal static class ApplicationGroupingVerification
 {
     internal static void Run(Action<bool, string> check)
     {
+        InstalledDuplicateVerification.Run(check);
         InstalledApplication App(string id, string name, string publisher, string root, params string[] files) => new()
         {
             Id = id, Name = name, Publisher = publisher, InstallLocation = root,

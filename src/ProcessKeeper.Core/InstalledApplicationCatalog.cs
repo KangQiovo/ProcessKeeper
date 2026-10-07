@@ -101,7 +101,7 @@ public sealed class InstalledApplicationCatalog
             var app = CreateApplication(package.Name, package.Publisher, package.InstallLocation, package.ExecutablePaths,
                 L.F($"当前用户的 Windows 包：{package.FullName}；只读取清单入口，不扫描包子目录。{package.Warning}"),
                 metadata, package.FamilyName, package.FullName, BudgetAvailable, cancellationToken, MaximumTotalExecutables - componentCount, package.ExecutablePaths);
-            if (app is not null) componentCount += AddDistinct(result, app);
+            if (app is not null) componentCount += AddDistinct(result, app with { ExternalInstallLocation = package.ExternalInstallLocation });
         }
         foreach (var seed in ReadRegistry(warnings, cancellationToken, BudgetAvailable))
         {
@@ -209,11 +209,17 @@ public sealed class InstalledApplicationCatalog
             if (path is null) continue;
             if (!metadata.TryGetValue(path, out var entry))
             {
-                var description = "";
-                try { description = FileVersionInfo.GetVersionInfo(path).FileDescription ?? ""; }
+                var description = ""; var product = ""; var company = ""; var version = "";
+                try
+                {
+                    var info = FileVersionInfo.GetVersionInfo(path);
+                    description = info.FileDescription ?? ""; product = info.ProductName ?? "";
+                    company = info.CompanyName ?? ""; version = info.FileVersion ?? "";
+                }
                 catch (Exception ex) when (IsReadFailure(ex)) { }
                 var classified = ProcessIdentity.Classify(new ProcessRecord { Id = 1, Name = Path.GetFileName(path), Path = path, PackageFamilyName = family });
-                entry = new InstalledExecutable { Path = path, Name = Path.GetFileName(path), Description = description, ApplicationKey = classified.ApplicationKey };
+                entry = new InstalledExecutable { Path = path, Name = Path.GetFileName(path), Description = description,
+                    ProductName = product, CompanyName = company, FileVersion = version, ApplicationKey = classified.ApplicationKey };
                 metadata[path] = entry;
             }
             if (family.Length > 0)

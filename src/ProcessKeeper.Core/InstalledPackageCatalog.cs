@@ -1,5 +1,6 @@
 using System.Xml;
 using Windows.ApplicationModel;
+using Windows.Foundation.Metadata;
 using Windows.Management.Deployment;
 
 namespace ProcessKeeper.Core;
@@ -11,7 +12,8 @@ internal sealed record InstalledPackageSeed(
     string FullName,
     string InstallLocation,
     IReadOnlyList<string> ExecutablePaths,
-    string Warning);
+    string Warning,
+    string ExternalInstallLocation = "");
 
 /// <summary>Reads package registration and declared entry points without activating an application.</summary>
 internal static class InstalledPackageCatalog
@@ -101,7 +103,7 @@ internal static class InstalledPackageCatalog
                     string warning = string.Join("；", notes);
                     if (warning.Length > 0) warnings.Add($"{name}：{warning}");
                     results.Add(new InstalledPackageSeed(name, publisher, family, fullName,
-                        location, entries.Paths, warning));
+                        location, entries.Paths, warning, ReadExternalInstallLocation(package)));
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
@@ -132,6 +134,60 @@ internal static class InstalledPackageCatalog
             notes.Add(L.F($"{field}不可读：{ErrorText(ex)}"));
         }
         return fallback;
+    }
+
+    private static string ReadExternalInstallLocation(Package package)
+    {
+        try
+        {
+            if (package.IsDevelopmentMode || !package.Status.VerifyIsOK()) return "";
+            // Only Windows registration supplies this association. Manifest absolute paths and
+            // EffectiveLocation are not substitutes for an explicitly registered external root.
+            const string packageType = "Windows.ApplicationModel.Package";
+            if (ApiInformation.IsPropertyPresent(packageType, "EffectiveExternalLocation"))
+            {
+                var location = package.EffectiveExternalLocation?.Path;
+                if (!string.IsNullOrWhiteSpace(location))
+                    return SelectExternalInstallLocation(location, false, true);
+            }
+            if (ApiInformation.IsPropertyPresent(packageType, "EffectiveExternalPath"))
+                return SelectExternalInstallLocation(package.EffectiveExternalPath, false, true);
+        }
+        catch { /* Unavailable APIs, unreadable state and unresolved directories supply no association. */ }
+        return "";
+    }
+
+    internal static string SelectExternalInstallLocation(string? location, bool isDevelopmentMode, bool isHealthy)
+    {
+        if (isDevelopmentMode || !isHealthy || string.IsNullOrWhiteSpace(location) || location.Length > 32767 ||
+            location.Any(char.IsControl) || !Path.IsPathFullyQualified(location) || location.StartsWith(@"\\", StringComparison.Ordinal) ||
+            location.Length < 4 || !char.IsAsciiLetter(location[0]) || location[1] != ':' || location.IndexOf(':', 2) >= 0 ||
+            location.IndexOfAny(['*', '?', '"', '<', '>', '|']) >= 0) return "";
+        try
+        {
+            string candidate = location.Replace('/', '\\').TrimEnd('\\');
+            string[] segments = candidate[3..].Split('\\');
+            if (segments.Length > 128 || segments.Any(s => s.Length == 0 || s is "." or ".." || s.EndsWith(' ') || s.EndsWith('.'))) return "";
+            string directory = Path.GetFullPath(candidate).TrimEnd('\\');
+            if (directory.Equals(Path.GetPathRoot(directory)?.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) ||
+                new[] { "Windows", "System32", "SysWOW64", "Program Files", "Program Files (x86)", "ProgramData", "WindowsApps",
+                    "Users", "AppData", "Local", "Roaming", "Temp", "Desktop", "Downloads", "Documents" }
+                .Contains(Path.GetFileName(directory), StringComparer.OrdinalIgnoreCase)) return "";
+            if (new[] { Environment.SpecialFolder.Windows, Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolder.ProgramFilesX86,
+                Environment.SpecialFolder.CommonApplicationData, Environment.SpecialFolder.UserProfile, Environment.SpecialFolder.LocalApplicationData,
+                Environment.SpecialFolder.ApplicationData }.Select(Environment.GetFolderPath).Where(value => value.Length > 0)
+                .Any(value => directory.Equals(value.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))) return "";
+            int depth = 0;
+            for (string? current = directory; !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
+            {
+                if (++depth > 128) return "";
+                var attributes = File.GetAttributes(current);
+                if ((attributes & FileAttributes.Directory) == 0 || (attributes & FileAttributes.ReparsePoint) != 0) return "";
+            }
+            return directory;
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        { return ""; }
     }
 
     private static (bool? HasApplications, IReadOnlyList<string> Paths) ReadEntryPoints(
