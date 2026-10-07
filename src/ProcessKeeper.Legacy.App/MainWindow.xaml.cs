@@ -101,7 +101,7 @@ public partial class MainWindow : Window
         foreach (var i in order) Navigation.Items.Add(new ListBoxItem { Tag = i, Content = _collapsed ? symbols[i] : symbols[i] + "   " + L.T(names[i]), ToolTip = L.T(names[i]), Padding = new Thickness(8, 12, 4, 12) });
         Navigation.SelectedIndex = Array.IndexOf(order, _page);
         TestingText.Text = L.T("测试版本不代表最终品质"); TestingText.Visibility = !_collapsed && BuildInfo.IsPreviewBuild ? Visibility.Visible : Visibility.Collapsed;
-        LocalText.Text = L.F($"版本：{CurrentAppVersion}"); LocalText.Margin = new Thickness(0, BuildInfo.IsPreviewBuild ? 7 : 0, 0, 0);
+        LocalText.Text = L.F($"版本：{ProcessKeeper.Core.ReleaseIdentity.DisplayVersion(CurrentAppVersion)}"); LocalText.Margin = new Thickness(0, BuildInfo.IsPreviewBuild ? 7 : 0, 0, 0);
         CompatibilityText.Text = L.T("当前使用兼容运行环境，部分效果和功能可能与新系统不同。");
         CompatibilityNotice.Visibility = CompatibilityNoticeState.ShouldShow(true) ? Visibility.Visible : Visibility.Collapsed;
         Live.Content = L.T("实时更新"); ShowSystem.Content = L.T("显示系统进程"); AutorunMode.OffContent = L.T("简单"); AutorunMode.OnContent = L.T("复杂"); HistoryAuto.Content = L.T("自动滚动");

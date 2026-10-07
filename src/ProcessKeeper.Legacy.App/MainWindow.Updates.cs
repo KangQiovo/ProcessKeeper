@@ -333,7 +333,7 @@ public partial class MainWindow
         var action = L.T(installer ? "退出并启动安装程序" : "更新并重新启动");
         var detail = L.T(installer ? "点击“退出并启动安装程序”后，Process Keeper 将退出并打开标准安装向导。请在安装向导中确认安装位置并完成更新。其他应用不会因此退出。" :
             "点击“更新并重新启动”后，Process Keeper 将退出并安装已下载的更新，然后重新启动。其他应用不会因此退出；请先完成本应用中的其他操作。") +
-            "\n\n" + download.Release.Tag + " | " + download.Asset.Name + "\nSHA-256 | " + download.Sha256;
+            "\n\n" + DisplayUpdateReleaseTag(download.Release) + " | " + download.Asset.Name + "\nSHA-256 | " + download.Sha256;
         if (installer) detail += "\n\n" + L.T("安装向导中的完成或取消由你决定；取消后原有 EXE 会保留。");
         if (_backend.Confirm is not null) return await _backend.Confirm(action, detail);
         var window = UpdateWindow(action, 640, out _, out var body, out var actions);

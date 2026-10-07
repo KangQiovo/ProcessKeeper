@@ -6,6 +6,8 @@
   <Grid.Style><Style TargetType="Grid"><Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}"/></Style></Grid.Style>
   <Grid.Resources><local:RoleKindVisibilityConverter x:Key="RoleKindVisibility"/><local:HiddenActionVisibilityConverter x:Key="HiddenActionVisibility"/></Grid.Resources>
   <Grid.RowDefinitions><RowDefinition Height="48"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <Border x:Name="MaterialReadabilitySurface" Grid.RowSpan="2" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" Opacity="0.85" Visibility="Collapsed" IsHitTestVisible="False"/>
+  <Border x:Name="MaterialAcrylicPalette" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" Visibility="Collapsed"/>
   <Grid x:Name="TitleBar" Padding="20,0,150,0" ColumnSpacing="12">
    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
    <Image Width="28" Height="28" VerticalAlignment="Center"><Image.Source><BitmapImage UriSource="ms-appx:///Assets/ProcessKeeper.png" DecodePixelWidth="64"/></Image.Source></Image>
@@ -215,7 +217,7 @@
         <StackPanel Spacing="28" MaxWidth="680" HorizontalAlignment="Left" Padding="0,12,16,24">
          <StackPanel Spacing="10"><TextBlock Text="{local:Loc Text='窗口背景'}" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="{local:Loc Text='使用 Windows 原生材质；关闭后显示纯色背景。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><CheckBox x:Name="BackdropEnabled" Content="{local:Loc Text='启用原生背景效果'}" IsChecked="True" Click="AppearanceToggleClicked"/><ComboBox x:Name="BackdropChoice" Header="{local:Loc Text='背景材质'}" SelectedIndex="0" MinWidth="260" HorizontalAlignment="Stretch" SelectionChanged="AppearanceSelectionChanged"><ComboBoxItem Content="{local:Loc Text='云母 | Mica'}"/><ComboBoxItem Content="{local:Loc Text='亚克力磨砂 | Acrylic'}"/></ComboBox></StackPanel>
          <Expander x:Name="BackdropParameters" Header="{local:Loc Text='自定义材质参数'}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-          <StackPanel x:Name="MaterialParameterSurface" Spacing="14" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" Padding="12">
+          <StackPanel x:Name="MaterialParameterSurface" Spacing="14" Padding="12">
            <CheckBox x:Name="CustomBackdropEnabled" Content="{local:Loc Text='启用自定义材质参数'}" Click="AppearanceToggleClicked"/>
            <StackPanel x:Name="MaterialParameterControls" Spacing="12">
             <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{local:Loc Text='色调不透明度'}" TextWrapping="Wrap"/><TextBlock x:Name="TintOpacityValue" Grid.Column="1" Text="80%"/></Grid>
@@ -233,7 +235,7 @@
            <TextBlock Text="{local:Loc Text='参数仅影响背景；Mica 不是真实窗后透明，系统限制时会降级。'}" TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
           </StackPanel>
          </Expander>
-         <StackPanel x:Name="AppearanceThemeSurface" Spacing="10" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" Padding="12"><TextBlock Text="{local:Loc Text='颜色主题'}" FontSize="19" FontWeight="SemiBold"/><ComboBox x:Name="ThemeChoice" SelectedIndex="0" MinWidth="260" HorizontalAlignment="Stretch" SelectionChanged="AppearanceSelectionChanged" AutomationProperties.Name="{local:Loc Text='颜色主题'}"><ComboBoxItem Content="{local:Loc Text='跟随系统'}"/><ComboBoxItem Content="{local:Loc Text='浅色'}"/><ComboBoxItem Content="{local:Loc Text='深色'}"/></ComboBox></StackPanel>
+         <StackPanel x:Name="AppearanceThemeSurface" Spacing="10"><TextBlock Text="{local:Loc Text='颜色主题'}" FontSize="19" FontWeight="SemiBold"/><ComboBox x:Name="ThemeChoice" SelectedIndex="0" MinWidth="260" HorizontalAlignment="Stretch" SelectionChanged="AppearanceSelectionChanged" AutomationProperties.Name="{local:Loc Text='颜色主题'}"><ComboBoxItem Content="{local:Loc Text='跟随系统'}"/><ComboBoxItem Content="{local:Loc Text='浅色'}"/><ComboBoxItem Content="{local:Loc Text='深色'}"/></ComboBox></StackPanel>
          <StackPanel Spacing="12"><Button Content="{local:Loc Text='恢复默认外观'}" Click="ResetAppearance"/><TextBlock x:Name="AppearanceStatus" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock Text="{local:Loc Text='更改即时预览并自动保存；材质效果遵循 Windows 的透明度与节能设置。'}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/></StackPanel>
         </StackPanel>
        </ScrollViewer>

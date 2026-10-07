@@ -83,7 +83,7 @@ public sealed partial class MainWindow
 
     private void UpdateNavigationFooter()
     {
-        FooterVersionText.Text = L.F($"版本：{UpdatesView.ResolveCurrentVersion()}");
+        FooterVersionText.Text = L.F($"版本：{ReleaseIdentity.DisplayVersion(UpdatesView.ResolveCurrentVersion())}");
         PreviewBuildText.Visibility = BuildInfo.IsPreviewBuild ? Visibility.Visible : Visibility.Collapsed;
         NavigationFooter.Visibility = Navigation.IsPaneOpen ? Visibility.Visible : Visibility.Collapsed;
     }

@@ -53,7 +53,7 @@ public sealed partial class UpdateService : IDisposable
                 if (UpdateVersion.TryParse(release.Tag, out var version) && (latestVersion is null || version!.CompareTo(latestVersion) > 0)) { latest = release; latestVersion = version; }
             var available = latestVersion is not null && latestVersion.CompareTo(current) > 0;
             return new UpdateCheckResult(current!.Value, latest, releases.AsReadOnly(), available,
-                releases.Count == 0 ? L.T("此仓库尚未发布可用版本。") : latest is null ? L.T("发布标签不是有效的 SemVer，无法判断是否有更新。") : available ? L.F($"发现新版本：{latest.Version}") : L.T("当前未发现更新版本。"));
+                releases.Count == 0 ? L.T("此仓库尚未发布可用版本。") : latest is null ? L.T("发布标签不是有效的 SemVer，无法判断是否有更新。") : available ? L.F($"发现新版本：{ReleaseIdentity.DisplayVersion(latest.Version)}") : L.T("当前未发现更新版本。"));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { throw Error("timeout", "更新请求超时，请稍后重试。"); }
         catch (Exception) when (timeout.IsCancellationRequested) { cancellationToken.ThrowIfCancellationRequested(); throw Error("timeout", "更新请求超时，请稍后重试。"); }

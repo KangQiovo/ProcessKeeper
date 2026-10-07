@@ -10,6 +10,7 @@ namespace ProcessKeeper.App;
 internal sealed class NativeMaterialBackdrop : SystemBackdrop
 {
     private readonly BackdropMaterial _material;
+    private readonly Func<(Color Tint, Color Fallback)> _themeColors;
     private AppearancePreferences _preferences;
     private MicaController? _mica;
     private DesktopAcrylicController? _acrylic;
@@ -19,10 +20,11 @@ internal sealed class NativeMaterialBackdrop : SystemBackdrop
     private SystemBackdropTheme? _theme;
 
     internal BackdropMaterial Material => _material;
+    internal bool IsHighContrast => _configuration?.IsHighContrast == true;
     internal event Action? AppearanceChanged;
 
-    internal NativeMaterialBackdrop(AppearancePreferences preferences)
-    { _material = preferences.Material; _preferences = preferences; }
+    internal NativeMaterialBackdrop(AppearancePreferences preferences, Func<(Color Tint, Color Fallback)> themeColors)
+    { _material = preferences.Material; _preferences = preferences; _themeColors = themeColors; }
 
     internal void Update(AppearancePreferences preferences)
     {
@@ -60,23 +62,27 @@ internal sealed class NativeMaterialBackdrop : SystemBackdrop
         else _acrylic!.SetSystemBackdropConfiguration(_configuration);
         if (refreshDefaults || _theme != _configuration.Theme || _configuration.IsHighContrast)
         {
-            // Reset re-evaluates the native theme/palette. Default color getters can still expose
-            // their original Light values, so never copy them back as explicit overrides.
+            // Reset restores native policy handling, including high contrast. Once any opacity
+            // is customized, all theme-dependent colors must also be supplied explicitly.
             if (_mica is not null) _mica.ResetProperties();
             else _acrylic!.ResetProperties();
             _theme = _configuration.Theme;
         }
         // Let the controller choose the system high-contrast palette; keep user values for later.
         if (_configuration.IsHighContrast) return;
+        var colors = _themeColors();
+        var tint = ParseColor(_preferences.TintColor) ?? colors.Tint;
         if (_mica is not null)
         {
-            if (ParseColor(_preferences.TintColor) is { } tint) _mica.TintColor = tint;
+            _mica.TintColor = tint;
+            _mica.FallbackColor = colors.Fallback;
             _mica.TintOpacity = (float)_preferences.TintOpacity;
             _mica.LuminosityOpacity = (float)_preferences.LuminosityOpacity;
         }
         else
         {
-            if (ParseColor(_preferences.TintColor) is { } tint) _acrylic!.TintColor = tint;
+            _acrylic!.TintColor = tint;
+            _acrylic.FallbackColor = colors.Fallback;
             _acrylic!.TintOpacity = (float)_preferences.TintOpacity;
             _acrylic.LuminosityOpacity = (float)_preferences.LuminosityOpacity;
         }

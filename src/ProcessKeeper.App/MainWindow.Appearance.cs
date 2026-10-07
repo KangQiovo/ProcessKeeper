@@ -186,9 +186,10 @@ public sealed partial class MainWindow
                         if (SystemBackdrop is NativeMaterialBackdrop custom && custom.Material == _appearance.Material) custom.Update(_appearance);
                         else
                         {
-                            var backdrop = new NativeMaterialBackdrop(_appearance);
+                            var material = _appearance.Material;
+                            var backdrop = new NativeMaterialBackdrop(_appearance, () => MaterialThemeColors(material));
                             backdrop.AppearanceChanged += () => Root.DispatcherQueue.TryEnqueue(() =>
-                            { if (!_closed && ReferenceEquals(SystemBackdrop, backdrop)) UpdateMaterialControlValues(); });
+                            { if (!_closed && ReferenceEquals(SystemBackdrop, backdrop)) { UpdateMaterialReadabilitySurface(); UpdateMaterialControlValues(); } });
                             SystemBackdrop = backdrop;
                         }
                     }
@@ -207,6 +208,9 @@ public sealed partial class MainWindow
             _appearanceResult = L.T("当前环境无法启用背景材质，已回退为纯色背景。");
         }
         CustomBackdropEnabled.IsEnabled = _appearance.BackdropEnabled && materialReady;
+        // A uniform WinUI theme layer protects every content area from arbitrary user tint or
+        // a fully transparent native material without changing the user's theme or parameters.
+        UpdateMaterialReadabilitySurface();
         var parametersEnabled = CustomBackdropEnabled.IsEnabled && _appearance.CustomBackdropEnabled;
         TintOpacitySlider.IsEnabled = LuminosityOpacitySlider.IsEnabled = TintColorButton.IsEnabled = TintColorPicker.IsEnabled = TintApplyButton.IsEnabled = TintThemeButton.IsEnabled = parametersEnabled;
         NativeDefaultsButton.IsEnabled = CustomBackdropEnabled.IsEnabled;
@@ -218,11 +222,26 @@ public sealed partial class MainWindow
         ? (_micaSupported ??= MicaController.IsSupported())
         : (_acrylicSupported ??= DesktopAcrylicController.IsSupported());
 
+    private (Windows.UI.Color Tint, Windows.UI.Color Fallback) MaterialThemeColors(BackdropMaterial material)
+    {
+        // Resolve live ThemeResources in this window rather than copying controller getters:
+        // native customization disables automatic Light/Dark values for all four properties.
+        if (material == BackdropMaterial.Acrylic && MaterialAcrylicPalette.Background is AcrylicBrush acrylic)
+            return (acrylic.TintColor, acrylic.FallbackColor);
+        var color = ((SolidColorBrush)MaterialReadabilitySurface.Background).Color;
+        return (color, color);
+    }
+
+    private void UpdateMaterialReadabilitySurface() => MaterialReadabilitySurface.Visibility =
+        _appearance.BackdropEnabled && _appearance.CustomBackdropEnabled && SystemBackdrop is NativeMaterialBackdrop { IsHighContrast: false }
+        ? Visibility.Visible : Visibility.Collapsed;
+
     private void UseSolidAppearance()
     {
         // Root.Style owns a ThemeResource setter. Removing only the local value keeps that live
         // resource expression, including explicit Light/Dark themes and later system theme changes.
         Root.ClearValue(Panel.BackgroundProperty);
+        MaterialReadabilitySurface.Visibility = Visibility.Collapsed;
         try { SystemBackdrop = null; }
         catch (Exception) { /* The opaque theme brush still hides a backdrop if native teardown fails. */ }
     }

@@ -330,7 +330,7 @@ internal sealed class UpdatesView : UserControl
                 var body = new StackPanel { Spacing = 12, MaxWidth = 500 };
                 body.Children.Add(Text(L.T(installer ? "点击“退出并启动安装程序”后，Process Keeper 将退出并打开标准安装向导。请在安装向导中确认安装位置并完成更新。其他应用不会因此退出。" : "点击“更新并重新启动”后，Process Keeper 将退出并安装已下载的更新，然后重新启动。其他应用不会因此退出；请先完成本应用中的其他操作。")));
                 if (installer) body.Children.Add(Text(L.T("安装向导中的完成或取消由你决定；取消后原有 EXE 会保留。"), 12));
-                body.Children.Add(Text(download.Asset.Name + " | " + download.Release.Tag));
+                body.Children.Add(Text(download.Asset.Name + " | " + DisplayReleaseTag(download.Release)));
                 body.Children.Add(Text("SHA-256 | " + download.Sha256, 12));
                 if (await ShowCancellableDialog(NewDialog(installAction, body, installAction), token) != ContentDialogResult.Primary)
                 { installChoice = new(TaskCreationOptions.RunContinuationsAsynchronously); transfer.SetPhase(UpdateTransferPhase.Ready, L.T("下载完成")); continue; }
